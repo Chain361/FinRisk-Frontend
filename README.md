@@ -2,6 +2,10 @@
 
 Angular + Tailwind frontend for local budget risk analytics.
 
+## Architecture
+
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the frontend module layout, backend interface contract, auth seam, and time-series gap policy.
+
 ## Run
 
 ```bash
