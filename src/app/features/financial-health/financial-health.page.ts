@@ -53,26 +53,6 @@ interface FactorOption {
         </p>
       }
 
-      <div
-        class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
-      >
-        <div>
-          <h2 class="text-base font-semibold text-slate-950">
-            เลือก Risk Factor เพื่อดู Time Series
-          </h2>
-          <p class="mt-1 text-sm text-slate-500">{{ coverage() }}</p>
-        </div>
-        <select
-          class="h-10 min-w-64 rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-slate-900"
-          [value]="selectedFactorCode() ?? ''"
-          (change)="setFactor($any($event.target).value)"
-        >
-          @for (factor of factorOptions(); track factor.code) {
-            <option [value]="factor.code">{{ factor.code }} - {{ factor.name }}</option>
-          }
-        </select>
-      </div>
-
       <div class="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
         <section class="panel p-4">
           <div class="mb-3">
@@ -137,24 +117,20 @@ interface FactorOption {
         <section class="panel p-4">
           <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 class="text-base font-semibold">{{ selectedFactorName() }}</h2>
+              <h2 class="text-base font-semibold">ทุก Risk Factor - Time Series</h2>
               <p class="text-sm text-slate-500">กราฟเว้น gap เมื่อปีนั้น computable=0</p>
             </div>
             <span
               class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600"
             >
-              ปีที่คำนวณได้ {{ computableYearCount() }}/{{ FISCAL_YEARS.length }}
+              Factors: {{ factorOptions().length }}
             </span>
           </div>
 
-          <app-time-series-chart [series]="factorSeries()" yAxisName="Observed value" />
+          <app-time-series-chart [series]="allFactorsSeries()" yAxisName="Observed value" />
 
-          @if (computableYearCount() > 0 && computableYearCount() < 2) {
-            <p
-              class="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
-            >
-              ต้องมี ≥ 2 ปีที่คำนวณได้จึงดูแนวโน้ม/คำนวณ YoY ได้ ตอนนี้แสดงเป็นจุดเดี่ยวเท่านั้น
-            </p>
+          @if (allFactorsSeries().length === 0) {
+            <app-empty-state title="ไม่พบข้อมูล" message="ไม่มี factor สำหรับตัวกรองนี้" />
           }
         </section>
       </div>
@@ -213,6 +189,37 @@ export class FinancialHealthPageComponent implements OnInit {
     () => this.selectedFactorRows().filter((row) => toBool(row.computable)).length,
   );
   readonly coverage = computed(() => coverageText(this.scopedRows()));
+
+  readonly allFactorsSeries = computed<TimeSeries[]>(() => {
+    const factorMap = new Map<string, { name: string; color: string }>();
+    const colors = ['#2563eb', '#dc2626', '#16a34a', '#ea580c', '#7c3aed', '#0891b2'];
+
+    this.scopedRows().forEach((row, idx) => {
+      if (!factorMap.has(row.factor_code)) {
+        factorMap.set(row.factor_code, {
+          name: row.factor_name,
+          color: colors[idx % colors.length],
+        });
+      }
+    });
+
+    return Array.from(factorMap.entries()).map(([code, { name, color }]) => ({
+      name: `${code} - ${name}`,
+      color,
+      points: FISCAL_YEARS.map((year) => {
+        const row = this.scopedRows().find(
+          (candidate) => candidate.fiscal_year === year && candidate.factor_code === code,
+        );
+        const computable = toBool(row?.computable);
+        return {
+          year,
+          value: computable ? toNumber(row?.observed_value) : null,
+          computable,
+          tooltip: row?.evidence_text ?? (computable ? null : 'ข้อมูลไม่พอสำหรับคำนวณ factor นี้'),
+        };
+      }),
+    }));
+  });
 
   readonly factorSeries = computed<TimeSeries[]>(() => [
     {
