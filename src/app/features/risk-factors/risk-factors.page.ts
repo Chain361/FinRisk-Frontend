@@ -179,9 +179,6 @@ import { formatMoney, formatNumber, sortProjectsByRisk, toBool, toNumber } from 
                           <p class="text-sm font-semibold text-slate-950">{{ factor.name_th }}</p>
                           <p class="text-xs text-slate-500">{{ factor.factor_code }} · severity {{ factor.severity || '-' }}</p>
                         </div>
-                        <span class="rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700">
-                          Triggered
-                        </span>
                       </div>
 
                       <div class="mt-4 grid gap-3 sm:grid-cols-2">
