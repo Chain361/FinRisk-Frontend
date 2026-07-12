@@ -81,15 +81,6 @@ interface FactorOption {
                         {{ row.factor_code }} · ปี {{ row.fiscal_year }}
                       </p>
                     </div>
-                    @if (isComputable(row)) {
-                      <app-risk-badge [level]="row.risk_level" />
-                    } @else {
-                      <span
-                        class="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600"
-                      >
-                        ประเมินไม่ได้
-                      </span>
-                    }
                   </div>
 
                   <div class="mt-4">
@@ -97,9 +88,7 @@ interface FactorOption {
                       <p class="text-xs font-semibold text-slate-500">Observed Value</p>
                       <p class="mt-1 text-lg font-semibold text-slate-900">
                         {{
-                          isComputable(row)
-                            ? number(row.observed_value)
-                            : 'ประเมินไม่ได้ (ข้อมูลไม่พอ)'
+                          isComputable(row) ? observedValueText(row) : 'ประเมินไม่ได้ (ข้อมูลไม่พอ)'
                         }}
                       </p>
                     </div>
@@ -278,6 +267,36 @@ export class FinancialHealthPageComponent implements OnInit {
 
   isComputable(row: AnnualRisk): boolean {
     return toBool(row.computable);
+  }
+
+  observedValueText(row: AnnualRisk): string {
+    const unit = this.observedValueUnit(row);
+    const value = this.number(row.observed_value);
+    return unit ? `${value} ${unit}` : value;
+  }
+
+  observedValueUnit(row: AnnualRisk): string {
+    const name = (row.factor_name ?? '').trim().toLowerCase();
+    const code = (row.factor_code ?? '').trim().toLowerCase();
+
+    if (
+      name.includes('อัตราการพึ่งพาตนเองทางการคลัง') ||
+      name.includes('ดุลการดำเนินงานประจำปี') ||
+      name.includes('self-reliance') ||
+      name.includes('operating balance')
+    ) {
+      return '%';
+    }
+
+    if (
+      name.includes('cash coverage ratio') ||
+      (code.includes('cash') && code.includes('coverage')) ||
+      code.includes('ccr')
+    ) {
+      return 'เท่า';
+    }
+
+    return '';
   }
 
   number(value: number | string | null | undefined): string {
