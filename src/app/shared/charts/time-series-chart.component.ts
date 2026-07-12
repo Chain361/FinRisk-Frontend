@@ -33,7 +33,7 @@ export class TimeSeriesChartComponent {
     const years = [...this.years()];
     return {
       color: this.series().map((item) => item.color),
-      grid: { top: 28, right: 24, bottom: 90, left: 52 },
+      grid: { top: 40, right: 24, bottom: 80, left: 52 },
       tooltip: {
         trigger: 'axis',
         appendToBody: true,
