@@ -3,13 +3,14 @@ import { forkJoin } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
 import { AnnualRisk, Subdistrict } from '../../core/models/domain.models';
+import { DonutChartComponent } from '../../shared/charts/donut-chart.component';
 import {
   TimeSeries,
   TimeSeriesChartComponent,
 } from '../../shared/charts/time-series-chart.component';
 import { FilterBarComponent } from '../../shared/filters/filter-bar.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
-import { RiskBadgeComponent } from '../../shared/ui/risk-badge.component';
+import { KpiCardComponent } from '../../shared/ui/kpi-card.component';
 import {
   coverageText,
   FISCAL_YEARS,
@@ -26,7 +27,13 @@ interface FactorOption {
 @Component({
   selector: 'app-financial-health-page',
   standalone: true,
-  imports: [EmptyStateComponent, FilterBarComponent, RiskBadgeComponent, TimeSeriesChartComponent],
+  imports: [
+    DonutChartComponent,
+    EmptyStateComponent,
+    FilterBarComponent,
+    KpiCardComponent,
+    TimeSeriesChartComponent,
+  ],
   template: `
     <section class="page-shell">
       <div>
@@ -46,6 +53,35 @@ interface FactorOption {
         (selectedYearChange)="setYear($event)"
         (reset)="resetFilters()"
       />
+
+      <div class="grid gap-4 md:grid-cols-3">
+        @for (card of balanceSheetKpis(); track card.label) {
+          <app-kpi-card
+            [label]="card.label"
+            [value]="card.value"
+            [hint]="card.hint"
+            [accentClass]="card.accentClass"
+          />
+        }
+      </div>
+
+      <div class="grid gap-4 xl:grid-cols-2">
+        <section class="panel p-4">
+          <div class="mb-3">
+            <h2 class="text-base font-semibold">สินทรัพย์รวม</h2>
+            <p class="text-sm text-slate-500">แบ่งเป็นสินทรัพย์หมุนเวียนและไม่หมุนเวียน</p>
+          </div>
+          <app-donut-chart [segments]="assetComposition()" />
+        </section>
+
+        <section class="panel p-4">
+          <div class="mb-3">
+            <h2 class="text-base font-semibold">หนี้สินรวม</h2>
+            <p class="text-sm text-slate-500">แบ่งเป็นหนี้สินหมุนเวียนและระยะยาว</p>
+          </div>
+          <app-donut-chart [segments]="liabilityComposition()" />
+        </section>
+      </div>
 
       @if (error()) {
         <p class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -118,6 +154,47 @@ interface FactorOption {
 
           <app-time-series-chart [series]="allFactorsSeries()" yAxisName="Observed value" />
 
+          <div class="mt-7 overflow-x-auto rounded-lg border border-slate-200">
+            <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+              <thead
+                class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500"
+              >
+                <tr>
+                  <th class="px-4 py-3">ตัวชี้วัด</th>
+                  <th class="px-4 py-3">วิธีการคำนวณ</th>
+                  <th class="px-4 py-3">หน่วย</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-200 text-slate-700">
+                <tr>
+                  <td class="whitespace-nowrap px-4 py-3 font-semibold text-slate-900">
+                    Y1 - อัตราการพึ่งพาตนเองทางการคลัง
+                  </td>
+                  <td class="px-4 py-3 leading-6">
+                    (รายได้จัดเก็บเอง + รายได้รัฐจัดเก็บให้) ÷ (รายได้รวม − เงินกู้) × 100
+                  </td>
+                  <td class="whitespace-nowrap px-4 py-3">%</td>
+                </tr>
+                <tr>
+                  <td class="whitespace-nowrap px-4 py-3 font-semibold text-slate-900">
+                    Y2 - ดุลการดำเนินงานประจำปี
+                  </td>
+                  <td class="px-4 py-3 leading-6">(รายได้ − ค่าใช้จ่าย) ÷ รายได้รวม × 100</td>
+                  <td class="whitespace-nowrap px-4 py-3">%</td>
+                </tr>
+                <tr>
+                  <td class="whitespace-nowrap px-4 py-3 font-semibold text-slate-900">
+                    Y3 - Cash Coverage
+                  </td>
+                  <td class="px-4 py-3 leading-6">
+                    เงินสดและรายการเทียบเท่าเงินสด ÷ (ภาระผูกพัน + หนี้สินหมุนเวียน)
+                  </td>
+                  <td class="whitespace-nowrap px-4 py-3">เท่า</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
           @if (allFactorsSeries().length === 0) {
             <app-empty-state title="ไม่พบข้อมูล" message="ไม่มี factor สำหรับตัวกรองนี้" />
           }
@@ -178,6 +255,113 @@ export class FinancialHealthPageComponent implements OnInit {
     () => this.selectedFactorRows().filter((row) => toBool(row.computable)).length,
   );
   readonly coverage = computed(() => coverageText(this.scopedRows()));
+
+  readonly balanceSheetKpis = computed(() => {
+    const year = this.selectedYear();
+    const rows = this.scopedRows().filter((row) => !year || row.fiscal_year === year);
+
+    const getValue = (patterns: string[]): number | null => {
+      const row = rows.find((candidate) => {
+        const name = this.normalizeMetricText(candidate.factor_name);
+        const code = this.normalizeMetricText(candidate.factor_code);
+        return patterns.some((pattern) => name.includes(pattern) || code.includes(pattern));
+      });
+      return row ? toNumber(row.observed_value) : null;
+    };
+
+    const assets = getValue(['สินทรัพย์รวม', 'assets', 'asset']);
+    const liabilities = getValue(['หนี้สินรวม', 'liabilities', 'liability']);
+    const netAssets = assets !== null && liabilities !== null ? assets - liabilities : null;
+
+    return [
+      {
+        label: 'สินทรัพย์รวม',
+        value: assets === null ? '-' : this.number(assets),
+        hint: '',
+        accentClass: 'bg-slate-900',
+      },
+      {
+        label: 'หนี้สินรวม',
+        value: liabilities === null ? '-' : this.number(liabilities),
+        hint: '',
+        accentClass: 'bg-amber-500',
+      },
+      {
+        label: 'ส่วนทุน/สินทรัพย์สุทธิ',
+        value: netAssets === null ? '-' : this.number(netAssets),
+        hint: '',
+        accentClass: 'bg-emerald-500',
+      },
+    ];
+  });
+
+  readonly assetComposition = computed(() => {
+    const year = this.selectedYear();
+    const rows = this.scopedRows().filter((row) => !year || row.fiscal_year === year);
+
+    const findValue = (patterns: string[]): number | null => {
+      const row = rows.find((candidate) => {
+        const name = this.normalizeMetricText(candidate.factor_name);
+        const code = this.normalizeMetricText(candidate.factor_code);
+        return patterns.some((pattern) => name.includes(pattern) || code.includes(pattern));
+      });
+      return row ? toNumber(row.observed_value) : null;
+    };
+
+    const currentAssets = findValue([
+      'สินทรัพย์หมุนเวียน',
+      'currentassets',
+      'currentasset',
+      'current assets',
+      'currentassetscurrent',
+    ]);
+    const nonCurrentAssets = findValue([
+      'สินทรัพย์ไม่หมุนเวียน',
+      'noncurrentassets',
+      'noncurrentasset',
+      'non-current assets',
+      'fixedassets',
+    ]);
+
+    return [
+      { name: 'สินทรัพย์หมุนเวียน', value: currentAssets ?? 0, color: '#2563eb' },
+      { name: 'สินทรัพย์ไม่หมุนเวียน', value: nonCurrentAssets ?? 0, color: '#16a34a' },
+    ];
+  });
+
+  readonly liabilityComposition = computed(() => {
+    const year = this.selectedYear();
+    const rows = this.scopedRows().filter((row) => !year || row.fiscal_year === year);
+
+    const findValue = (patterns: string[]): number | null => {
+      const row = rows.find((candidate) => {
+        const name = this.normalizeMetricText(candidate.factor_name);
+        const code = this.normalizeMetricText(candidate.factor_code);
+        return patterns.some((pattern) => name.includes(pattern) || code.includes(pattern));
+      });
+      return row ? toNumber(row.observed_value) : null;
+    };
+
+    const currentLiabilities = findValue([
+      'หนี้สินหมุนเวียน',
+      'currentliabilities',
+      'currentliability',
+      'current liabilities',
+    ]);
+    const longTermLiabilities = findValue([
+      'หนี้สินระยะยาว',
+      'longtermliabilities',
+      'longtermliability',
+      'long-term liabilities',
+      'noncurrentliabilities',
+      'noncurrentliability',
+    ]);
+
+    return [
+      { name: 'หนี้สินหมุนเวียน', value: currentLiabilities ?? 0, color: '#dc2626' },
+      { name: 'หนี้สินระยะยาว', value: longTermLiabilities ?? 0, color: '#ea580c' },
+    ];
+  });
 
   readonly allFactorsSeries = computed<TimeSeries[]>(() => {
     const factorMap = new Map<string, { name: string; color: string }>();
@@ -273,6 +457,15 @@ export class FinancialHealthPageComponent implements OnInit {
     const unit = this.observedValueUnit(row);
     const value = this.number(row.observed_value);
     return unit ? `${value} ${unit}` : value;
+  }
+
+  private normalizeMetricText(value: string | null | undefined): string {
+    return (value ?? '')
+      .toString()
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '')
+      .replace(/[^a-z0-9ก-๙]/g, '');
   }
 
   observedValueUnit(row: AnnualRisk): string {
