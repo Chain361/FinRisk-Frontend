@@ -1,9 +1,13 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
-import { forkJoin } from 'rxjs';
+import { catchError, forkJoin, of } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
-import { AnnualRisk, Subdistrict } from '../../core/models/domain.models';
+import { AnnualRisk, FinancialStatement, Subdistrict } from '../../core/models/domain.models';
 import { DonutChartComponent } from '../../shared/charts/donut-chart.component';
+import {
+  StackedBarChartComponent,
+  StackedBarSeries,
+} from '../../shared/charts/stacked-bar-chart.component';
 import {
   TimeSeries,
   TimeSeriesChartComponent,
@@ -24,6 +28,22 @@ interface FactorOption {
   name: string;
 }
 
+interface BalanceSheetTotals {
+  assets: number | null;
+  liabilities: number | null;
+  netAssets: number | null;
+  currentAssets: number | null;
+  nonCurrentAssets: number | null;
+  currentLiabilities: number | null;
+  nonCurrentLiabilities: number | null;
+}
+
+interface IncomeStatementTotals {
+  income: number | null;
+  expenses: number | null;
+  netIncome: number | null;
+}
+
 @Component({
   selector: 'app-financial-health-page',
   standalone: true,
@@ -32,6 +52,7 @@ interface FactorOption {
     EmptyStateComponent,
     FilterBarComponent,
     KpiCardComponent,
+    StackedBarChartComponent,
     TimeSeriesChartComponent,
   ],
   template: `
@@ -82,6 +103,31 @@ interface FactorOption {
           <app-donut-chart [segments]="liabilityComposition()" />
         </section>
       </div>
+
+      <div class="grid gap-4 md:grid-cols-3">
+        @for (card of incomeStatementKpis(); track card.label) {
+          <app-kpi-card
+            [label]="card.label"
+            [value]="card.value"
+            [hint]="card.hint"
+            [accentClass]="card.accentClass"
+          />
+        }
+      </div>
+
+      <section class="panel p-4">
+        <div class="mb-3">
+          <h2 class="text-base font-semibold">โครงสร้างรายได้</h2>
+          <p class="text-sm text-slate-500">
+            เปรียบเทียบรายได้จัดเก็บเองและรัฐจัดสรร กับเงินอุดหนุนของตำบลที่เลือก
+          </p>
+        </div>
+        <app-stacked-bar-chart
+          [categories]="revenueStructureCategories()"
+          [series]="revenueStructureSeries()"
+          yAxisName="บาท"
+        />
+      </section>
 
       @if (error()) {
         <p class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -211,6 +257,7 @@ export class FinancialHealthPageComponent implements OnInit {
   readonly error = signal('');
   readonly subdistricts = signal<Subdistrict[]>([]);
   readonly annualRisks = signal<AnnualRisk[]>([]);
+  readonly financialStatements = signal<FinancialStatement[]>([]);
 
   readonly selectedSubdistrictId = signal<number | null>(null);
   readonly selectedYear = signal<number | null>(2568);
@@ -256,72 +303,59 @@ export class FinancialHealthPageComponent implements OnInit {
   );
   readonly coverage = computed(() => coverageText(this.scopedRows()));
 
-  readonly balanceSheetKpis = computed(() => {
+  readonly scopedFinancialStatements = computed(() => {
+    const subdistrictId = this.selectedSubdistrictId();
     const year = this.selectedYear();
-    const rows = this.scopedRows().filter((row) => !year || row.fiscal_year === year);
+    return this.financialStatements().filter(
+      (row) =>
+        (!subdistrictId || row.subdistrict_id === subdistrictId) &&
+        (!year || row.fiscal_year === year),
+    );
+  });
 
-    const getValue = (patterns: string[]): number | null => {
-      const row = rows.find((candidate) => {
-        const name = this.normalizeMetricText(candidate.factor_name);
-        const code = this.normalizeMetricText(candidate.factor_code);
-        return patterns.some((pattern) => name.includes(pattern) || code.includes(pattern));
-      });
-      return row ? toNumber(row.observed_value) : null;
-    };
+  readonly balanceSheet = computed(() =>
+    this.getBalanceSheetTotals(
+      this.scopedFinancialStatements().filter(
+        (row) => this.normalizeMetricText(row.statement_type) === 'งบแสดงฐานะการเงิน',
+      ),
+    ),
+  );
 
-    const assets = getValue(['สินทรัพย์รวม', 'assets', 'asset']);
-    const liabilities = getValue(['หนี้สินรวม', 'liabilities', 'liability']);
-    const netAssets = assets !== null && liabilities !== null ? assets - liabilities : null;
+  readonly incomeStatement = computed(() =>
+    this.getIncomeStatementTotals(
+      this.scopedFinancialStatements().filter(
+        (row) => this.normalizeMetricText(row.statement_type) === 'งบแสดงผลการดำเนินงาน',
+      ),
+    ),
+  );
+
+  readonly balanceSheetKpis = computed(() => {
+    const { assets, liabilities, netAssets } = this.balanceSheet();
 
     return [
       {
         label: 'สินทรัพย์รวม',
         value: assets === null ? '-' : this.number(assets),
-        hint: '',
+        hint: 'รวมจากงบแสดงฐานะการเงินของตำบลที่เลือก',
         accentClass: 'bg-slate-900',
       },
       {
         label: 'หนี้สินรวม',
         value: liabilities === null ? '-' : this.number(liabilities),
-        hint: '',
+        hint: 'รวมจากงบแสดงฐานะการเงินของตำบลที่เลือก',
         accentClass: 'bg-amber-500',
       },
       {
         label: 'ส่วนทุน/สินทรัพย์สุทธิ',
         value: netAssets === null ? '-' : this.number(netAssets),
-        hint: '',
+        hint: 'ยอดสินทรัพย์สุทธิ/ส่วนทุนจากงบการเงิน',
         accentClass: 'bg-emerald-500',
       },
     ];
   });
 
   readonly assetComposition = computed(() => {
-    const year = this.selectedYear();
-    const rows = this.scopedRows().filter((row) => !year || row.fiscal_year === year);
-
-    const findValue = (patterns: string[]): number | null => {
-      const row = rows.find((candidate) => {
-        const name = this.normalizeMetricText(candidate.factor_name);
-        const code = this.normalizeMetricText(candidate.factor_code);
-        return patterns.some((pattern) => name.includes(pattern) || code.includes(pattern));
-      });
-      return row ? toNumber(row.observed_value) : null;
-    };
-
-    const currentAssets = findValue([
-      'สินทรัพย์หมุนเวียน',
-      'currentassets',
-      'currentasset',
-      'current assets',
-      'currentassetscurrent',
-    ]);
-    const nonCurrentAssets = findValue([
-      'สินทรัพย์ไม่หมุนเวียน',
-      'noncurrentassets',
-      'noncurrentasset',
-      'non-current assets',
-      'fixedassets',
-    ]);
+    const { currentAssets, nonCurrentAssets } = this.balanceSheet();
 
     return [
       { name: 'สินทรัพย์หมุนเวียน', value: currentAssets ?? 0, color: '#2563eb' },
@@ -330,36 +364,60 @@ export class FinancialHealthPageComponent implements OnInit {
   });
 
   readonly liabilityComposition = computed(() => {
-    const year = this.selectedYear();
-    const rows = this.scopedRows().filter((row) => !year || row.fiscal_year === year);
-
-    const findValue = (patterns: string[]): number | null => {
-      const row = rows.find((candidate) => {
-        const name = this.normalizeMetricText(candidate.factor_name);
-        const code = this.normalizeMetricText(candidate.factor_code);
-        return patterns.some((pattern) => name.includes(pattern) || code.includes(pattern));
-      });
-      return row ? toNumber(row.observed_value) : null;
-    };
-
-    const currentLiabilities = findValue([
-      'หนี้สินหมุนเวียน',
-      'currentliabilities',
-      'currentliability',
-      'current liabilities',
-    ]);
-    const longTermLiabilities = findValue([
-      'หนี้สินระยะยาว',
-      'longtermliabilities',
-      'longtermliability',
-      'long-term liabilities',
-      'noncurrentliabilities',
-      'noncurrentliability',
-    ]);
+    const { currentLiabilities, nonCurrentLiabilities } = this.balanceSheet();
 
     return [
       { name: 'หนี้สินหมุนเวียน', value: currentLiabilities ?? 0, color: '#dc2626' },
-      { name: 'หนี้สินระยะยาว', value: longTermLiabilities ?? 0, color: '#ea580c' },
+      { name: 'หนี้สินระยะยาว', value: nonCurrentLiabilities ?? 0, color: '#ea580c' },
+    ];
+  });
+
+  readonly incomeStatementKpis = computed(() => {
+    const { income, expenses, netIncome } = this.incomeStatement();
+    return [
+      {
+        label: 'รายได้รวม',
+        value: income === null ? '-' : this.number(income),
+        hint: 'ยอดรวมจากงบแสดงผลการดำเนินงานของตำบลที่เลือก',
+        accentClass: 'bg-sky-600',
+      },
+      {
+        label: 'ค่าใช้จ่ายรวม',
+        value: expenses === null ? '-' : this.number(expenses),
+        hint: 'ยอดรวมจากงบแสดงผลการดำเนินงานของตำบลที่เลือก',
+        accentClass: 'bg-rose-500',
+      },
+      {
+        label: 'ผลสุทธิ (รายได้ − ค่าใช้จ่าย)',
+        value: netIncome === null ? '-' : this.number(netIncome),
+        hint:
+          netIncome === null
+            ? 'ไม่พบข้อมูลรายได้หรือค่าใช้จ่ายรวม'
+            : netIncome >= 0
+              ? `รายได้สูงกว่าค่าใช้จ่าย ${this.number(netIncome)} บาท`
+              : `ค่าใช้จ่ายสูงกว่ารายได้ ${this.number(Math.abs(netIncome))} บาท`,
+        accentClass: netIncome !== null && netIncome < 0 ? 'bg-rose-600' : 'bg-emerald-500',
+      },
+    ];
+  });
+
+  readonly revenueStructureCategories = computed(() => [
+    this.selectedYear() ? `ปี ${this.selectedYear()}` : 'ทุกปีที่เลือก',
+  ]);
+
+  readonly revenueStructureSeries = computed<StackedBarSeries[]>(() => {
+    const { ownAndAllocatedRevenue, subsidies } = this.getRevenueStructure(
+      this.scopedFinancialStatements().filter(
+        (row) => this.normalizeMetricText(row.statement_type) === 'งบแสดงผลการดำเนินงาน',
+      ),
+    );
+    return [
+      {
+        name: 'รายได้จัดเก็บเอง + รัฐจัดสรร',
+        values: [ownAndAllocatedRevenue],
+        color: '#2563eb',
+      },
+      { name: 'เงินอุดหนุน', values: [subsidies], color: '#16a34a' },
     ];
   });
 
@@ -416,15 +474,21 @@ export class FinancialHealthPageComponent implements OnInit {
     forkJoin({
       subdistricts: this.api.subdistricts(),
       annualRisks: this.api.annualRisk(),
+      // `/financials` is optional while older backends are being upgraded.
+      // Its absence must not block the existing annual-risk view.
+      financialStatements: this.api
+        .financialStatements()
+        .pipe(catchError(() => of<FinancialStatement[]>([]))),
     }).subscribe({
-      next: ({ subdistricts, annualRisks }) => {
+      next: ({ subdistricts, annualRisks, financialStatements }) => {
         this.subdistricts.set(subdistricts);
         this.annualRisks.set(annualRisks);
+        this.financialStatements.set(financialStatements);
         this.selectedFactorCode.set(this.factorOptions()[0]?.code ?? null);
         this.loading.set(false);
       },
       error: () => {
-        this.error.set('โหลด /risk/annual ไม่สำเร็จ');
+        this.error.set('โหลดข้อมูล Financial Health ไม่สำเร็จ');
         this.loading.set(false);
       },
     });
@@ -466,6 +530,111 @@ export class FinancialHealthPageComponent implements OnInit {
       .toLowerCase()
       .replace(/\s+/g, '')
       .replace(/[^a-z0-9ก-๙]/g, '');
+  }
+
+  private getBalanceSheetTotals(rows: FinancialStatement[]): BalanceSheetTotals {
+    const totals = this.getCategoryTotals(rows, [
+      'สินทรัพย์รวม',
+      'หนี้สินรวม',
+      'สินทรัพย์สุทธิส่วนทุน',
+      'สินทรัพย์หมุนเวียน',
+      'สินทรัพย์ไม่หมุนเวียน',
+      'หนี้สินหมุนเวียน',
+      'หนี้สินไม่หมุนเวียน',
+    ]);
+    const assets =
+      totals['สินทรัพย์รวม'] ??
+      this.sumValues(totals['สินทรัพย์หมุนเวียน'], totals['สินทรัพย์ไม่หมุนเวียน']);
+    const liabilities =
+      totals['หนี้สินรวม'] ??
+      this.sumValues(totals['หนี้สินหมุนเวียน'], totals['หนี้สินไม่หมุนเวียน']);
+    return {
+      assets,
+      liabilities,
+      netAssets: totals['สินทรัพย์สุทธิส่วนทุน'] ?? this.subtractValues(assets, liabilities),
+      currentAssets: totals['สินทรัพย์หมุนเวียน'],
+      nonCurrentAssets: totals['สินทรัพย์ไม่หมุนเวียน'],
+      currentLiabilities: totals['หนี้สินหมุนเวียน'],
+      nonCurrentLiabilities: totals['หนี้สินไม่หมุนเวียน'],
+    };
+  }
+
+  private getIncomeStatementTotals(rows: FinancialStatement[]): IncomeStatementTotals {
+    const totals = this.getCategoryTotals(rows, ['รายได้รวม', 'ค่าใช้จ่ายรวม']);
+    const income = totals['รายได้รวม'];
+    const expenses = totals['ค่าใช้จ่ายรวม'];
+    return { income, expenses, netIncome: this.subtractValues(income, expenses) };
+  }
+
+  private getRevenueStructure(rows: FinancialStatement[]): {
+    ownAndAllocatedRevenue: number;
+    subsidies: number;
+  } {
+    return rows
+      .filter(
+        (row) =>
+          this.normalizeMetricText(row.category) === 'รายได้' && row.detail_level === 'line_item',
+      )
+      .reduce(
+        (totals, row) => {
+          const value = toNumber(row.value) ?? 0;
+          if (this.normalizeMetricText(row.account_item).includes('อุดหนุน')) {
+            totals.subsidies += value;
+          } else {
+            totals.ownAndAllocatedRevenue += value;
+          }
+          return totals;
+        },
+        { ownAndAllocatedRevenue: 0, subsidies: 0 },
+      );
+  }
+
+  private getCategoryTotals(
+    rows: FinancialStatement[],
+    categories: string[],
+  ): Record<string, number | null> {
+    const groupedRows = new Map<string, FinancialStatement[]>();
+    rows.forEach((row) => {
+      const key = `${row.subdistrict_id}-${row.fiscal_year}`;
+      const group = groupedRows.get(key) ?? [];
+      group.push(row);
+      groupedRows.set(key, group);
+    });
+
+    const totals = Object.fromEntries(categories.map((category) => [category, 0])) as Record<
+      string,
+      number
+    >;
+    const found = Object.fromEntries(categories.map((category) => [category, false])) as Record<
+      string,
+      boolean
+    >;
+    groupedRows.forEach((group) => {
+      categories.forEach((category) => {
+        const matchingRows = group.filter(
+          (row) =>
+            this.normalizeMetricText(row.category) === category &&
+            ['total', 'subtotal'].includes(row.detail_level ?? ''),
+        );
+        const row = matchingRows.find((item) => item.detail_level === 'total') ?? matchingRows[0];
+        const value = row ? toNumber(row.value) : null;
+        if (value !== null) {
+          totals[category] += value;
+          found[category] = true;
+        }
+      });
+    });
+    return Object.fromEntries(
+      categories.map((category) => [category, found[category] ? totals[category] : null]),
+    );
+  }
+
+  private sumValues(first: number | null, second: number | null): number | null {
+    return first !== null && second !== null ? first + second : null;
+  }
+
+  private subtractValues(first: number | null, second: number | null): number | null {
+    return first !== null && second !== null ? first - second : null;
   }
 
   observedValueUnit(row: AnnualRisk): string {

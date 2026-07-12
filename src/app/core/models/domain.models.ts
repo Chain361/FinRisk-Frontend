@@ -87,6 +87,18 @@ export interface AnnualRisk {
   [key: string]: unknown;
 }
 
+export interface FinancialStatement {
+  fs_id?: number;
+  subdistrict_id: number;
+  fiscal_year: number;
+  statement_type?: string | null;
+  category?: string | null;
+  account_item?: string | null;
+  value?: number | string | null;
+  detail_level?: 'line_item' | 'subtotal' | 'total' | 'indicator' | 'reference' | string | null;
+  [key: string]: unknown;
+}
+
 export interface RiskSummary {
   total: number;
   by_level: Record<string, number | undefined>;

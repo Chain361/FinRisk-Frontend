@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   AnnualRisk,
+  FinancialStatement,
   LoginRequest,
   LoginResponse,
   Project,
@@ -46,6 +47,10 @@ export class ApiService {
 
   annualRisk(): Observable<AnnualRisk[]> {
     return this.http.get<AnnualRisk[]>(`${this.baseUrl}/risk/annual`);
+  }
+
+  financialStatements(): Observable<FinancialStatement[]> {
+    return this.http.get<FinancialStatement[]>(`${this.baseUrl}/financials`);
   }
 
   riskSummary(filters: ProjectFilters = {}): Observable<RiskSummary> {
