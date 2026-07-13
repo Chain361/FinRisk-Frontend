@@ -37,3 +37,9 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# Secrets / deploy — Vercel CLI เขียน VERCEL_OIDC_TOKEN ลง .env.local
+.env
+.env.*
+!.env.example
+.vercel/
