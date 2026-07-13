@@ -208,15 +208,37 @@ import { formatMoney, formatNumber, sortProjectsByRisk, toBool, toNumber } from 
             </section>
 
             <section class="panel p-4">
-              <h2 class="text-base font-semibold">Risk Factor Catalog</h2>
-              <div class="mt-3 grid gap-2 md:grid-cols-2">
-                @for (factor of catalog(); track factor.factor_code) {
-                  <div class="rounded-md border border-slate-200 p-3">
-                    <p class="text-sm font-semibold text-slate-900">{{ factor.factor_code }} · {{ factor.name_th }}</p>
-                    <p class="mt-1 text-xs leading-5 text-slate-500">{{ factor.description_th || factor.category || 'ไม่มีคำอธิบายเพิ่มเติม' }}</p>
-                  </div>
-                }
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 class="text-base font-semibold">Risk Factor Catalog</h2>
+                  <p class="text-sm text-slate-500">catalog ของ factor ที่ trigger ในโครงการที่เลือก</p>
+                </div>
+                <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+                  {{ selectedProjectCatalog().length }} รายการ
+                </span>
               </div>
+
+              @if (!selectedProjectCatalog().length) {
+                <div class="mt-3">
+                  <app-empty-state title="ยังไม่มี factor ที่ trigger" message="ลองเลือกโครงการอื่น หรือรอให้ backend ส่ง risk_factors ของโครงการที่เลือก" />
+                </div>
+              } @else {
+                <div class="mt-3 grid gap-2 md:grid-cols-2">
+                  @for (factor of selectedProjectCatalog(); track factor.factor_code) {
+                    <div class="rounded-md border border-slate-200 p-3">
+                      <div class="flex items-start justify-between gap-2">
+                        <p class="text-sm font-semibold text-slate-900">{{ factor.factor_code }} · {{ factor.name_th }}</p>
+                        @if (factor.severity) {
+                          <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{{ factor.severity }}</span>
+                        }
+                      </div>
+                      <p class="mt-1 text-xs leading-5 text-slate-500">
+                        {{ factor.description_th || factor.category || 'ไม่มีคำอธิบายเพิ่มเติม' }}
+                      </p>
+                    </div>
+                  }
+                </div>
+              }
             </section>
           }
         </section>
@@ -245,6 +267,25 @@ export class RiskFactorsPageComponent implements OnInit {
   readonly triggeredFactors = computed(() => {
     const factors = this.projectDetail()?.risk_factors ?? [];
     return factors.filter((factor) => toBool(factor.triggered));
+  });
+  readonly selectedProjectCatalog = computed(() => {
+    const factors = this.triggeredFactors();
+    const catalog = this.catalog();
+    const seen = new Set<string>();
+    return factors
+      .map((factor) => catalog.find((item) => item.factor_code === factor.factor_code) ?? {
+        factor_code: factor.factor_code,
+        name_th: factor.name_th,
+        severity: factor.severity ?? null,
+        description_th: factor.evidence_text ?? null,
+      })
+      .filter((factor) => {
+        if (seen.has(factor.factor_code)) {
+          return false;
+        }
+        seen.add(factor.factor_code);
+        return true;
+      });
   });
 
   ngOnInit(): void {
