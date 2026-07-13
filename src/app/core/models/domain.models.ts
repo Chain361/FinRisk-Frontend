@@ -33,17 +33,35 @@ export interface Project {
   budget_year: number;
   subdistrict_id: number;
   project_type?: string | null;
+  dept_name?: string | null;
+  dept_sub_name?: string | null;
   purchase_method_group?: string | null;
+  purchase_method?: string | null;
+  project_status?: string | null;
+  status?: string | null;
   budget_amount?: number | null;
   reference_price?: number | null;
   contract_value?: number | null;
+  contract_price?: number | null;
+  contract_amount?: number | null;
+  winning_price?: number | null;
+  contract_no?: string | null;
+  contract_status?: string | null;
+  contract_date?: string | null;
+  contract_finish_date?: string | null;
+  contract_duration_days?: number | null;
+  data_quality_note?: string | null;
+  source_file?: string | null;
+  vendor_id?: number | string | null;
   price_ratio?: number | null;
   risk_score?: number | null;
   risk_level?: RiskLevel | null;
-  factors_triggered?: string[] | string | null;
+  factors_triggered?: number | string[] | string | null;
   vendor_name?: string | null;
   contractor_name?: string | null;
   supplier_name?: string | null;
+  winner_name?: string | null;
+  bidder_name?: string | null;
   [key: string]: unknown;
 }
 
@@ -60,6 +78,23 @@ export interface ProjectRiskFactor {
 
 export interface ProjectDetail extends Project {
   risk_factors?: ProjectRiskFactor[];
+}
+
+export interface ProjectDetailResponse {
+  project: Project;
+  risk_score?: {
+    score_id?: number;
+    run_id?: number;
+    project_id?: string | number;
+    risk_score?: number | null;
+    risk_level?: RiskLevel | null;
+    factors_triggered?: number | null;
+    factors_not_computable?: number | null;
+    summary_text?: string | null;
+    [key: string]: unknown;
+  } | null;
+  risk_factors?: ProjectRiskFactor[];
+  [key: string]: unknown;
 }
 
 export interface RiskFactorCatalog {
