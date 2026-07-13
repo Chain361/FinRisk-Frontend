@@ -223,10 +223,6 @@ interface IncomeStatementTotals {
         </div>
 
         <app-time-series-chart [series]="fixedAssetSeries()" yAxisName="บาท" />
-
-        <p class="mt-4 rounded-md bg-slate-50 p-3 text-sm leading-6 text-slate-700">
-          {{ fixedAssetInsight() }}
-        </p>
       </section>
 
       @if (error()) {
@@ -497,8 +493,8 @@ export class FinancialHealthPageComponent implements OnInit {
           netIncome === null
             ? 'ไม่พบข้อมูลรายได้หรือค่าใช้จ่ายรวม'
             : netIncome >= 0
-              ? `รายได้สูงกว่าค่าใช้จ่าย ${this.number(netIncome)} บาท`
-              : `ค่าใช้จ่ายสูงกว่ารายได้ ${this.number(Math.abs(netIncome))} บาท`,
+              ? `รายได้สูงกว่าค่าใช้จ่าย`
+              : `ค่าใช้จ่ายสูงกว่ารายได้`,
         accentClass: netIncome !== null && netIncome < 0 ? 'bg-rose-600' : 'bg-emerald-500',
       },
     ];
@@ -587,8 +583,8 @@ export class FinancialHealthPageComponent implements OnInit {
       year,
       value: this.getCategoryTotals(
         rows.filter((row) => row.fiscal_year === year),
-        ['สินทรัพย์ถาวร'],
-      )['สินทรัพย์ถาวร'],
+        ['สินทรัพย์ไม่หมุนเวียน'],
+      )['สินทรัพย์ไม่หมุนเวียน'],
     }));
   });
 
