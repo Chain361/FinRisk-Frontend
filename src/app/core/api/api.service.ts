@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   AnnualRisk,
+  FinancialStatement,
   LoginRequest,
   LoginResponse,
   Project,
@@ -25,7 +26,9 @@ export class ApiService {
   }
 
   me(): Observable<{ user?: LoginResponse['user'] } & LoginResponse['user']> {
-    return this.http.get<{ user?: LoginResponse['user'] } & LoginResponse['user']>(`${this.baseUrl}/auth/me`);
+    return this.http.get<{ user?: LoginResponse['user'] } & LoginResponse['user']>(
+      `${this.baseUrl}/auth/me`,
+    );
   }
 
   subdistricts(): Observable<Subdistrict[]> {
@@ -48,8 +51,14 @@ export class ApiService {
     return this.http.get<AnnualRisk[]>(`${this.baseUrl}/risk/annual`);
   }
 
+  financialStatements(): Observable<FinancialStatement[]> {
+    return this.http.get<FinancialStatement[]>(`${this.baseUrl}/financials`);
+  }
+
   riskSummary(filters: ProjectFilters = {}): Observable<RiskSummary> {
-    return this.http.get<RiskSummary>(`${this.baseUrl}/risk/summary`, { params: this.toParams(filters) });
+    return this.http.get<RiskSummary>(`${this.baseUrl}/risk/summary`, {
+      params: this.toParams(filters),
+    });
   }
 
   private toParams(filters: ProjectFilters): HttpParams {

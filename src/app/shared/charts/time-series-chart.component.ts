@@ -33,13 +33,13 @@ export class TimeSeriesChartComponent {
     const years = [...this.years()];
     return {
       color: this.series().map((item) => item.color),
-      grid: { top: 28, right: 24, bottom: 36, left: 52 },
+      grid: { top: 40, right: 24, bottom: 70, left: 52 },
       tooltip: {
         trigger: 'axis',
         appendToBody: true,
         formatter: (params: unknown) => this.tooltip(params),
       },
-      legend: { top: 0, textStyle: { color: '#475569' } },
+      legend: { bottom: 0, textStyle: { color: '#475569' } },
       xAxis: {
         type: 'category',
         data: years,
@@ -81,9 +81,15 @@ export class TimeSeriesChartComponent {
     const header = params[0]?.axisValueLabel ?? params[0]?.axisValue ?? '';
     const rows = params
       .map((item) => {
-        const data = item.data as { value?: number | null; computable?: boolean; tooltip?: string | null };
+        const data = item.data as {
+          value?: number | null;
+          computable?: boolean;
+          tooltip?: string | null;
+        };
         const valueText = data.computable ? (data.value ?? '-') : 'ประเมินไม่ได้';
-        const detail = data.tooltip ? `<br/><span style="color:#64748b">${data.tooltip}</span>` : '';
+        const detail = data.tooltip
+          ? `<br/><span style="color:#64748b">${data.tooltip}</span>`
+          : '';
         return `${item.marker}${item.seriesName}: <strong>${valueText}</strong>${detail}`;
       })
       .join('<br/>');
