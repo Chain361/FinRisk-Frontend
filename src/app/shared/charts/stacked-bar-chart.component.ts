@@ -21,7 +21,7 @@ export class StackedBarChartComponent {
 
   readonly chartOptions = computed<EChartsOption>(() => ({
     color: this.series().map((item) => item.color),
-    grid: { top: 28, right: 24, bottom: 36, left: 112 },
+    grid: { top: 28, right: 24, bottom: 60, left: 112 },
     tooltip: { trigger: 'axis', appendToBody: true },
     legend: { bottom: 0, textStyle: { color: '#475569' } },
     xAxis: {

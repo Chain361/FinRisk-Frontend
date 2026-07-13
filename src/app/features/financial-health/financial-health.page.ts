@@ -19,6 +19,7 @@ import {
   coverageText,
   FISCAL_YEARS,
   formatNumber,
+  subdistrictLabel,
   toBool,
   toNumber,
 } from '../../shared/utils/risk-utils';
@@ -26,6 +27,13 @@ import {
 interface FactorOption {
   code: string;
   name: string;
+}
+
+type ComparisonMetric = 'netAssets' | 'netIncome' | 'riskFactor';
+
+interface ComparisonDatum {
+  name: string;
+  value: number;
 }
 
 interface BalanceSheetTotals {
@@ -74,6 +82,60 @@ interface IncomeStatementTotals {
         (selectedYearChange)="setYear($event)"
         (reset)="resetFilters()"
       />
+
+      <section class="panel p-4">
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="text-base font-semibold">เปรียบเทียบตัวชี้วัดข้ามตำบล</h2>
+            <p class="text-sm text-slate-500">
+              เปรียบเทียบตัวชี้วัดสุขภาพการคลังของทุกตำบลในปี {{ selectedYear() ?? 'ทุกปี' }}
+            </p>
+          </div>
+
+          <div class="flex flex-wrap items-end gap-3">
+            <label class="block">
+              <span class="text-xs font-semibold text-slate-500 mr-2">ตัวชี้วัด</span>
+              <select
+                class="mt-1 h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-900"
+                [value]="comparisonMetric()"
+                (change)="setComparisonMetric($any($event.target).value)"
+              >
+                <option value="netAssets">สินทรัพย์สุทธิ</option>
+                <option value="netIncome">ผลสุทธิ</option>
+                <option value="riskFactor">Risk Factor รายปี</option>
+              </select>
+            </label>
+
+            @if (comparisonMetric() === 'riskFactor') {
+              <label class="block">
+                <span class="text-xs font-semibold text-slate-500 ml-4 mr-2">Factor</span>
+                <select
+                  class="mt-1 h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-900"
+                  [value]="comparisonFactorCode() ?? ''"
+                  (change)="setComparisonFactorCode($any($event.target).value)"
+                >
+                  @for (option of allFactorOptions(); track option.code) {
+                    <option [value]="option.code">{{ option.code }} - {{ option.name }}</option>
+                  }
+                </select>
+              </label>
+            }
+          </div>
+        </div>
+
+        @if (comparisonSeries()[0]?.values?.length) {
+          <app-stacked-bar-chart
+            [categories]="comparisonCategories()"
+            [series]="comparisonSeries()"
+            [yAxisName]="comparisonUnit()"
+          />
+        } @else {
+          <app-empty-state
+            title="ไม่พบข้อมูลสำหรับเปรียบเทียบ"
+            message="ลองเลือกปีหรือตัวชี้วัดอื่น"
+          />
+        }
+      </section>
 
       <div class="grid gap-4 md:grid-cols-3">
         @for (card of balanceSheetKpis(); track card.label) {
@@ -127,6 +189,44 @@ interface IncomeStatementTotals {
           [series]="revenueStructureSeries()"
           yAxisName="บาท"
         />
+      </section>
+
+      <section class="panel p-4">
+        <div class="mb-3">
+          <h2 class="text-base font-semibold">แนวโน้มการลงทุน (สินทรัพย์ถาวร)</h2>
+          <p class="text-sm text-slate-500">
+            มูลค่าสินทรัพย์ถาวรย้อนหลังของตำบลที่เลือก พร้อมการเปลี่ยนแปลงเทียบปีก่อน (YoY)
+          </p>
+        </div>
+
+        <div class="mb-4 grid gap-3 sm:grid-cols-2">
+          <app-kpi-card
+            [label]="'มูลค่าสินทรัพย์ถาวร ปี ' + fixedAssetFocusYear()"
+            [value]="fixedAssetFocusValueText()"
+            hint="อ้างอิงตัวกรองตำบล/ปีงบประมาณด้านบน"
+            accentClass="bg-indigo-600"
+          />
+
+          <div class="rounded-lg border border-slate-200 p-4">
+            <p class="text-sm font-medium text-slate-500">YoY เทียบปีก่อน</p>
+            @if (fixedAssetYoyView(); as yoyView) {
+              <p class="mt-2 text-2xl font-semibold" [class]="yoyView.colorClass">
+                {{ yoyView.arrow }} {{ yoyView.magnitude }}%
+              </p>
+              <p class="mt-1 text-xs text-slate-500">
+                เทียบปี {{ fixedAssetPreviousYear() }} → {{ fixedAssetFocusYear() }}
+              </p>
+            } @else {
+              <p class="mt-2 text-sm text-slate-500">ไม่มีข้อมูลเพียงพอสำหรับคำนวณ YoY</p>
+            }
+          </div>
+        </div>
+
+        <app-time-series-chart [series]="fixedAssetSeries()" yAxisName="บาท" />
+
+        <p class="mt-4 rounded-md bg-slate-50 p-3 text-sm leading-6 text-slate-700">
+          {{ fixedAssetInsight() }}
+        </p>
       </section>
 
       @if (error()) {
@@ -262,6 +362,9 @@ export class FinancialHealthPageComponent implements OnInit {
   readonly selectedSubdistrictId = signal<number | null>(null);
   readonly selectedYear = signal<number | null>(2568);
   readonly selectedFactorCode = signal<string | null>(null);
+
+  readonly comparisonMetric = signal<ComparisonMetric>('netAssets');
+  readonly comparisonFactorCode = signal<string | null>(null);
 
   readonly scopedRows = computed(() => {
     const subdistrictId = this.selectedSubdistrictId();
@@ -469,6 +572,154 @@ export class FinancialHealthPageComponent implements OnInit {
     },
   ]);
 
+  readonly subdistrictFinancialStatements = computed(() => {
+    const subdistrictId = this.selectedSubdistrictId();
+    return this.financialStatements().filter(
+      (row) => !subdistrictId || row.subdistrict_id === subdistrictId,
+    );
+  });
+
+  readonly fixedAssetTotals = computed(() => {
+    const rows = this.subdistrictFinancialStatements().filter(
+      (row) => this.normalizeMetricText(row.statement_type) === 'งบแสดงฐานะการเงิน',
+    );
+    return FISCAL_YEARS.map((year) => ({
+      year,
+      value: this.getCategoryTotals(
+        rows.filter((row) => row.fiscal_year === year),
+        ['สินทรัพย์ถาวร'],
+      )['สินทรัพย์ถาวร'],
+    }));
+  });
+
+  readonly fixedAssetComputableYears = computed(
+    () =>
+      this.fixedAssetTotals().filter((item) => item.value !== null) as {
+        year: number;
+        value: number;
+      }[],
+  );
+
+  readonly fixedAssetFocusYear = computed(() => {
+    const year = this.selectedYear();
+    if (year) {
+      return year;
+    }
+    const computable = this.fixedAssetComputableYears();
+    return computable.length
+      ? computable[computable.length - 1].year
+      : FISCAL_YEARS[FISCAL_YEARS.length - 1];
+  });
+
+  readonly fixedAssetPreviousYear = computed(() => this.fixedAssetFocusYear() - 1);
+
+  readonly fixedAssetFocusValue = computed(
+    () =>
+      this.fixedAssetTotals().find((item) => item.year === this.fixedAssetFocusYear())?.value ??
+      null,
+  );
+
+  readonly fixedAssetPreviousValue = computed(
+    () =>
+      this.fixedAssetTotals().find((item) => item.year === this.fixedAssetPreviousYear())
+        ?.value ?? null,
+  );
+
+  readonly fixedAssetFocusValueText = computed(() => {
+    const value = this.fixedAssetFocusValue();
+    return value === null ? '-' : `${this.number(value)} บาท`;
+  });
+
+  readonly fixedAssetYoy = computed(() => {
+    const current = this.fixedAssetFocusValue();
+    const previous = this.fixedAssetPreviousValue();
+    if (current === null || previous === null || previous === 0) {
+      return null;
+    }
+    return ((current - previous) / previous) * 100;
+  });
+
+  readonly fixedAssetYoyView = computed(() => {
+    const yoy = this.fixedAssetYoy();
+    if (yoy === null) {
+      return null;
+    }
+    return {
+      arrow: yoy > 0 ? '▲' : yoy < 0 ? '▼' : '─',
+      magnitude: this.number(Math.abs(yoy)),
+      colorClass: yoy > 0 ? 'text-emerald-600' : yoy < 0 ? 'text-red-600' : 'text-slate-700',
+    };
+  });
+
+  readonly fixedAssetInsight = computed(() => {
+    const yoy = this.fixedAssetYoy();
+    if (yoy === null) {
+      return 'ไม่มีข้อมูลเพียงพอสำหรับคำนวณ YoY';
+    }
+    const direction = yoy > 0 ? 'เพิ่มขึ้น' : yoy < 0 ? 'ลดลง' : 'ไม่เปลี่ยนแปลง';
+    const reflection =
+      yoy > 0
+        ? 'สะท้อนการลงทุนในโครงสร้างพื้นฐานที่เพิ่มขึ้น'
+        : yoy < 0
+          ? 'สะท้อนการลงทุนในโครงสร้างพื้นฐานที่ชะลอตัวหรือมีการจำหน่ายสินทรัพย์'
+          : 'สะท้อนการลงทุนในโครงสร้างพื้นฐานที่ทรงตัว';
+    return `มูลค่าสินทรัพย์ถาวร${direction} ${this.number(Math.abs(yoy))}% จากปีก่อน ${reflection}`;
+  });
+
+  readonly fixedAssetSeries = computed<TimeSeries[]>(() => [
+    {
+      name: 'มูลค่าสินทรัพย์ถาวร',
+      color: '#4f46e5',
+      points: this.fixedAssetTotals().map((item) => ({
+        year: item.year,
+        value: item.value,
+        computable: item.value !== null,
+        tooltip: item.value === null ? 'ไม่มีข้อมูลสินทรัพย์ถาวรสำหรับปีนี้' : null,
+      })),
+    },
+  ]);
+
+  readonly allFactorOptions = computed<FactorOption[]>(() => {
+    const map = new Map<string, string>();
+    this.annualRisks().forEach((row) => map.set(row.factor_code, row.factor_name));
+    return [...map.entries()].map(([code, name]) => ({ code, name }));
+  });
+
+  readonly comparisonData = computed<ComparisonDatum[]>(() => {
+    const metric = this.comparisonMetric();
+    const year = this.selectedYear();
+    const factorCode = this.comparisonFactorCode();
+
+    return this.subdistricts()
+      .map((subdistrict) => ({
+        name: subdistrictLabel(subdistrict),
+        value: this.comparisonValue(subdistrict.subdistrict_id, metric, year, factorCode),
+      }))
+      .filter((item): item is ComparisonDatum => item.value !== null);
+  });
+
+  readonly comparisonCategories = computed(() => this.comparisonData().map((item) => item.name));
+
+  readonly comparisonSeries = computed<StackedBarSeries[]>(() => [
+    {
+      name: this.comparisonMetricLabel(),
+      values: this.comparisonData().map((item) => item.value),
+      color: '#2563eb',
+    },
+  ]);
+
+  readonly comparisonUnit = computed(() => {
+    if (this.comparisonMetric() !== 'riskFactor') {
+      return 'บาท';
+    }
+    const option = this.allFactorOptions().find(
+      (item) => item.code === this.comparisonFactorCode(),
+    );
+    return option
+      ? this.observedValueUnit({ factor_code: option.code, factor_name: option.name } as AnnualRisk)
+      : '';
+  });
+
   ngOnInit(): void {
     this.loading.set(true);
     forkJoin({
@@ -485,6 +736,7 @@ export class FinancialHealthPageComponent implements OnInit {
         this.annualRisks.set(annualRisks);
         this.financialStatements.set(financialStatements);
         this.selectedFactorCode.set(this.factorOptions()[0]?.code ?? null);
+        this.comparisonFactorCode.set(this.allFactorOptions()[0]?.code ?? null);
         this.loading.set(false);
       },
       error: () => {
@@ -507,10 +759,23 @@ export class FinancialHealthPageComponent implements OnInit {
     this.selectedFactorCode.set(value || null);
   }
 
+  setComparisonMetric(value: ComparisonMetric): void {
+    this.comparisonMetric.set(value);
+    if (value === 'riskFactor' && !this.comparisonFactorCode()) {
+      this.comparisonFactorCode.set(this.allFactorOptions()[0]?.code ?? null);
+    }
+  }
+
+  setComparisonFactorCode(value: string): void {
+    this.comparisonFactorCode.set(value || null);
+  }
+
   resetFilters(): void {
     this.selectedSubdistrictId.set(null);
     this.selectedYear.set(2568);
     this.selectedFactorCode.set(this.factorOptions()[0]?.code ?? null);
+    this.comparisonMetric.set('netAssets');
+    this.comparisonFactorCode.set(this.allFactorOptions()[0]?.code ?? null);
   }
 
   isComputable(row: AnnualRisk): boolean {
@@ -564,6 +829,54 @@ export class FinancialHealthPageComponent implements OnInit {
     const income = totals['รายได้รวม'];
     const expenses = totals['ค่าใช้จ่ายรวม'];
     return { income, expenses, netIncome: this.subtractValues(income, expenses) };
+  }
+
+  private comparisonMetricLabel(): string {
+    switch (this.comparisonMetric()) {
+      case 'netAssets':
+        return 'สินทรัพย์สุทธิ';
+      case 'netIncome':
+        return 'ผลสุทธิ';
+      case 'riskFactor': {
+        const option = this.allFactorOptions().find(
+          (item) => item.code === this.comparisonFactorCode(),
+        );
+        return option ? `${option.code} - ${option.name}` : 'Risk Factor';
+      }
+    }
+  }
+
+  private comparisonValue(
+    subdistrictId: number,
+    metric: ComparisonMetric,
+    year: number | null,
+    factorCode: string | null,
+  ): number | null {
+    if (metric === 'riskFactor') {
+      if (!factorCode) {
+        return null;
+      }
+      const row = this.annualRisks().find(
+        (candidate) =>
+          candidate.subdistrict_id === subdistrictId &&
+          candidate.factor_code === factorCode &&
+          (!year || candidate.fiscal_year === year),
+      );
+      return row && toBool(row.computable) ? toNumber(row.observed_value) : null;
+    }
+
+    const statementType =
+      metric === 'netAssets' ? 'งบแสดงฐานะการเงิน' : 'งบแสดงผลการดำเนินงาน';
+    const rows = this.financialStatements().filter(
+      (row) =>
+        row.subdistrict_id === subdistrictId &&
+        (!year || row.fiscal_year === year) &&
+        this.normalizeMetricText(row.statement_type) === statementType,
+    );
+
+    return metric === 'netAssets'
+      ? this.getBalanceSheetTotals(rows).netAssets
+      : this.getIncomeStatementTotals(rows).netIncome;
   }
 
   private getRevenueStructure(rows: FinancialStatement[]): {
