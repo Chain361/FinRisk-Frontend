@@ -4,12 +4,6 @@ import { NgxEchartsDirective } from 'ngx-echarts';
 
 import { riskColor, riskLabel } from '../utils/risk-utils';
 
-interface DonutSegment {
-  name: string;
-  value: number | null | undefined;
-  color?: string;
-}
-
 @Component({
   selector: 'app-donut-chart',
   standalone: true,
@@ -18,24 +12,9 @@ interface DonutSegment {
 })
 export class DonutChartComponent {
   readonly byLevel = input<Record<string, number | undefined>>({});
-  readonly segments = input<DonutSegment[]>([]);
 
   readonly chartOptions = computed<EChartsOption>(() => {
     const levels = ['high', 'medium', 'low'];
-    const customSegments = this.segments();
-
-    const data = customSegments.length
-      ? customSegments.map((segment) => ({
-          name: segment.name,
-          value: segment.value ?? 0,
-          itemStyle: { color: segment.color ?? '#2563eb' },
-        }))
-      : levels.map((level) => ({
-          name: riskLabel(level),
-          value: this.byLevel()[level] ?? 0,
-          itemStyle: { color: riskColor(level) },
-        }));
-
     return {
       tooltip: { trigger: 'item' },
       legend: { bottom: 0, textStyle: { color: '#475569' } },
@@ -47,7 +26,11 @@ export class DonutChartComponent {
           avoidLabelOverlap: true,
           itemStyle: { borderColor: '#fff', borderWidth: 3 },
           label: { formatter: '{b}\n{c}', color: '#334155' },
-          data,
+          data: levels.map((level) => ({
+            name: riskLabel(level),
+            value: this.byLevel()[level] ?? 0,
+            itemStyle: { color: riskColor(level) },
+          })),
         },
       ],
     };
