@@ -37,20 +37,70 @@ import { formatMoney, formatNumber, sortProjectsByRisk, toBool, toNumber } from 
         <p class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ error() }}</p>
       }
 
-      <div class="grid gap-4 xl:grid-cols-[390px_1fr]">
+      @if (loadingProjects()) {
+        <div class="panel p-6 text-sm text-slate-500">กำลังโหลดโครงการ...</div>
+      } @else if (!sortedProjects().length) {
+        <div class="panel p-4">
+          <app-empty-state title="ไม่พบโครงการ" message="ลองเปลี่ยนปี ตำบล หรือระดับความเสี่ยง" />
+        </div>
+      } @else if (!projectDetail()) {
         <section class="panel overflow-hidden">
           <div class="border-b border-slate-200 p-4">
-            <h2 class="text-base font-semibold">รายการโครงการ</h2>
-            <p class="text-sm text-slate-500">เรียงตาม risk score สูงไปต่ำ</p>
+            <h2 class="text-base font-semibold">รายการโครงการเรียงตาม Risk Score</h2>
+            <p class="text-sm text-slate-500">คลิกโครงการเพื่อเปลี่ยนเป็นหน้า Risk Factors</p>
           </div>
 
-          @if (loadingProjects()) {
-            <p class="p-4 text-sm text-slate-500">กำลังโหลดโครงการ...</p>
-          } @else if (!sortedProjects().length) {
-            <div class="p-4">
-              <app-empty-state title="ไม่พบโครงการ" message="ลองเปลี่ยนปี ตำบล หรือระดับความเสี่ยง" />
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200 text-sm">
+              <thead class="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500">
+                <tr>
+                  <th class="px-4 py-3">โครงการ</th>
+                  <th class="px-4 py-3">ปี</th>
+                  <th class="px-4 py-3">ประเภท</th>
+                  <th class="px-4 py-3 text-right">งบประมาณ</th>
+                  <th class="px-4 py-3 text-right">ราคา/อ้างอิง</th>
+                  <th class="px-4 py-3 text-right">Risk Score</th>
+                  <th class="px-4 py-3">ระดับ</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 bg-white">
+                @for (project of sortedProjects(); track project.project_id) {
+                  <tr class="cursor-pointer hover:bg-slate-50" (click)="selectProject(project.project_id)">
+                    <td class="max-w-md px-4 py-3">
+                      <p class="line-clamp-2 font-semibold text-slate-900">{{ project.project_name }}</p>
+                      <p class="text-xs text-slate-500">ID {{ project.project_id }}</p>
+                    </td>
+                    <td class="px-4 py-3">{{ project.budget_year }}</td>
+                    <td class="px-4 py-3">{{ project.project_type || project.purchase_method_group || '-' }}</td>
+                    <td class="px-4 py-3 text-right">{{ money(project.budget_amount) }}</td>
+                    <td class="px-4 py-3 text-right">{{ number(project.price_ratio, 3) }}</td>
+                    <td class="px-4 py-3 text-right font-semibold">{{ number(project.risk_score, 2) }}</td>
+                    <td class="px-4 py-3"><app-risk-badge [level]="project.risk_level" /></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+      } @else {
+        <div class="grid gap-4 xl:grid-cols-[390px_1fr]">
+          <section class="panel overflow-hidden">
+            <div class="border-b border-slate-200 p-4">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <h2 class="text-base font-semibold">รายการโครงการ</h2>
+                  <p class="text-sm text-slate-500">เลือกโครงการด้านซ้ายเพื่อดูรายละเอียด</p>
+                </div>
+                <button
+                  type="button"
+                  class="rounded-md border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                  (click)="clearSelection()"
+                >
+                  กลับไปรายการ
+                </button>
+              </div>
             </div>
-          } @else {
+
             <div class="max-h-[680px] overflow-y-auto">
               @for (project of sortedProjects(); track project.project_id) {
                 <button
@@ -71,17 +121,12 @@ import { formatMoney, formatNumber, sortProjectsByRisk, toBool, toNumber } from 
                 </button>
               }
             </div>
-          }
-        </section>
+          </section>
 
-        <section class="grid gap-4">
-          @if (loadingDetail()) {
-            <div class="panel p-6 text-sm text-slate-500">กำลังโหลดรายละเอียดโครงการ...</div>
-          } @else if (!projectDetail()) {
-            <div class="panel p-4">
-              <app-empty-state title="ยังไม่ได้เลือกโครงการ" message="เลือกโครงการทางซ้ายเพื่อดูรายละเอียด" />
-            </div>
-          } @else {
+          <section class="grid gap-4">
+            @if (loadingDetail()) {
+              <div class="panel p-6 text-sm text-slate-500">กำลังโหลดรายละเอียดโครงการ...</div>
+            } @else {
             <article class="panel p-4">
               <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
@@ -243,6 +288,7 @@ import { formatMoney, formatNumber, sortProjectsByRisk, toBool, toNumber } from 
           }
         </section>
       </div>
+      }
     </section>
   `,
 })
@@ -330,6 +376,12 @@ export class RiskFactorsPageComponent implements OnInit {
   selectProject(projectId: string | number): void {
     this.selectedProjectId.set(String(projectId));
     this.loadProjectDetail(projectId);
+  }
+
+  clearSelection(): void {
+    this.selectedProjectId.set(null);
+    this.projectDetail.set(null);
+    this.loadingDetail.set(false);
   }
 
   money(value: number | string | null | undefined): string {
@@ -423,12 +475,8 @@ export class RiskFactorsPageComponent implements OnInit {
       next: (projects) => {
         this.projects.set(projects);
         this.loadingProjects.set(false);
-        const first = sortProjectsByRisk(projects)[0];
-        if (first) {
-          this.selectProject(first.project_id);
-        } else {
-          this.selectedProjectId.set(null);
-        }
+        this.selectedProjectId.set(null);
+        this.projectDetail.set(null);
       },
       error: () => {
         this.error.set('โหลดรายชื่อโครงการไม่สำเร็จ');
