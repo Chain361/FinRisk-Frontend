@@ -83,6 +83,28 @@ interface IncomeStatementTotals {
         (reset)="resetFilters()"
       />
 
+      <div class="grid gap-4 md:grid-cols-3">
+        @for (card of balanceSheetKpis(); track card.label) {
+          <app-kpi-card
+            [label]="card.label"
+            [value]="card.value"
+            [hint]="card.hint"
+            [accentClass]="card.accentClass"
+          />
+        }
+      </div>
+
+      <div class="grid gap-4 md:grid-cols-3">
+        @for (card of incomeStatementKpis(); track card.label) {
+          <app-kpi-card
+            [label]="card.label"
+            [value]="card.value"
+            [hint]="card.hint"
+            [accentClass]="card.accentClass"
+          />
+        }
+      </div>
+
       <section class="panel p-4">
         <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -137,17 +159,6 @@ interface IncomeStatementTotals {
         }
       </section>
 
-      <div class="grid gap-4 md:grid-cols-3">
-        @for (card of balanceSheetKpis(); track card.label) {
-          <app-kpi-card
-            [label]="card.label"
-            [value]="card.value"
-            [hint]="card.hint"
-            [accentClass]="card.accentClass"
-          />
-        }
-      </div>
-
       <div class="grid gap-4 xl:grid-cols-2">
         <section class="panel p-4">
           <div class="mb-3">
@@ -164,17 +175,6 @@ interface IncomeStatementTotals {
           </div>
           <app-donut-chart [segments]="liabilityComposition()" />
         </section>
-      </div>
-
-      <div class="grid gap-4 md:grid-cols-3">
-        @for (card of incomeStatementKpis(); track card.label) {
-          <app-kpi-card
-            [label]="card.label"
-            [value]="card.value"
-            [hint]="card.hint"
-            [accentClass]="card.accentClass"
-          />
-        }
       </div>
 
       <section class="panel p-4">
@@ -495,7 +495,7 @@ export class FinancialHealthPageComponent implements OnInit {
             : netIncome >= 0
               ? `รายได้สูงกว่าค่าใช้จ่าย`
               : `ค่าใช้จ่ายสูงกว่ารายได้`,
-        accentClass: netIncome !== null && netIncome < 0 ? 'bg-rose-600' : 'bg-emerald-500',
+        accentClass: 'bg-indigo-500',
       },
     ];
   });
