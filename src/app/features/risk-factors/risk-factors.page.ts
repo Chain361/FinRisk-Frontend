@@ -39,15 +39,28 @@ import { formatMoney, formatNumber, sortProjectsByRisk, toBool, toNumber } from 
 
       @if (loadingProjects()) {
         <div class="panel p-6 text-sm text-slate-500">กำลังโหลดโครงการ...</div>
-      } @else if (!sortedProjects().length) {
+      } @else if (!filteredProjects().length) {
         <div class="panel p-4">
-          <app-empty-state title="ไม่พบโครงการ" message="ลองเปลี่ยนปี ตำบล หรือระดับความเสี่ยง" />
+          <app-empty-state title="ไม่พบโครงการ" message="ลองเปลี่ยนคำค้น ปี ตำบล หรือระดับความเสี่ยง" />
         </div>
       } @else if (!projectDetail()) {
         <section class="panel overflow-hidden">
-          <div class="border-b border-slate-200 p-4">
-            <h2 class="text-base font-semibold">รายการโครงการเรียงตาม Risk Score</h2>
-            <p class="text-sm text-slate-500">คลิกโครงการเพื่อเปลี่ยนเป็นหน้า Risk Factors</p>
+          <div class="panel flex flex-wrap items-center justify-between gap-3 p-4">
+            <div>
+              <h2 class="text-base font-semibold">รายการโครงการเรียงตาม Risk Score</h2>
+              <p class="text-sm text-slate-500">คลิกโครงการเพื่อเปลี่ยนเป็นหน้า Risk Factors</p>
+            </div>
+            <label class="relative w-full max-w-md">
+              <span class="sr-only">ค้นหาโครงการ</span>
+              <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">⌕</span>
+              <input
+                type="search"
+                class="h-11 w-full rounded-md border border-slate-300 bg-white pl-9 pr-3 text-sm outline-none transition focus:border-slate-900"
+                placeholder="ค้นหาชื่อโครงการ หรือ Project ID"
+                [value]="searchQuery()"
+                (input)="setSearch($any($event.target).value)"
+              />
+            </label>
           </div>
 
           <div class="overflow-x-auto">
@@ -64,7 +77,7 @@ import { formatMoney, formatNumber, sortProjectsByRisk, toBool, toNumber } from 
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 bg-white">
-                @for (project of sortedProjects(); track project.project_id) {
+                @for (project of filteredProjects(); track project.project_id) {
                   <tr class="cursor-pointer hover:bg-slate-50" (click)="selectProject(project.project_id)">
                     <td class="max-w-md px-4 py-3">
                       <p class="line-clamp-2 font-semibold text-slate-900">{{ project.project_name }}</p>
@@ -102,7 +115,7 @@ import { formatMoney, formatNumber, sortProjectsByRisk, toBool, toNumber } from 
             </div>
 
             <div class="max-h-[680px] overflow-y-auto">
-              @for (project of sortedProjects(); track project.project_id) {
+              @for (project of filteredProjects(); track project.project_id) {
                 <button
                   type="button"
                   class="block w-full border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50"
@@ -303,6 +316,7 @@ export class RiskFactorsPageComponent implements OnInit {
   readonly projects = signal<Project[]>([]);
   readonly catalog = signal<RiskFactorCatalog[]>([]);
   readonly projectDetail = signal<ProjectDetail | null>(null);
+  readonly searchQuery = signal('');
 
   readonly selectedSubdistrictId = signal<number | null>(null);
   readonly selectedYear = signal<number | null>(2568);
@@ -310,6 +324,18 @@ export class RiskFactorsPageComponent implements OnInit {
   readonly selectedProjectId = signal<string | null>(null);
 
   readonly sortedProjects = computed(() => sortProjectsByRisk(this.projects()));
+  readonly filteredProjects = computed(() => {
+    const query = this.searchQuery().trim().toLowerCase();
+    const projects = this.sortedProjects();
+    if (!query) {
+      return projects;
+    }
+    return projects.filter((project) => {
+      const idText = String(project.project_id).toLowerCase();
+      const nameText = String(project.project_name ?? '').toLowerCase();
+      return idText.includes(query) || nameText.includes(query);
+    });
+  });
   readonly triggeredFactors = computed(() => {
     const factors = this.projectDetail()?.risk_factors ?? [];
     return factors.filter((factor) => toBool(factor.triggered));
@@ -366,10 +392,15 @@ export class RiskFactorsPageComponent implements OnInit {
     this.loadProjects();
   }
 
+  setSearch(value: string): void {
+    this.searchQuery.set(value);
+  }
+
   resetFilters(): void {
     this.selectedSubdistrictId.set(null);
     this.selectedYear.set(2568);
     this.selectedRiskLevel.set(null);
+    this.searchQuery.set('');
     this.loadProjects();
   }
 
