@@ -3,7 +3,7 @@ import { forkJoin } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
 import { Project, ProjectFilters, RiskSummary, Subdistrict } from '../../core/models/domain.models';
-import { RiskHeatmapComponent } from '../../shared/charts/risk-heatmap.component';
+import { RiskBarChartComponent } from '../../shared/charts/risk-barchart-component';
 import { TimeSeries, TimeSeriesChartComponent } from '../../shared/charts/time-series-chart.component';
 import { DonutChartComponent } from '../../shared/charts/donut-chart.component';
 import { FilterBarComponent } from '../../shared/filters/filter-bar.component';
@@ -29,7 +29,7 @@ import {
     FilterBarComponent,
     KpiCardComponent,
     RiskBadgeComponent,
-    RiskHeatmapComponent,
+    RiskBarChartComponent,
     TimeSeriesChartComponent,
   ],
   template: `
@@ -77,10 +77,10 @@ import {
 
         <section class="panel p-4">
           <div class="mb-3">
-            <h2 class="text-base font-semibold">Risk Heatmap ตามปีงบประมาณ</h2>
+            <h2 class="text-base font-semibold">Risk Bar Chart ตามปีงบประมาณ</h2>
             <p class="text-sm text-slate-500">นับจำนวนโครงการในแต่ละระดับความเสี่ยงจาก /projects</p>
           </div>
-          <app-risk-heatmap [projects]="heatmapProjects()" />
+          <app-risk-bar-chart [projects]="barchartProjects()" />
         </section>
       </div>
 
@@ -153,7 +153,7 @@ export class ProjectRiskPageComponent implements OnInit {
   readonly error = signal('');
   readonly subdistricts = signal<Subdistrict[]>([]);
   readonly projects = signal<Project[]>([]);
-  readonly heatmapProjects = signal<Project[]>([]);
+  readonly barchartProjects = signal<Project[]>([]);
   readonly summary = signal<RiskSummary | null>(null);
   readonly riskSeries = signal<TimeSeries[]>([]);
 
@@ -247,7 +247,7 @@ export class ProjectRiskPageComponent implements OnInit {
     forkJoin(requests).subscribe({
       next: (rowsByYear) => {
         const all = rowsByYear.flat();
-        this.heatmapProjects.set(all);
+        this.barchartProjects.set(all);
         this.riskSeries.set(
           RISK_LEVELS.map((level) => ({
             name: level === 'high' ? 'เสี่ยงสูง' : level === 'medium' ? 'เสี่ยงปานกลาง' : 'เสี่ยงต่ำ',
