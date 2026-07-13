@@ -168,7 +168,7 @@ import { formatMoney, formatNumber, sortProjectsByRisk, toBool, toNumber } from 
               </div>
 
               @if (!triggeredFactors().length) {
-                <app-empty-state title="ไม่พบ factor ที่ trigger" message="โครงการนี้อาจไม่แตะ threshold ที่กำหนดไว้" />
+                <app-empty-state title="ไม่พบ factor ที่ trigger" message="โครงการนี้อาจไม่ไม่มีสัญญาณตามเกณฑ์ที่กำหนดไว้" />
               } @else {
                 <div class="grid gap-3">
                   @for (factor of triggeredFactors(); track factor.factor_code) {
@@ -187,17 +187,9 @@ import { formatMoney, formatNumber, sortProjectsByRisk, toBool, toNumber } from 
                             {{ isComputable(factor) ? value(factor.observed_value) : 'ประเมินไม่ได้' }}
                           </p>
                         </div>
-                        <div class="rounded-md bg-slate-50 p-3">
-                          <p class="text-xs font-semibold text-slate-500">เกณฑ์</p>
-                          <p class="mt-1 text-lg font-semibold text-slate-900">{{ value(factor.threshold_used) }}</p>
-                        </div>
                       </div>
 
-                      
-
                       <div class="mt-3 rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">
-                        <p class="font-semibold text-slate-700">สูตร</p>
-                        <p class="mt-1">{{ factorFormula(factor) }}</p>
                         <p class="font-semibold text-slate-700 mt-1">คำอธิบาย</p>
                         @if (factor.evidence_text) {
                         <p class="mt-1">{{ factor.evidence_text }}</p>
@@ -370,14 +362,6 @@ export class RiskFactorsPageComponent implements OnInit {
     }
     const sign = diff > 0 ? '+' : '';
     return `(${sign}${diff.toFixed(2)}%) เทียบจากค่าฐานด้านขวา`;
-  }
-
-  factorFormula(factor: ProjectRiskFactor): string {
-    const catalog = this.catalog().find((item) => item.factor_code === factor.factor_code);
-    const observed = this.isComputable(factor) ? this.value(factor.observed_value) : 'ประเมินไม่ได้';
-    const threshold = this.value(factor.threshold_used);
-    const extra = catalog?.description_th || catalog?.category || factor.evidence_text || 'ไม่มีคำอธิบายเพิ่มเติม';
-    return `ค่าที่สังเกตได้ ${observed} เทียบกับเกณฑ์ ${threshold}`;
   }
 
   isComputable(factor: ProjectRiskFactor): boolean {
