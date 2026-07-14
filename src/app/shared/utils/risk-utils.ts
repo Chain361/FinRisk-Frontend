@@ -28,11 +28,11 @@ export function riskLabel(level: RiskLevel | null | undefined): string {
 export function riskColor(level: RiskLevel | null | undefined): string {
   switch (normalizeRiskLevel(level)) {
     case 'high':
-      return '#dc2626';
+      return '#b91c1c';
     case 'medium':
-      return '#d97706';
+      return '#b45309';
     case 'low':
-      return '#16a34a';
+      return '#15803d';
     default:
       return '#64748b';
   }
@@ -41,13 +41,13 @@ export function riskColor(level: RiskLevel | null | undefined): string {
 export function riskBadgeClasses(level: RiskLevel | null | undefined): string {
   switch (normalizeRiskLevel(level)) {
     case 'high':
-      return 'border-red-200 bg-red-50 text-red-700';
+      return 'bg-risk-high text-white';
     case 'medium':
-      return 'border-amber-200 bg-amber-50 text-amber-700';
+      return 'bg-risk-medium text-white';
     case 'low':
-      return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+      return 'bg-risk-low text-white';
     default:
-      return 'border-slate-200 bg-slate-50 text-slate-600';
+      return 'bg-slate-500 text-white';
   }
 }
 
