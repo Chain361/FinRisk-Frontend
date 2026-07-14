@@ -29,6 +29,17 @@ interface RepeatedEntity {
   totalBudget: number;
 }
 
+interface VendorRanking {
+  vendorName: string;
+  projectCount: number;
+  winCount: number;
+  totalContractValue: number;
+  sampleProjects: string[];
+  years: number[];
+  isRecurring: boolean;
+  isFrequentWinner: boolean;
+}
+
 @Component({
   selector: 'app-project-risk-page',
   standalone: true,
@@ -148,6 +159,89 @@ interface RepeatedEntity {
         </section>
       </div>
 
+      <section class="panel p-4">
+        <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 class="text-base font-semibold">ผู้รับจ้างที่ได้รับงานบ่อยที่สุด</h2>
+            <p class="text-sm text-slate-500">แสดง Top 10 Vendors ตามจำนวนโครงการที่ได้รับในช่วงตัวกรองที่เลือก</p>
+          </div>
+        </div>
+
+        <div class="mb-4 grid gap-3 md:grid-cols-[1.2fr_0.8fr]">
+          <label class="block">
+            <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">ค้นหาผู้รับจ้าง</span>
+            <input
+              type="search"
+              class="mt-1 h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-900"
+              placeholder="พิมพ์ชื่อผู้รับจ้าง"
+              [value]="vendorSearchText()"
+              (input)="setVendorSearch($any($event.target).value)"
+            />
+          </label>
+
+          <label class="block">
+            <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">ประเภทโครงการ</span>
+            <select
+              class="mt-1 h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-900"
+              [value]="selectedProjectType() ?? 'all'"
+              (change)="setProjectType($any($event.target).value)"
+            >
+              <option value="all">ทุกประเภท</option>
+              @for (type of projectTypes(); track type) {
+                <option [value]="type">{{ type }}</option>
+              }
+            </select>
+          </label>
+        </div>
+
+        @if (!vendorRankings().length) {
+          <app-empty-state title="ไม่พบข้อมูลผู้รับจ้างสำหรับตัวกรองที่เลือก" message="ลองเปลี่ยนตัวกรองปี/ตำบลหรือคำค้นหาผู้รับจ้างใหม่อีกครั้ง" />
+        } @else {
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200 text-sm">
+              <thead class="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500">
+                <tr>
+                  <th class="px-3 py-3">อันดับ</th>
+                  <th class="px-3 py-3">ผู้รับจ้าง</th>
+                  <th class="px-3 py-3 text-right">จำนวนโครงการ</th>
+                  <th class="px-3 py-3 text-right">จำนวนครั้งที่ชนะ</th>
+                  <th class="px-3 py-3 text-right">มูลค่าสัญญารวม</th>
+                  <th class="px-3 py-3">รายชื่อโครงการ</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                @for (vendor of vendorRankings(); track vendor.vendorName) {
+                  <tr>
+                    <td class="px-3 py-3 font-semibold text-slate-900">{{ $index + 1 }}</td>
+                    <td class="px-3 py-3">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <span class="font-semibold text-slate-900">{{ vendor.vendorName }}</span>
+                        @if (vendor.isRecurring) {
+                          <span class="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">Recurring Vendor</span>
+                        }
+                        @if (vendor.isFrequentWinner) {
+                          <span class="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700">Frequent Winner</span>
+                        }
+                      </div>
+                    </td>
+                    <td class="px-3 py-3 text-right">{{ vendor.projectCount }}</td>
+                    <td class="px-3 py-3 text-right">{{ vendor.winCount }}</td>
+                    <td class="px-3 py-3 text-right">{{ money(vendor.totalContractValue) }}</td>
+                    <td class="px-3 py-3 text-slate-600">
+                      <div class="flex flex-wrap gap-1">
+                        @for (projectName of vendor.sampleProjects; track projectName) {
+                          <span class="rounded-full bg-slate-100 px-2 py-1 text-xs">{{ projectName }}</span>
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+
       <div class="grid gap-4 xl:grid-cols-[1fr_0.9fr]">
         <section class="panel overflow-hidden">
           <div class="border-b border-slate-200 p-4">
@@ -230,6 +324,8 @@ export class ProjectRiskPageComponent implements OnInit {
   readonly selectedSubdistrictId = signal<number | null>(null);
   readonly selectedYear = signal<number | null>(2568);
   readonly selectedRiskLevel = signal<string | null>(null);
+  readonly selectedProjectType = signal<string | null>(null);
+  readonly vendorSearchText = signal('');
 
   readonly hasActiveFilter = computed(
     () => Boolean(this.selectedSubdistrictId()) || Boolean(this.selectedYear()) || Boolean(this.selectedRiskLevel()),
@@ -244,6 +340,63 @@ export class ProjectRiskPageComponent implements OnInit {
 
   readonly totalProjects = computed(() => (this.hasActiveFilter() ? this.projects().length : (this.summary()?.total ?? this.projects().length)));
   readonly sortedProjects = computed(() => sortProjectsByRisk(this.projects()));
+
+  readonly projectTypes = computed<string[]>(() => {
+    const types = new Set<string>();
+    this.projects().forEach((project) => {
+      const type = this.projectType(project);
+      if (type && type !== 'ไม่ระบุประเภท') {
+        types.add(type);
+      }
+    });
+    return [...types].sort((a, b) => a.localeCompare(b, 'th'));
+  });
+
+  readonly filteredVendorProjects = computed(() => {
+    const search = this.vendorSearchText().trim().toLowerCase();
+    return this.projects().filter((project) => {
+      const typeMatches = !this.selectedProjectType() || this.projectType(project) === this.selectedProjectType();
+      const vendorName = this.vendorDisplayName(project).toLowerCase();
+      const searchMatches = !search || vendorName.includes(search);
+      return typeMatches && searchMatches;
+    });
+  });
+
+  readonly vendorRankings = computed<VendorRanking[]>(() => {
+    const groups = new Map<string, { years: Set<number>; projectCount: number; totalContractValue: number; sampleProjects: string[] }>();
+
+    this.filteredVendorProjects().forEach((project) => {
+      const vendorName = this.vendorDisplayName(project) || 'ไม่ระบุผู้รับจ้าง';
+      const current = groups.get(vendorName) ?? {
+        years: new Set<number>(),
+        projectCount: 0,
+        totalContractValue: 0,
+        sampleProjects: [],
+      };
+
+      current.years.add(project.budget_year);
+      current.projectCount += 1;
+      current.totalContractValue += toNumber(project.contract_value ?? project.contract_price ?? project.contract_amount ?? project.winning_price ?? project.budget_amount) ?? 0;
+      if (project.project_name) {
+        current.sampleProjects.push(project.project_name);
+      }
+      groups.set(vendorName, current);
+    });
+
+    return [...groups.entries()]
+      .map(([vendorName, value]) => ({
+        vendorName,
+        projectCount: value.projectCount,
+        winCount: value.projectCount,
+        totalContractValue: value.totalContractValue,
+        sampleProjects: value.sampleProjects.slice(0, 3),
+        years: [...value.years].sort((a, b) => a - b),
+        isRecurring: value.years.size > 2,
+        isFrequentWinner: value.projectCount > 5,
+      }))
+      .sort((a, b) => b.projectCount - a.projectCount || b.totalContractValue - a.totalContractValue || a.vendorName.localeCompare(b.vendorName, 'th'))
+      .slice(0, 10);
+  });
 
   readonly scopedAnnualRisks = computed(() => {
     const subdistrictId = this.selectedSubdistrictId();
@@ -358,8 +511,18 @@ export class ProjectRiskPageComponent implements OnInit {
     this.selectedSubdistrictId.set(null);
     this.selectedYear.set(2568);
     this.selectedRiskLevel.set(null);
+    this.selectedProjectType.set(null);
+    this.vendorSearchText.set('');
     this.loadDashboard();
     this.loadTimeSeries();
+  }
+
+  setProjectType(value: string | null): void {
+    this.selectedProjectType.set(value === 'all' ? null : value);
+  }
+
+  setVendorSearch(value: string): void {
+    this.vendorSearchText.set(value);
   }
 
   money(value: number | string | null | undefined): string {
@@ -519,6 +682,17 @@ this.averageRiskSeries.set([
 
   private projectType(project: Project): string {
     return project.project_type || project.purchase_method_group || 'ไม่ระบุประเภท';
+  }
+
+  private vendorDisplayName(project: Project): string {
+    return (
+      project.winner_name ||
+      project.vendor_name ||
+      project.contractor_name ||
+      project.supplier_name ||
+      project.bidder_name ||
+      'ไม่ระบุผู้รับจ้าง'
+    );
   }
 
   private entityLabel(project: Project): string {
