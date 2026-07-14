@@ -238,7 +238,7 @@ import { formatMoney, formatNumber, sortProjectsByRisk, toBool, toNumber } from 
                         </div>
                       </div>
 
-                      <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                      <div class="mt-4">
                         <div class="rounded-md bg-slate-50 p-3">
                           <p class="text-xs font-semibold text-slate-500">ค่าที่สังเกตได้</p>
                           <p class="mt-1 text-lg font-semibold text-slate-900">

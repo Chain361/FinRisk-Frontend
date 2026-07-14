@@ -25,7 +25,6 @@ import { GuardrailBannerComponent } from '../shared/ui/guardrail-banner.componen
     LucideLayoutDashboard,
     LucideLogOut,
     LucideShieldAlert,
-    LucideTrendingUp,
   ],
   template: `
     <div class="min-h-screen bg-slate-50 text-slate-950 lg:grid lg:grid-cols-[264px_1fr]">
@@ -64,14 +63,6 @@ import { GuardrailBannerComponent } from '../shared/ui/guardrail-banner.componen
           >
             <svg lucideChartLine class="size-4"></svg>
             Risk Factors
-          </a>
-          <a
-            routerLink="/trends"
-            routerLinkActive="bg-slate-950 text-white"
-            class="flex items-center gap-3 rounded-md px-3 py-2.5 text-slate-700 hover:bg-slate-100"
-          >
-            <svg lucideTrendingUp class="size-4"></svg>
-            Trends
           </a>
         </nav>
       </aside>

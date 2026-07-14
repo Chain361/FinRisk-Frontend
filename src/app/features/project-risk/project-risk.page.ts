@@ -2,7 +2,7 @@ import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { forkJoin } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
-import { Project, ProjectFilters, RiskSummary, Subdistrict } from '../../core/models/domain.models';
+import { AnnualRisk, Project, ProjectFilters, RiskSummary, Subdistrict } from '../../core/models/domain.models';
 import { RiskHeatmapComponent } from '../../shared/charts/risk-heatmap.component';
 import { TimeSeries, TimeSeriesChartComponent } from '../../shared/charts/time-series-chart.component';
 import { DonutChartComponent } from '../../shared/charts/donut-chart.component';
@@ -18,7 +18,17 @@ import {
   normalizeRiskLevel,
   RISK_LEVELS,
   sortProjectsByRisk,
+  subdistrictLabel,
+  toBool,
+  toNumber,
 } from '../../shared/utils/risk-utils';
+
+interface RepeatedEntity {
+  label: string;
+  years: number[];
+  count: number;
+  totalBudget: number;
+}
 
 @Component({
   selector: 'app-project-risk-page',
@@ -87,7 +97,7 @@ import {
       <section class="panel p-4">
         <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 class="text-base font-semibold">Time Series จำนวนโครงการตามระดับความเสี่ยง</h2>
+            <h2 class="text-base font-semibold">จำนวนโครงการตามระดับความเสี่ยง</h2>
             <p class="text-sm text-slate-500">ปีที่ไม่มีโครงการจะแสดงเป็น 0 จริง ไม่ใช่ข้อมูลขาด</p>
           </div>
           <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
@@ -97,58 +107,94 @@ import {
         <app-time-series-chart [series]="riskSeries()" yAxisName="จำนวนโครงการ" />
       </section>
 
-      <section class="panel overflow-hidden">
-        <div class="border-b border-slate-200 p-4">
-          <h2 class="text-base font-semibold">รายการโครงการเรียงตาม Risk Score</h2>
-          <p class="text-sm text-slate-500">ใช้ /projects และกรองตามปี ตำบล ระดับความเสี่ยง</p>
-        </div>
+      
+      <div class="grid gap-4 xl:grid-cols-2">
+        <section class="panel p-4">
+          <div class="mb-3">
+            <h2 class="text-base font-semibold">งบเฉลี่ยตามประเภทโครงการ</h2>
+            <p class="text-sm text-slate-500">ถ้าปีใดไม่มีโครงการประเภทนั้น กราฟจะเว้น gap ไม่แทนค่า 0</p>
+          </div>
+          <app-time-series-chart [series]="averageBudgetSeries()" yAxisName="บาท" />
+        </section>
 
-        @if (loading()) {
-          <div class="p-6 text-sm text-slate-500">กำลังโหลดข้อมูล...</div>
-        } @else if (!sortedProjects().length) {
-          <div class="p-4">
-            <app-empty-state title="ไม่พบโครงการในตัวกรองนี้" message="ลองเลือกปีหรือตำบลอื่นเพื่อดูความเสี่ยง" />
+        <section class="panel p-4">
+          <div class="mb-3">
+            <h2 class="text-base font-semibold">ความเสี่ยงข้ามปี/ข้ามตำบล</h2>
+            <p class="text-sm text-slate-500">เมื่อเลือกทุกตำบล เส้นจะแยกตามตำบล; เมื่อเลือกตำบลเดียว เส้นจะแยกตามระดับความเสี่ยง</p>
           </div>
-        } @else {
-          <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-slate-200 text-sm">
-              <thead class="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500">
-                <tr>
-                  <th class="px-4 py-3">โครงการ</th>
-                  <th class="px-4 py-3">ปี</th>
-                  <th class="px-4 py-3">ประเภท</th>
-                  <th class="px-4 py-3 text-right">งบประมาณ</th>
-                  <th class="px-4 py-3 text-right">ราคา/อ้างอิง</th>
-                  <th class="px-4 py-3 text-right">Risk Score</th>
-                  <th class="px-4 py-3">ระดับ</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100 bg-white">
-                @for (project of sortedProjects(); track project.project_id) {
-                  <tr class="hover:bg-slate-50">
-                    <td class="max-w-md px-4 py-3">
-                      <p class="font-semibold text-slate-900">{{ project.project_name }}</p>
-                      <p class="text-xs text-slate-500">ID {{ project.project_id }}</p>
-                    </td>
-                    <td class="px-4 py-3">{{ project.budget_year }}</td>
-                    <td class="px-4 py-3">{{ project.project_type || project.purchase_method_group || '-' }}</td>
-                    <td class="px-4 py-3 text-right">{{ money(project.budget_amount) }}</td>
-                    <td class="px-4 py-3 text-right">{{ number(project.price_ratio, 3) }}</td>
-                    <td class="px-4 py-3 text-right font-semibold">{{ number(project.risk_score, 2) }}</td>
-                    <td class="px-4 py-3"><app-risk-badge [level]="project.risk_level" /></td>
+          <app-time-series-chart [series]="riskTrendSeries()" yAxisName="จำนวนโครงการ" />
+        </section>
+      </div>
+
+      <div class="grid gap-4 xl:grid-cols-[1fr_0.9fr]">
+        <section class="panel overflow-hidden">
+          <div class="border-b border-slate-200 p-4">
+            <h2 class="text-base font-semibold">โครงการ/ผู้รับจ้าง/วิธีจัดซื้อที่ซ้ำข้ามปี</h2>
+            <p class="text-sm text-slate-500">ใช้ vendor field ถ้ามีจาก API; ถ้าไม่มีจะ fallback เป็นวิธีจัดซื้อ/ประเภทโครงการ</p>
+          </div>
+
+          @if (!repeatedEntities().length) {
+            <div class="p-4">
+              <app-empty-state title="ยังไม่พบรายการซ้ำ ≥ 2 ปี" message="ข้อมูลใน scope ปัจจุบันอาจมีปีเดียวหรือไม่มี vendor field" />
+            </div>
+          } @else {
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-slate-200 text-sm">
+                <thead class="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500">
+                  <tr>
+                    <th class="px-4 py-3">รายการ</th>
+                    <th class="px-4 py-3">ปีที่พบ</th>
+                    <th class="px-4 py-3 text-right">จำนวน</th>
+                    <th class="px-4 py-3 text-right">งบรวม</th>
                   </tr>
-                }
-              </tbody>
-            </table>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  @for (entity of repeatedEntities(); track entity.label) {
+                    <tr>
+                      <td class="px-4 py-3 font-semibold text-slate-900">{{ entity.label }}</td>
+                      <td class="px-4 py-3 text-slate-600">{{ entity.years.join(', ') }}</td>
+                      <td class="px-4 py-3 text-right">{{ entity.count }}</td>
+                      <td class="px-4 py-3 text-right">{{ money(entity.totalBudget) }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </section>
+
+        <section class="panel p-4">
+          <h2 class="text-base font-semibold">Financial Risk Coverage</h2>
+          <p class="mt-1 text-sm text-slate-500">สรุปจาก /risk/annual เพื่อเห็นปีที่ประเมินไม่ได้</p>
+          <div class="mt-4 grid gap-2">
+            @for (year of FISCAL_YEARS; track year) {
+              <div class="rounded-md border border-slate-200 p-3">
+                <div class="flex items-center justify-between gap-3">
+                  <p class="text-sm font-semibold text-slate-900">{{ year }}</p>
+                  <p class="text-xs text-slate-500">{{ annualRowsForYear(year).length }} factors</p>
+                </div>
+                <div class="mt-3 grid grid-cols-2 gap-2 text-center text-xs">
+                  <div class="rounded-md bg-emerald-50 px-2 py-2 text-emerald-700">
+                    <p class="font-semibold">{{ annualComputableCount(year) }}</p>
+                    <p>คำนวณได้</p>
+                  </div>
+                  <div class="rounded-md bg-slate-100 px-2 py-2 text-slate-600">
+                    <p class="font-semibold">{{ annualNotComputableCount(year) }}</p>
+                    <p>ประเมินไม่ได้</p>
+                  </div>
+                </div>
+              </div>
+            }
           </div>
-        }
-      </section>
+        </section>
+      </div>
     </section>
   `,
 })
 export class ProjectRiskPageComponent implements OnInit {
   private readonly api = inject(ApiService);
 
+  readonly FISCAL_YEARS = FISCAL_YEARS;
   readonly loading = signal(false);
   readonly error = signal('');
   readonly subdistricts = signal<Subdistrict[]>([]);
@@ -156,6 +202,7 @@ export class ProjectRiskPageComponent implements OnInit {
   readonly heatmapProjects = signal<Project[]>([]);
   readonly summary = signal<RiskSummary | null>(null);
   readonly riskSeries = signal<TimeSeries[]>([]);
+  readonly annualRisks = signal<AnnualRisk[]>([]);
 
   readonly selectedSubdistrictId = signal<number | null>(null);
   readonly selectedYear = signal<number | null>(2568);
@@ -175,10 +222,97 @@ export class ProjectRiskPageComponent implements OnInit {
   readonly totalProjects = computed(() => (this.hasActiveFilter() ? this.projects().length : (this.summary()?.total ?? this.projects().length)));
   readonly sortedProjects = computed(() => sortProjectsByRisk(this.projects()));
 
+  readonly scopedAnnualRisks = computed(() => {
+    const subdistrictId = this.selectedSubdistrictId();
+    return this.annualRisks().filter((row) => !subdistrictId || row.subdistrict_id === subdistrictId);
+  });
+
+  readonly averageBudgetSeries = computed<TimeSeries[]>(() => {
+    const topTypes = this.topProjectTypes();
+    const colors = ['#2563eb', '#7c3aed', '#0891b2', '#ea580c', '#475569'];
+
+    return topTypes.map((type, index) => ({
+      name: type,
+      color: colors[index % colors.length],
+      points: FISCAL_YEARS.map((year) => {
+        const projects = this.heatmapProjects().filter((project) => project.budget_year === year && this.projectType(project) === type);
+        const values = projects.map((project) => toNumber(project.budget_amount)).filter((value): value is number => value !== null);
+        const average = values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+        return {
+          year,
+          value: average,
+          computable: average !== null,
+          tooltip: average === null ? 'ไม่มีโครงการประเภทนี้ในปีนี้' : `${projects.length} โครงการ`,
+        };
+      }),
+    }));
+  });
+
+  readonly riskTrendSeries = computed<TimeSeries[]>(() => {
+    if (this.selectedSubdistrictId()) {
+      const levels = [
+        { level: 'high', name: 'เสี่ยงสูง', color: '#dc2626' },
+        { level: 'medium', name: 'เสี่ยงปานกลาง', color: '#d97706' },
+        { level: 'low', name: 'เสี่ยงต่ำ', color: '#16a34a' },
+      ];
+      return levels.map((item) => ({
+        name: item.name,
+        color: item.color,
+        points: FISCAL_YEARS.map((year) => ({
+          year,
+          value: this.heatmapProjects().filter(
+            (project) => project.budget_year === year && normalizeRiskLevel(project.risk_level) === item.level,
+          ).length,
+          computable: true,
+          tooltip: 'นับจาก /projects',
+        })),
+      }));
+    }
+
+    const ids = [...new Set(this.heatmapProjects().map((project) => project.subdistrict_id))];
+    const colors = ['#dc2626', '#2563eb', '#0891b2', '#7c3aed', '#ea580c'];
+    return ids.map((id, index) => ({
+      name: this.subdistrictName(id),
+      color: colors[index % colors.length],
+      points: FISCAL_YEARS.map((year) => ({
+        year,
+        value: this.heatmapProjects().filter(
+          (project) => project.budget_year === year && project.subdistrict_id === id && normalizeRiskLevel(project.risk_level) === 'high',
+        ).length,
+        computable: true,
+        tooltip: 'จำนวนโครงการเสี่ยงสูง',
+      })),
+    }));
+  });
+
+  readonly repeatedEntities = computed<RepeatedEntity[]>(() => {
+    const groups = new Map<string, { years: Set<number>; count: number; totalBudget: number }>();
+    this.heatmapProjects().forEach((project) => {
+      const label = this.entityLabel(project);
+      const current = groups.get(label) ?? { years: new Set<number>(), count: 0, totalBudget: 0 };
+      current.years.add(project.budget_year);
+      current.count += 1;
+      current.totalBudget += toNumber(project.budget_amount) ?? 0;
+      groups.set(label, current);
+    });
+
+    return [...groups.entries()]
+      .map(([label, value]) => ({
+        label,
+        years: [...value.years].sort((a, b) => a - b),
+        count: value.count,
+        totalBudget: value.totalBudget,
+      }))
+      .filter((item) => item.years.length >= 2)
+      .sort((a, b) => b.count - a.count || b.totalBudget - a.totalBudget)
+      .slice(0, 12);
+  });
+
   ngOnInit(): void {
     this.loadSubdistricts();
     this.loadDashboard();
     this.loadTimeSeries();
+    this.loadAnnualRisks();
   }
 
   setSubdistrict(value: number | null): void {
@@ -211,6 +345,22 @@ export class ProjectRiskPageComponent implements OnInit {
 
   number(value: number | string | null | undefined, fractionDigits = 2): string {
     return formatNumber(value, fractionDigits);
+  }
+
+  annualRowsForYear(year: number): AnnualRisk[] {
+    return this.scopedAnnualRisks().filter((row) => row.fiscal_year === year);
+  }
+
+  annualHighCount(year: number): number {
+    return this.annualRowsForYear(year).filter((row) => normalizeRiskLevel(row.risk_level) === 'high').length;
+  }
+
+  annualComputableCount(year: number): number {
+    return this.annualRowsForYear(year).filter((row) => toBool(row.computable)).length;
+  }
+
+  annualNotComputableCount(year: number): number {
+    return this.annualRowsForYear(year).filter((row) => !toBool(row.computable)).length;
   }
 
   private loadSubdistricts(): void {
@@ -265,11 +415,49 @@ export class ProjectRiskPageComponent implements OnInit {
     });
   }
 
+  private loadAnnualRisks(): void {
+    this.api.annualRisk().subscribe({
+      next: (rows) => this.annualRisks.set(rows),
+      error: () => this.error.set('โหลดข้อมูล Financial Risk Coverage ไม่สำเร็จ'),
+    });
+  }
+
   private filters(): ProjectFilters {
     return {
       budget_year: this.selectedYear(),
       subdistrict_id: this.selectedSubdistrictId(),
       risk_level: this.selectedRiskLevel(),
     };
+  }
+
+  private topProjectTypes(): string[] {
+    const counts = new Map<string, number>();
+    this.heatmapProjects().forEach((project) => {
+      const type = this.projectType(project);
+      counts.set(type, (counts.get(type) ?? 0) + 1);
+    });
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([type]) => type);
+  }
+
+  private projectType(project: Project): string {
+    return project.project_type || project.purchase_method_group || 'ไม่ระบุประเภท';
+  }
+
+  private entityLabel(project: Project): string {
+    return (
+      project.vendor_name ||
+      project.contractor_name ||
+      project.supplier_name ||
+      project.purchase_method_group ||
+      project.project_type ||
+      'ไม่ระบุรายการ'
+    );
+  }
+
+  private subdistrictName(id: number): string {
+    return subdistrictLabel(this.subdistricts().find((subdistrict) => subdistrict.subdistrict_id === id));
   }
 }
