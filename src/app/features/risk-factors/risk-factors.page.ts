@@ -27,9 +27,18 @@ import { formatMoney, formatNumber, sortProjectsByRisk, toBool, toNumber } from 
         [selectedSubdistrictId]="selectedSubdistrictId()"
         [selectedYear]="selectedYear()"
         [selectedRiskLevel]="selectedRiskLevel()"
+        [selectedProjectType]="selectedProjectType()"
+        [budgetAmountMin]="budgetAmountMin()"
+        [budgetAmountMax]="budgetAmountMax()"
+        [showProjectTypeFilter]="true"
+        [showBudgetScopeFilter]="true"
+        [projectTypes]="projectTypes()"
         (selectedSubdistrictIdChange)="setSubdistrict($event)"
         (selectedYearChange)="setYear($event)"
         (selectedRiskLevelChange)="setRisk($event)"
+        (selectedProjectTypeChange)="setProjectType($event)"
+        (budgetAmountMinChange)="setBudgetAmountMin($event)"
+        (budgetAmountMaxChange)="setBudgetAmountMax($event)"
         (reset)="resetFilters()"
       />
 
@@ -313,6 +322,7 @@ export class RiskFactorsPageComponent implements OnInit {
   readonly loadingProjects = signal(false);
   readonly loadingDetail = signal(false);
   readonly subdistricts = signal<Subdistrict[]>([]);
+  readonly allProjects = signal<Project[]>([]);
   readonly projects = signal<Project[]>([]);
   readonly catalog = signal<RiskFactorCatalog[]>([]);
   readonly projectDetail = signal<ProjectDetail | null>(null);
@@ -321,19 +331,37 @@ export class RiskFactorsPageComponent implements OnInit {
   readonly selectedSubdistrictId = signal<number | null>(null);
   readonly selectedYear = signal<number | null>(2568);
   readonly selectedRiskLevel = signal<string | null>(null);
+  readonly selectedProjectType = signal<string | null>(null);
+  readonly budgetAmountMin = signal('');
+  readonly budgetAmountMax = signal('');
   readonly selectedProjectId = signal<string | null>(null);
 
   readonly sortedProjects = computed(() => sortProjectsByRisk(this.projects()));
+  readonly projectTypes = computed(() => {
+    const types = new Set<string>();
+    this.allProjects().forEach((project) => {
+      const type = this.projectType(project);
+      if (type) {
+        types.add(type);
+      }
+    });
+    return [...types].sort((a, b) => a.localeCompare(b, 'th'));
+  });
   readonly filteredProjects = computed(() => {
     const query = this.searchQuery().trim().toLowerCase();
+    const selectedType = this.selectedProjectType();
+    const minBudget = toNumber(this.budgetAmountMin());
+    const maxBudget = toNumber(this.budgetAmountMax());
     const projects = this.sortedProjects();
     if (!query) {
-      return projects;
+      return projects.filter((project) => this.projectMatchesFilters(project, selectedType, minBudget, maxBudget));
     }
     return projects.filter((project) => {
       const idText = String(project.project_id).toLowerCase();
       const nameText = String(project.project_name ?? '').toLowerCase();
-      return idText.includes(query) || nameText.includes(query);
+      const typeText = this.projectType(project).toLowerCase();
+      const matchesQuery = idText.includes(query) || nameText.includes(query) || typeText.includes(query);
+      return matchesQuery && this.projectMatchesFilters(project, selectedType, minBudget, maxBudget);
     });
   });
   readonly triggeredFactors = computed(() => {
@@ -366,10 +394,12 @@ export class RiskFactorsPageComponent implements OnInit {
     forkJoin({
       subdistricts: this.api.subdistricts(),
       catalog: this.api.riskFactors(),
+      allProjects: this.api.projects(),
     }).subscribe({
-      next: ({ subdistricts, catalog }) => {
+      next: ({ subdistricts, catalog, allProjects }) => {
         this.subdistricts.set(subdistricts);
         this.catalog.set(catalog);
+        this.allProjects.set(allProjects);
       },
       error: () => this.error.set('โหลด catalog หรือรายชื่อตำบลไม่สำเร็จ'),
     });
@@ -392,6 +422,18 @@ export class RiskFactorsPageComponent implements OnInit {
     this.loadProjects();
   }
 
+  setProjectType(value: string | null): void {
+    this.selectedProjectType.set(value === 'all' ? null : value);
+  }
+
+  setBudgetAmountMin(value: string): void {
+    this.budgetAmountMin.set(value);
+  }
+
+  setBudgetAmountMax(value: string): void {
+    this.budgetAmountMax.set(value);
+  }
+
   setSearch(value: string): void {
     this.searchQuery.set(value);
   }
@@ -400,6 +442,9 @@ export class RiskFactorsPageComponent implements OnInit {
     this.selectedSubdistrictId.set(null);
     this.selectedYear.set(2568);
     this.selectedRiskLevel.set(null);
+    this.selectedProjectType.set(null);
+    this.budgetAmountMin.set('');
+    this.budgetAmountMax.set('');
     this.searchQuery.set('');
     this.loadProjects();
   }
@@ -536,6 +581,23 @@ export class RiskFactorsPageComponent implements OnInit {
       subdistrict_id: this.selectedSubdistrictId(),
       risk_level: this.selectedRiskLevel(),
     };
+  }
+
+  private projectType(project: Project): string {
+    return project.project_type || project.purchase_method_group || 'ไม่ระบุประเภท';
+  }
+
+  private projectMatchesFilters(
+    project: Project,
+    selectedType: string | null,
+    minBudget: number | null,
+    maxBudget: number | null,
+  ): boolean {
+    const projectBudget = toNumber(project.budget_amount);
+    const matchesType = !selectedType || this.projectType(project) === selectedType;
+    const matchesMin = minBudget === null || (projectBudget !== null && projectBudget >= minBudget);
+    const matchesMax = maxBudget === null || (projectBudget !== null && projectBudget <= maxBudget);
+    return matchesType && matchesMin && matchesMax;
   }
 
   private percentageDifference(left: number | string | null | undefined, right: number | string | null | undefined): number | null {

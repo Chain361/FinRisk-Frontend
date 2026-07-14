@@ -56,6 +56,52 @@ import { FISCAL_YEARS, subdistrictLabel } from '../utils/risk-utils';
         </label>
       }
 
+      @if (showProjectTypeFilter()) {
+        <label class="block">
+          <span class="text-xs font-semibold text-slate-500">ประเภทโครงการ</span>
+          <select
+            class="mt-1 h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-900"
+            [value]="selectedProjectType() ?? 'all'"
+            (change)="onProjectTypeChange($any($event.target).value)"
+          >
+            <option value="all">ทุกประเภท</option>
+            @for (type of projectTypes(); track type) {
+              <option [value]="type">{{ type }}</option>
+            }
+          </select>
+        </label>
+      }
+
+      @if (showBudgetScopeFilter()) {
+        <div class="grid gap-3 sm:grid-cols-2 lg:col-span-2">
+          <label class="block">
+            <span class="text-xs font-semibold text-slate-500">งบประมาณตั้งแต่</span>
+            <input
+              type="number"
+              inputmode="numeric"
+              min="0"
+              class="mt-1 h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-900"
+              placeholder="0"
+              [value]="budgetAmountMin()"
+              (input)="budgetAmountMinChange.emit($any($event.target).value)"
+            />
+          </label>
+
+          <label class="block">
+            <span class="text-xs font-semibold text-slate-500">ถึง</span>
+            <input
+              type="number"
+              inputmode="numeric"
+              min="0"
+              class="mt-1 h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-900"
+              placeholder="0"
+              [value]="budgetAmountMax()"
+              (input)="budgetAmountMaxChange.emit($any($event.target).value)"
+            />
+          </label>
+        </div>
+      }
+
       <div class="flex items-end">
         <button
           type="button"
@@ -74,13 +120,22 @@ export class FilterBarComponent {
   readonly selectedSubdistrictId = input<number | null>(null);
   readonly selectedYear = input<number | null>(null);
   readonly selectedRiskLevel = input<string | null>(null);
+  readonly selectedProjectType = input<string | null>(null);
+  readonly budgetAmountMin = input('');
+  readonly budgetAmountMax = input('');
   readonly showYearFilter = input(true);
   readonly showRiskFilter = input(true);
+  readonly showProjectTypeFilter = input(false);
+  readonly showBudgetScopeFilter = input(false);
   readonly yearOptions = input<readonly number[]>(FISCAL_YEARS);
+  readonly projectTypes = input<readonly string[]>([]);
 
   readonly selectedSubdistrictIdChange = output<number | null>();
   readonly selectedYearChange = output<number | null>();
   readonly selectedRiskLevelChange = output<string | null>();
+  readonly selectedProjectTypeChange = output<string | null>();
+  readonly budgetAmountMinChange = output<string>();
+  readonly budgetAmountMaxChange = output<string>();
   readonly reset = output<void>();
 
   labelFor(subdistrict: Subdistrict): string {
@@ -97,5 +152,9 @@ export class FilterBarComponent {
 
   onRiskChange(value: string): void {
     this.selectedRiskLevelChange.emit(value === 'all' ? null : value);
+  }
+
+  onProjectTypeChange(value: string): void {
+    this.selectedProjectTypeChange.emit(value === 'all' ? null : value);
   }
 }
