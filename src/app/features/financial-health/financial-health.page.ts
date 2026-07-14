@@ -5,7 +5,10 @@ import { ApiService } from '../../core/api/api.service';
 import { AnnualRisk, FinancialStatement, Subdistrict } from '../../core/models/domain.models';
 import { BarChartComponent, BarChartSeries } from '../../shared/charts/bar-chart.component';
 import { FilterBarComponent } from '../../shared/filters/filter-bar.component';
-import { CompositionBarComponent, CompositionSegment } from '../../shared/ui/composition-bar.component';
+import {
+  CompositionBarComponent,
+  CompositionSegment,
+} from '../../shared/ui/composition-bar.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { InfoTooltipComponent } from '../../shared/ui/info-tooltip.component';
 import { KpiCardComponent } from '../../shared/ui/kpi-card.component';
@@ -78,7 +81,9 @@ interface IncomeStatementTotals {
       />
 
       @if (error()) {
-        <p class="rounded-[4px] border-[1.5px] border-risk-high bg-red-50 px-4 py-3 text-sm text-risk-high">
+        <p
+          class="rounded-[4px] border-[1.5px] border-risk-high bg-red-50 px-4 py-3 text-sm text-risk-high"
+        >
           {{ error() }}
         </p>
       }
@@ -116,7 +121,7 @@ interface IncomeStatementTotals {
 
           <div class="flex flex-wrap items-end gap-3.5">
             <label class="block">
-              <span class="text-[12.5px] font-bold text-muted">ตัวชี้วัด</span>
+              <span class="text-[12.5px] font-bold text-muted mr-3">ตัวชี้วัด</span>
               <select
                 class="gov-select mt-[5px] w-auto!"
                 [value]="comparisonMetric()"
@@ -130,7 +135,7 @@ interface IncomeStatementTotals {
 
             @if (comparisonMetric() === 'riskFactor') {
               <label class="block">
-                <span class="text-[12.5px] font-bold text-muted">Factor</span>
+                <span class="text-[12.5px] font-bold text-muted ml-3 mr-3">ปัจจัย</span>
                 <select
                   class="gov-select mt-[5px] w-auto!"
                   [value]="comparisonFactorCode() ?? ''"
@@ -156,7 +161,10 @@ interface IncomeStatementTotals {
             [fractionDigits]="comparisonMetric() === 'riskFactor' ? 2 : 0"
           />
         } @else {
-          <app-empty-state title="ไม่พบข้อมูลสำหรับเปรียบเทียบ" message="ลองเลือกปีหรือตัวชี้วัดอื่น" />
+          <app-empty-state
+            title="ไม่พบข้อมูลสำหรับเปรียบเทียบ"
+            message="ลองเลือกปีหรือตัวชี้วัดอื่น"
+          />
         }
       </section>
 
@@ -215,7 +223,13 @@ interface IncomeStatementTotals {
         </div>
 
         <app-bar-chart
-          [title]="'แนวโน้มมูลค่าสินทรัพย์ถาวร (ปี ' + FISCAL_YEARS[0] + '-' + FISCAL_YEARS[FISCAL_YEARS.length - 1] + ')'"
+          [title]="
+            'แนวโน้มมูลค่าสินทรัพย์ถาวร (ปี ' +
+            FISCAL_YEARS[0] +
+            '-' +
+            FISCAL_YEARS[FISCAL_YEARS.length - 1] +
+            ')'
+          "
           [subtitle]="fixedAssetInsight()"
           [categories]="fiscalYearLabels"
           [series]="fixedAssetBarSeries()"
@@ -237,64 +251,72 @@ interface IncomeStatementTotals {
           ค่าที่ประเมินไม่ได้ (computable = false) จะแสดงข้อความ "ประเมินไม่ได้" และไม่แทนค่าเป็น 0
         </p>
 
-        @if (!factorCards().length) {
-          <app-empty-state
-            title="ไม่พบข้อมูล Financial Health"
-            message="ข้อมูล /risk/annual อาจยังไม่มีสำหรับตัวกรองนี้"
-          />
-        } @else {
-          <div class="grid gap-3.5 md:grid-cols-2 xl:grid-cols-3">
-            @for (
-              row of factorCards();
-              track row.factor_code + '-' + row.fiscal_year + '-' + row.subdistrict_id
-            ) {
-              <article class="rounded-[4px] border-[1.5px] border-line p-3.5">
-                <p class="m-0 text-sm font-bold text-ink">{{ row.factor_name }}</p>
-                <p class="m-0 mt-0.5 text-[11.5px] text-muted">{{ row.factor_code }} · ปี {{ row.fiscal_year }}</p>
-                <div class="mt-2.5 rounded-[3px] border border-line-soft bg-zebra p-2.5">
-                  <p class="m-0 text-[11.5px] font-bold text-muted">Observed Value</p>
-                  <p
-                    class="m-0 mt-1 text-[16px] font-extrabold"
-                    [class]="isComputable(row) ? 'text-ink' : 'text-[#8a2a1f]'"
-                  >
-                    {{ isComputable(row) ? observedValueText(row) : 'ประเมินไม่ได้ (ข้อมูลไม่พอ)' }}
+        <div class="mt-[18px] grid gap-4 xl:grid-cols-[1fr_1fr]">
+          @if (!factorCards().length) {
+            <app-empty-state
+              title="ไม่พบข้อมูล Financial Health"
+              message="ข้อมูล /risk/annual อาจยังไม่มีสำหรับตัวกรองนี้"
+            />
+          } @else {
+            <div class="max-h-[370px] overflow-y-auto flex flex-col gap-3.5">
+              @for (
+                row of factorCards();
+                track row.factor_code + '-' + row.fiscal_year + '-' + row.subdistrict_id
+              ) {
+                <article class="rounded-[4px] border-[1.5px] border-line p-3.5">
+                  <p class="m-0 text-sm font-bold text-ink">{{ row.factor_name }}</p>
+                  <p class="m-0 mt-0.5 text-[11.5px] text-muted">
+                    {{ row.factor_code }} · ปี {{ row.fiscal_year }}
                   </p>
-                </div>
-                @if (row.evidence_text) {
-                  <p class="m-0 mt-2.5 text-xs leading-relaxed text-muted">{{ row.evidence_text }}</p>
-                }
-              </article>
-            }
-          </div>
-        }
+                  <div class="mt-2.5 rounded-[3px] border border-line-soft bg-zebra p-2.5">
+                    <p class="m-0 text-[11.5px] font-bold text-muted">Observed Value</p>
+                    <p
+                      class="m-0 mt-1 text-[16px] font-extrabold"
+                      [class]="isComputable(row) ? 'text-ink' : 'text-[#8a2a1f]'"
+                    >
+                      {{
+                        isComputable(row) ? observedValueText(row) : 'ประเมินไม่ได้ (ข้อมูลไม่พอ)'
+                      }}
+                    </p>
+                  </div>
+                  @if (row.evidence_text) {
+                    <p class="m-0 mt-2.5 text-xs leading-relaxed text-muted">
+                      {{ row.evidence_text }}
+                    </p>
+                  }
+                </article>
+              }
+            </div>
+          }
 
-        <div class="mt-[18px] overflow-x-auto">
-          <table class="gov-table text-[13px]">
-            <thead>
-              <tr>
-                <th>ตัวชี้วัด</th>
-                <th>วิธีการคำนวณ</th>
-                <th>หน่วย</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td class="whitespace-nowrap font-bold">Y1 - อัตราการพึ่งพาตนเองทางการคลัง</td>
-                <td>(รายได้จัดเก็บเอง + รายได้รัฐจัดเก็บให้) ÷ (รายได้รวม − เงินกู้) × 100</td>
-                <td class="whitespace-nowrap">%</td>
-              </tr>
-              <tr>
-                <td class="whitespace-nowrap font-bold">Y2 - ดุลการดำเนินงานประจำปี</td>
-                <td>(รายได้ − ค่าใช้จ่าย) ÷ รายได้รวม × 100</td>
-                <td class="whitespace-nowrap">%</td>
-              </tr>
-              <tr>
-                <td class="whitespace-nowrap font-bold">Y3 - Cash Coverage Ratio</td>
-                <td>เงินสดและรายการเทียบเท่าเงินสด ÷ (ภาระผูกพัน + หนี้สินหมุนเวียน)</td>
-                <td class="whitespace-nowrap">เท่า</td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="overflow-x-auto">
+            <table class="gov-table text-[13px]">
+              <thead>
+                <tr>
+                  <th>ตัวชี้วัด</th>
+                  <th>วิธีการคำนวณ</th>
+                  <th>หน่วย</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="whitespace-nowrap font-bold">Y1 - อัตราการพึ่งพาตนเองทางการคลัง</td>
+                  <td>(รายได้จัดเก็บเอง + รายได้รัฐจัดเก็บให้) ÷ (รายได้รวม − เงินกู้) × 100</td>
+                  <td class="whitespace-nowrap">%</td>
+                </tr>
+                <tr>
+                  <td class="whitespace-nowrap font-bold">Y2 - ดุลการดำเนินงานประจำปี</td>
+                  <td>(รายได้ − ค่าใช้จ่าย) ÷ รายได้รวม × 100</td>
+                  <td class="whitespace-nowrap">%</td>
+                </tr>
+                <tr>
+                  <td class="whitespace-nowrap font-bold">Y3 - Cash Coverage Ratio</td>
+                  <td>เงินสดและรายการเทียบเท่าเงินสด ÷ (ภาระผูกพัน + หนี้สินหมุนเวียน)</td>
+                  <td class="whitespace-nowrap">เท่า</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
     </section>
@@ -438,7 +460,11 @@ export class FinancialHealthPageComponent implements OnInit {
       ),
     );
     return [
-      { name: 'รายได้จัดเก็บเอง + รัฐจัดสรร', values: [ownAndAllocatedRevenue], color: PALETTE.navy },
+      {
+        name: 'รายได้จัดเก็บเอง + รัฐจัดสรร',
+        values: [ownAndAllocatedRevenue],
+        color: PALETTE.navy,
+      },
       { name: 'เงินอุดหนุน', values: [subsidies], color: PALETTE.chartBlue },
     ];
   });
