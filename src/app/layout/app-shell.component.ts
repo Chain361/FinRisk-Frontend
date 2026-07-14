@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs';
@@ -80,49 +80,10 @@ const NAV_GROUPS: NavGroup[] = [
         <nav class="flex flex-1 flex-col overflow-y-auto py-2.5">
           @for (group of navGroups; track group.id) {
             <div>
-              <button
-                type="button"
-                class="flex w-full cursor-pointer items-center justify-between px-5 py-3 text-left text-xs font-bold uppercase tracking-wider text-[#9fb0c8] hover:text-white"
-                (click)="toggleGroup(group.id)"
-              >
-                <span>{{ group.label }}</span>
-                <span
-                  class="inline-block transition-transform duration-150"
-                  [style.transform]="isExpanded(group.id) ? 'rotate(90deg)' : 'rotate(0deg)'"
-                >
-                  ›
-                </span>
-              </button>
-              @if (isExpanded(group.id)) {
-                <div class="flex flex-col pb-1.5">
-                  @for (item of group.items; track item.label) {
-                    @if (item.children?.length) {
-                      <div>
-                        <div
-                          class="flex items-center gap-2.5 px-5 py-[11px] pl-[26px] text-sm font-semibold text-white"
-                        >
-                          <span class="text-[12.5px] opacity-85">{{ item.code }}</span>
-                          <span>{{ item.label }}</span>
-                        </div>
-
-                        <div class="ml-6 flex flex-col">
-                          @for (child of item.children; track child.path) {
-                            <a
-                              [routerLink]="child.path"
-                              class="flex items-center gap-2 border-l-2 px-4 py-2 text-[13px] no-underline hover:bg-white/[.08]"
-                              [class]="
-                                isActive(child.path)
-                                  ? 'border-gold text-white bg-white/10'
-                                  : 'border-transparent text-[#c9d4e3]'
-                              "
-                            >
-                              <span>•</span>
-                              <span>{{ child.label }}</span>
-                            </a>
-                          }
-                        </div>
-                      </div>
-                    } @else {
+              <div class="flex flex-col pb-1.5">
+                @for (item of group.items; track item.label) {
+                  @if (item.children?.length) {
+                    <div>
                       <a
                         [routerLink]="item.path"
                         class="flex items-center gap-2.5 border-l-4 px-5 py-[11px] pl-[26px] text-sm font-semibold no-underline hover:bg-white/[.08]"
@@ -135,10 +96,40 @@ const NAV_GROUPS: NavGroup[] = [
                         <span class="text-[12.5px] opacity-85">{{ item.code }}</span>
                         <span>{{ item.label }}</span>
                       </a>
-                    }
+
+                      <div class="ml-6 flex flex-col">
+                        @for (child of item.children; track child.path) {
+                          <a
+                            [routerLink]="child.path"
+                            class="flex items-center gap-2 border-l-2 px-4 py-2 text-[13px] no-underline hover:bg-white/[.08]"
+                            [class]="
+                              isActive(child.path)
+                                ? 'border-gold text-white bg-white/10'
+                                : 'border-transparent text-[#c9d4e3]'
+                            "
+                          >
+                            <span>•</span>
+                            <span>{{ child.label }}</span>
+                          </a>
+                        }
+                      </div>
+                    </div>
+                  } @else {
+                    <a
+                      [routerLink]="item.path"
+                      class="flex items-center gap-2.5 border-l-4 px-5 py-[11px] pl-[26px] text-sm font-semibold no-underline hover:bg-white/[.08]"
+                      [class]="
+                        isActive(item.path)
+                          ? 'border-gold bg-white/10 text-white'
+                          : 'border-transparent text-[#e6ecf5]'
+                      "
+                    >
+                      <span class="text-[12.5px] opacity-85">{{ item.code }}</span>
+                      <span>{{ item.label }}</span>
+                    </a>
                   }
-                </div>
-              }
+                }
+              </div>
             </div>
           }
         </nav>
@@ -205,17 +196,6 @@ export class AppShellComponent {
     { initialValue: this.router.url },
   );
 
-  private readonly expandedGroups = signal<Set<string>>(
-    new Set(NAV_GROUPS.map((group) => group.id)),
-  );
-
-  private readonly activeGroupId = computed(() => {
-    const url = this.currentUrl();
-    return (
-      NAV_GROUPS.find((group) => group.items.some((item) => url.startsWith(item.path)))?.id ?? null
-    );
-  });
-
   readonly currentPageLabel = computed(() => {
     const url = this.currentUrl();
     for (const group of NAV_GROUPS) {
@@ -227,32 +207,7 @@ export class AppShellComponent {
     return 'Project Risk Dashboard';
   });
 
-  constructor() {
-    effect(() => {
-      const active = this.activeGroupId();
-      if (active && !this.expandedGroups().has(active)) {
-        this.expandedGroups.update((groups) => new Set(groups).add(active));
-      }
-    });
-  }
-
-  isExpanded(groupId: string): boolean {
-    return this.expandedGroups().has(groupId);
-  }
-
   isActive(path: string): boolean {
     return this.currentUrl().startsWith(path);
-  }
-
-  toggleGroup(groupId: string): void {
-    this.expandedGroups.update((groups) => {
-      const next = new Set(groups);
-      if (next.has(groupId)) {
-        next.delete(groupId);
-      } else {
-        next.add(groupId);
-      }
-      return next;
-    });
   }
 }
