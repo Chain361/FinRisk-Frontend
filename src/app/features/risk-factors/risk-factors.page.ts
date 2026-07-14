@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { forkJoin } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
@@ -48,12 +48,9 @@ import {
         [selectedSubdistrictId]="selectedSubdistrictId()"
         [selectedYear]="selectedYear()"
         [selectedRiskLevel]="selectedRiskLevel()"
-        [showSearch]="true"
-        [searchValue]="searchQuery()"
         (selectedSubdistrictIdChange)="setSubdistrict($event)"
         (selectedYearChange)="setYear($event)"
         (selectedRiskLevelChange)="setRisk($event)"
-        (searchChange)="setSearch($event)"
         (reset)="resetFilters()"
       />
 
@@ -67,12 +64,88 @@ import {
         <div class="panel p-4">
           <app-empty-state title="ไม่พบโครงการ" message="ลองเปลี่ยนคำค้น ปี ตำบล หรือระดับความเสี่ยง" />
         </div>
+      } @else if (!selectedProjectId()) {
+        <section class="panel overflow-hidden">
+          <div class="border-b-[1.5px] border-line px-4 py-3.5">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 class="m-0 text-[15px] font-bold text-ink">รายการโครงการเรียงตาม Risk Score</h2>
+                <p class="m-0 mt-1 text-[12.5px] text-muted">คลิกโครงการเพื่อดูรายละเอียดและปัจจัยที่ทำให้เสี่ยง</p>
+              </div>
+              <label class="block w-full max-w-md">
+                <span class="sr-only">ค้นหาโครงการ</span>
+                <input
+                  type="search"
+                  class="gov-input"
+                  placeholder="ค้นหาชื่อโครงการ หรือ Project ID"
+                  [value]="searchQuery()"
+                  (input)="setSearch($any($event.target).value)"
+                />
+              </label>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200 text-sm">
+              <thead class="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500">
+                <tr>
+                  <th class="px-4 py-3">โครงการ</th>
+                  <th class="px-4 py-3">ปี</th>
+                  <th class="px-4 py-3">ประเภท</th>
+                  <th class="px-4 py-3 text-right">งบประมาณ</th>
+                  <th class="px-4 py-3 text-right">ราคา/อ้างอิง</th>
+                  <th class="px-4 py-3 text-right">Risk Score</th>
+                  <th class="px-4 py-3">ระดับ</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 bg-white">
+                @for (project of filteredProjects(); track project.project_id) {
+                  <tr class="cursor-pointer hover:bg-slate-50" (click)="selectProject(project.project_id)">
+                    <td class="max-w-md px-4 py-3">
+                      <p class="line-clamp-2 font-semibold text-slate-900">{{ project.project_name }}</p>
+                      <p class="text-xs text-slate-500">ID {{ project.project_id }}</p>
+                    </td>
+                    <td class="px-4 py-3">{{ project.budget_year }}</td>
+                    <td class="px-4 py-3">{{ project.project_type || project.purchase_method_group || '-' }}</td>
+                    <td class="px-4 py-3 text-right">{{ money(project.budget_amount) }}</td>
+                    <td class="px-4 py-3 text-right">{{ number(project.price_ratio, 3) }}</td>
+                    <td class="px-4 py-3 text-right font-semibold">{{ number(project.risk_score, 2) }}</td>
+                    <td class="px-4 py-3"><app-risk-badge [level]="project.risk_level" /></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
       } @else {
         <div class="grid items-start gap-4 xl:grid-cols-[340px_1fr]">
           <section class="panel overflow-hidden">
             <div class="border-b-[1.5px] border-line px-4 py-3.5">
-              <h2 class="m-0 text-[15px] font-bold text-ink">รายการโครงการ</h2>
-              <p class="m-0 mt-1 text-[12.5px] text-muted">เลือกโครงการเพื่อดูรายละเอียด</p>
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 class="m-0 text-[15px] font-bold text-ink">รายการโครงการ</h2>
+                  <p class="m-0 mt-1 text-[12.5px] text-muted">เลือกโครงการเพื่อดูรายละเอียด</p>
+                </div>
+                <div class="flex w-full max-w-[260px] flex-col gap-2">
+                  <button
+                    type="button"
+                    class="inline-flex h-10 items-center justify-center rounded-[3px] border-[1.5px] border-line bg-white px-3 text-[13.5px] font-bold text-slate-700 hover:bg-zebra"
+                    (click)="clearSelection()"
+                  >
+                    กลับไปรายการ
+                  </button>
+                  <label class="block">
+                    <span class="sr-only">ค้นหาโครงการ</span>
+                    <input
+                      type="search"
+                      class="gov-input"
+                      placeholder="ค้นหาชื่อโครงการ หรือ Project ID"
+                      [value]="searchQuery()"
+                      (input)="setSearch($any($event.target).value)"
+                    />
+                  </label>
+                </div>
+              </div>
             </div>
 
             <div class="max-h-[620px] overflow-y-auto">
@@ -336,20 +409,6 @@ export class RiskFactorsPageComponent implements OnInit {
     ];
   });
 
-  constructor() {
-    effect(() => {
-      const projects = this.filteredProjects();
-      if (!projects.length) {
-        return;
-      }
-      const selected = this.selectedProjectId();
-      const stillVisible = selected && projects.some((project) => String(project.project_id) === selected);
-      if (!stillVisible) {
-        this.selectProject(projects[0].project_id);
-      }
-    });
-  }
-
   ngOnInit(): void {
     this.loadingProjects.set(true);
 
@@ -399,6 +458,13 @@ export class RiskFactorsPageComponent implements OnInit {
     this.savedAt.set(null);
     this.modalOpen.set(false);
     this.loadProjectDetail(projectId);
+  }
+
+  clearSelection(): void {
+    this.selectedProjectId.set(null);
+    this.projectDetail.set(null);
+    this.loadingDetail.set(false);
+    this.modalOpen.set(false);
   }
 
   confirmSave(): void {
