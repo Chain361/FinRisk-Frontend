@@ -17,20 +17,59 @@ export const routes: Routes = [
       {
         path: 'project-risk',
         loadComponent: () =>
-          import('./features/project-risk/project-risk.page').then((m) => m.ProjectRiskPageComponent),
+          import('./features/project-risk/project-risk.page').then(
+            (m) => m.ProjectRiskPageComponent,
+          ),
       },
       {
         path: 'financial-health',
-        loadComponent: () =>
-          import('./features/financial-health/financial-health.page').then((m) => m.FinancialHealthPageComponent),
+        children: [
+          {
+            path: 'overview',
+            loadComponent: () =>
+              import('./features/financial-health/overview/overview.page').then(
+                (m) => m.OverviewPageComponent,
+              ),
+          },
+          {
+            path: 'benchmarking',
+            loadComponent: () =>
+              import('./features/financial-health/benchmarking/benchmarking.page').then(
+                (m) => m.BenchmarkingPageComponent,
+              ),
+          },
+          {
+            path: 'investment-trends',
+            loadComponent: () =>
+              import('./features/financial-health/investment-trends/investment-trends.page').then(
+                (m) => m.InvestmentTrendsPageComponent,
+              ),
+          },
+          {
+            path: 'risk-indicators',
+            loadComponent: () =>
+              import('./features/financial-health/risk-indicators/risk-indicators.page').then(
+                (m) => m.RiskIndicatorsPageComponent,
+              ),
+          },
+          {
+            path: '',
+            redirectTo: 'overview',
+            pathMatch: 'full',
+          },
+        ],
       },
       {
         path: 'risk-factors',
-        loadComponent: () => import('./features/risk-factors/risk-factors.page').then((m) => m.RiskFactorsPageComponent),
+        loadComponent: () =>
+          import('./features/risk-factors/risk-factors.page').then(
+            (m) => m.RiskFactorsPageComponent,
+          ),
       },
       {
         path: 'trends',
-        loadComponent: () => import('./features/trends/trends.page').then((m) => m.TrendsPageComponent),
+        loadComponent: () =>
+          import('./features/trends/trends.page').then((m) => m.TrendsPageComponent),
       },
     ],
   },

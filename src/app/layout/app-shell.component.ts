@@ -10,6 +10,7 @@ interface NavItem {
   code: string;
   label: string;
   path: string;
+  children?: NavItem[];
 }
 
 interface NavGroup {
@@ -28,7 +29,33 @@ const NAV_GROUPS: NavGroup[] = [
     id: 'finance',
     label: 'การเงินและปัจจัยเสี่ยง',
     items: [
-      { code: 'F2', label: 'Financial Health', path: '/financial-health' },
+      {
+        code: 'F2',
+        label: 'สถานะและสุขภาพการคลัง',
+        path: '/financial-health',
+        children: [
+          {
+            code: 'F2.1',
+            label: 'ภาพรวมสุขภาพการคลัง',
+            path: '/financial-health/overview',
+          },
+          {
+            code: 'F2.2',
+            label: 'เปรียบเทียบสถานะการคลัง',
+            path: '/financial-health/benchmarking',
+          },
+          {
+            code: 'F2.3',
+            label: 'แนวโน้มการลงทุนและการจัดซื้อจัดจ้าง',
+            path: '/financial-health/investment-trends',
+          },
+          {
+            code: 'F2.4',
+            label: 'ตัวชี้วัดความเสี่ยงทางการคลัง',
+            path: '/financial-health/risk-indicators',
+          },
+        ],
+      },
       { code: 'F3', label: 'Risk Factors', path: '/risk-factors' },
     ],
   },
@@ -47,8 +74,12 @@ const NAV_GROUPS: NavGroup[] = [
     <div class="flex min-h-screen bg-page text-ink">
       <aside class="hidden w-[264px] shrink-0 flex-col bg-navy text-white lg:flex">
         <div class="border-b border-white/20 px-5 py-[22px]">
-          <p class="m-0 text-[16px] font-bold leading-normal">ระบบวิเคราะห์ความเสี่ยง<br />งบประมาณตำบล</p>
-          <p class="m-0 mt-2 text-xs tracking-wide text-[#c9d4e3]">Local Budget Financial Risk System</p>
+          <p class="m-0 text-[16px] font-bold leading-normal">
+            ระบบวิเคราะห์ความเสี่ยง<br />งบประมาณตำบล
+          </p>
+          <p class="m-0 mt-2 text-xs tracking-wide text-[#c9d4e3]">
+            Local Budget Financial Risk System
+          </p>
         </div>
 
         <nav class="flex flex-1 flex-col overflow-y-auto py-2.5">
@@ -69,19 +100,47 @@ const NAV_GROUPS: NavGroup[] = [
               </button>
               @if (isExpanded(group.id)) {
                 <div class="flex flex-col pb-1.5">
-                  @for (item of group.items; track item.path) {
-                    <a
-                      [routerLink]="item.path"
-                      class="flex items-center gap-2.5 border-l-4 px-5 py-[11px] pl-[26px] text-sm font-semibold no-underline hover:bg-white/[.08]"
-                      [class]="
-                        isActive(item.path)
-                          ? 'border-gold bg-white/10 text-white'
-                          : 'border-transparent text-[#e6ecf5]'
-                      "
-                    >
-                      <span class="text-[12.5px] opacity-85">{{ item.code }}</span>
-                      <span>{{ item.label }}</span>
-                    </a>
+                  @for (item of group.items; track item.label) {
+                    @if (item.children?.length) {
+                      <div>
+                        <div
+                          class="flex items-center gap-2.5 px-5 py-[11px] pl-[26px] text-sm font-semibold text-white"
+                        >
+                          <span class="text-[12.5px] opacity-85">{{ item.code }}</span>
+                          <span>{{ item.label }}</span>
+                        </div>
+
+                        <div class="ml-6 flex flex-col">
+                          @for (child of item.children; track child.path) {
+                            <a
+                              [routerLink]="child.path"
+                              class="flex items-center gap-2 border-l-2 px-4 py-2 text-[13px] no-underline hover:bg-white/[.08]"
+                              [class]="
+                                isActive(child.path)
+                                  ? 'border-gold text-white bg-white/10'
+                                  : 'border-transparent text-[#c9d4e3]'
+                              "
+                            >
+                              <span>•</span>
+                              <span>{{ child.label }}</span>
+                            </a>
+                          }
+                        </div>
+                      </div>
+                    } @else {
+                      <a
+                        [routerLink]="item.path"
+                        class="flex items-center gap-2.5 border-l-4 px-5 py-[11px] pl-[26px] text-sm font-semibold no-underline hover:bg-white/[.08]"
+                        [class]="
+                          isActive(item.path)
+                            ? 'border-gold bg-white/10 text-white'
+                            : 'border-transparent text-[#e6ecf5]'
+                        "
+                      >
+                        <span class="text-[12.5px] opacity-85">{{ item.code }}</span>
+                        <span>{{ item.label }}</span>
+                      </a>
+                    }
                   }
                 </div>
               }
@@ -96,18 +155,26 @@ const NAV_GROUPS: NavGroup[] = [
       </aside>
 
       <div class="flex min-w-0 flex-1 flex-col">
-        <header class="flex flex-wrap items-center justify-between gap-4 border-b-2 border-navy bg-white px-4 py-3.5 lg:px-[30px]">
+        <header
+          class="flex flex-wrap items-center justify-between gap-4 border-b-2 border-navy bg-white px-4 py-3.5 lg:px-[30px]"
+        >
           <div>
             <p class="m-0 text-[12.5px] text-muted">
               หน้าหลัก / <span class="font-bold text-navy">{{ currentPageLabel() }}</span>
             </p>
-            <p class="m-0 mt-1 text-[13px] font-semibold text-slate-700">แดชบอร์ดวิเคราะห์ความเสี่ยงงบประมาณท้องถิ่น</p>
+            <p class="m-0 mt-1 text-[13px] font-semibold text-slate-700">
+              แดชบอร์ดวิเคราะห์ความเสี่ยงงบประมาณท้องถิ่น
+            </p>
           </div>
 
           <div class="flex items-center gap-3.5">
             <div class="rounded-[3px] border-[1.5px] border-line px-3.5 py-[7px] text-right">
-              <p class="m-0 text-[13px] font-bold text-ink">{{ auth.user()?.username ?? auth.token() }}</p>
-              <p class="m-0 mt-0.5 text-[11px] uppercase text-muted">{{ auth.user()?.role ?? 'mock-auth' }}</p>
+              <p class="m-0 text-[13px] font-bold text-ink">
+                {{ auth.user()?.username ?? auth.token() }}
+              </p>
+              <p class="m-0 mt-0.5 text-[11px] uppercase text-muted">
+                {{ auth.user()?.role ?? 'mock-auth' }}
+              </p>
             </div>
             <button
               type="button"
@@ -143,11 +210,15 @@ export class AppShellComponent {
     { initialValue: this.router.url },
   );
 
-  private readonly expandedGroups = signal<Set<string>>(new Set(NAV_GROUPS.map((group) => group.id)));
+  private readonly expandedGroups = signal<Set<string>>(
+    new Set(NAV_GROUPS.map((group) => group.id)),
+  );
 
   private readonly activeGroupId = computed(() => {
     const url = this.currentUrl();
-    return NAV_GROUPS.find((group) => group.items.some((item) => url.startsWith(item.path)))?.id ?? null;
+    return (
+      NAV_GROUPS.find((group) => group.items.some((item) => url.startsWith(item.path)))?.id ?? null
+    );
   });
 
   readonly currentPageLabel = computed(() => {
