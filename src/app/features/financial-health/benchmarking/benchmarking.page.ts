@@ -63,8 +63,11 @@ interface IncomeStatementTotals {
   template: `
     <section class="page-shell">
       <div>
-        <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F2.2</p>
-        <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">เปรียบเทียบสถานะการคลัง</h1>
+        <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F2</p>
+        <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">Annual Financial Health</h1>
+        <p class="m-0 mt-1.5 text-sm text-muted">
+          สถานะทางการเงินรายปี พร้อมค่าที่สังเกตได้และหลักฐานประกอบของแต่ละปัจจัย
+        </p>
       </div>
 
       <app-filter-bar
@@ -84,6 +87,28 @@ interface IncomeStatementTotals {
           {{ error() }}
         </p>
       }
+
+      <div class="grid gap-4 md:grid-cols-3">
+        @for (card of balanceSheetKpis(); track card.label) {
+          <app-kpi-card
+            [label]="card.label"
+            [value]="card.value"
+            [hint]="card.hint"
+            [accentClass]="card.accentClass"
+          />
+        }
+      </div>
+
+      <div class="grid gap-4 md:grid-cols-3">
+        @for (card of incomeStatementKpis(); track card.label) {
+          <app-kpi-card
+            [label]="card.label"
+            [value]="card.value"
+            [hint]="card.hint"
+            [accentClass]="card.accentClass"
+          />
+        }
+      </div>
 
       <section class="panel p-[18px]">
         <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -141,6 +166,158 @@ interface IncomeStatementTotals {
             message="ลองเลือกปีหรือตัวชี้วัดอื่น"
           />
         }
+      </section>
+
+      <div class="grid gap-4 xl:grid-cols-2">
+        <app-composition-bar
+          title="โครงสร้างสินทรัพย์"
+          subtitle="แบ่งเป็นสินทรัพย์หมุนเวียนและไม่หมุนเวียน"
+          [segments]="assetComposition()"
+        />
+        <app-composition-bar
+          title="โครงสร้างหนี้สิน"
+          subtitle="แบ่งเป็นหนี้สินหมุนเวียนและระยะยาว"
+          [segments]="liabilityComposition()"
+        />
+      </div>
+
+      <app-bar-chart
+        title="โครงสร้างรายได้"
+        subtitle="เปรียบเทียบรายได้จัดเก็บเองและรัฐจัดสรร กับเงินอุดหนุนของตำบลที่เลือก"
+        [categories]="revenueStructureCategories()"
+        [series]="revenueStructureSeries()"
+        unitSuffix="บาท"
+        rowHeader="ประเภทรายได้"
+        [compactValueLabels]="true"
+      />
+
+      <section class="panel p-[18px]">
+        <div class="mb-3">
+          <h2 class="m-0 text-[16px] font-bold text-ink">แนวโน้มการลงทุน (สินทรัพย์ถาวร)</h2>
+          <p class="m-0 mt-1 text-[13px] text-muted">
+            มูลค่าสินทรัพย์ถาวรย้อนหลังของตำบลที่เลือก พร้อมการเปลี่ยนแปลงเทียบปีก่อน (YoY)
+          </p>
+        </div>
+
+        <div class="mb-4 grid gap-3.5 sm:grid-cols-2">
+          <app-kpi-card
+            [label]="'มูลค่าสินทรัพย์ถาวร ปี ' + fixedAssetFocusYear()"
+            [value]="fixedAssetFocusValueText()"
+            hint="อ้างอิงตัวกรองตำบล/ปีงบประมาณด้านบน"
+            accentClass="bg-navy"
+          />
+
+          <div class="rounded-[4px] border-[1.5px] border-line bg-white p-4">
+            <p class="m-0 text-[13px] font-bold text-muted">YoY เทียบปีก่อน</p>
+            @if (fixedAssetYoyView(); as yoyView) {
+              <p class="m-0 mt-2 text-2xl font-extrabold" [class]="yoyView.colorClass">
+                {{ yoyView.arrow }} {{ yoyView.magnitude }}%
+              </p>
+              <p class="m-0 mt-1 text-xs text-muted">
+                เทียบปี {{ fixedAssetPreviousYear() }} → {{ fixedAssetFocusYear() }}
+              </p>
+            } @else {
+              <p class="m-0 mt-2 text-sm text-muted">ไม่มีข้อมูลเพียงพอสำหรับคำนวณ YoY</p>
+            }
+          </div>
+        </div>
+
+        <app-bar-chart
+          [title]="
+            'แนวโน้มมูลค่าสินทรัพย์ถาวร (ปี ' +
+            FISCAL_YEARS[0] +
+            '-' +
+            FISCAL_YEARS[FISCAL_YEARS.length - 1] +
+            ')'
+          "
+          [subtitle]="fixedAssetInsight()"
+          [categories]="fiscalYearLabels"
+          [series]="fixedAssetBarSeries()"
+          unitSuffix="บาท"
+          [compactValueLabels]="true"
+        />
+      </section>
+
+      <section class="panel p-[18px]">
+        <div class="mb-0.5 flex items-center gap-2">
+          <h2 class="m-0 text-[16px] font-bold text-ink">
+            สถานะปัจจัยเสี่ยงทางการเงิน ปี {{ selectedYear() ?? 'ทุกปี' }}
+          </h2>
+          <app-info-tooltip
+            text="ประเมินไม่ได้ หมายถึงข้อมูลที่จำเป็นต่อการคำนวณยังไม่ครบตามที่ระบุในระเบียบ ไม่ใช่ค่า 0 กรุณาตรวจสอบกับหน่วยงานคลังก่อนสรุปผล"
+          />
+        </div>
+        <p class="m-0 mb-3.5 text-[13px] text-muted">
+          ค่าที่ประเมินไม่ได้ (computable = false) จะแสดงข้อความ "ประเมินไม่ได้" และไม่แทนค่าเป็น 0
+        </p>
+
+        <div class="mt-[18px] grid gap-4 xl:grid-cols-[1fr_1fr]">
+          @if (!factorCards().length) {
+            <app-empty-state
+              title="ไม่พบข้อมูล Financial Health"
+              message="ข้อมูล /risk/annual อาจยังไม่มีสำหรับตัวกรองนี้"
+            />
+          } @else {
+            <div class="max-h-[370px] overflow-y-auto flex flex-col gap-3.5">
+              @for (
+                row of factorCards();
+                track row.factor_code + '-' + row.fiscal_year + '-' + row.subdistrict_id
+              ) {
+                <article class="rounded-[4px] border-[1.5px] border-line p-3.5">
+                  <p class="m-0 text-sm font-bold text-ink">{{ row.factor_name }}</p>
+                  <p class="m-0 mt-0.5 text-[11.5px] text-muted">
+                    {{ row.factor_code }} · ปี {{ row.fiscal_year }}
+                  </p>
+                  <div class="mt-2.5 rounded-[3px] border border-line-soft bg-zebra p-2.5">
+                    <p class="m-0 text-[11.5px] font-bold text-muted">Observed Value</p>
+                    <p
+                      class="m-0 mt-1 text-[16px] font-extrabold"
+                      [class]="isComputable(row) ? 'text-ink' : 'text-[#8a2a1f]'"
+                    >
+                      {{
+                        isComputable(row) ? observedValueText(row) : 'ประเมินไม่ได้ (ข้อมูลไม่พอ)'
+                      }}
+                    </p>
+                  </div>
+                  @if (row.evidence_text) {
+                    <p class="m-0 mt-2.5 text-xs leading-relaxed text-muted">
+                      {{ row.evidence_text }}
+                    </p>
+                  }
+                </article>
+              }
+            </div>
+          }
+
+          <div class="overflow-x-auto">
+            <table class="gov-table text-[13px]">
+              <thead>
+                <tr>
+                  <th>ตัวชี้วัด</th>
+                  <th>วิธีการคำนวณ</th>
+                  <th>หน่วย</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="whitespace-nowrap font-bold">Y1 - อัตราการพึ่งพาตนเองทางการคลัง</td>
+                  <td>(รายได้จัดเก็บเอง + รายได้รัฐจัดเก็บให้) ÷ (รายได้รวม − เงินกู้) × 100</td>
+                  <td class="whitespace-nowrap">%</td>
+                </tr>
+                <tr>
+                  <td class="whitespace-nowrap font-bold">Y2 - ดุลการดำเนินงานประจำปี</td>
+                  <td>(รายได้ − ค่าใช้จ่าย) ÷ รายได้รวม × 100</td>
+                  <td class="whitespace-nowrap">%</td>
+                </tr>
+                <tr>
+                  <td class="whitespace-nowrap font-bold">Y3 - Cash Coverage Ratio</td>
+                  <td>เงินสดและรายการเทียบเท่าเงินสด ÷ (ภาระผูกพัน + หนี้สินหมุนเวียน)</td>
+                  <td class="whitespace-nowrap">เท่า</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </section>
     </section>
   `,

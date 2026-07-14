@@ -57,9 +57,7 @@ interface CrossTabRow {
       <div>
         <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F1</p>
         <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">Project Risk Dashboard</h1>
-        <p class="m-0 mt-1.5 text-sm text-muted">
-          สรุปจำนวนโครงการตามระดับความเสี่ยง และรายการที่ควรตรวจสอบต่อ
-        </p>
+        <p class="m-0 mt-1.5 text-sm text-muted">สรุปจำนวนโครงการตามระดับความเสี่ยง และรายการที่ควรตรวจสอบต่อ</p>
       </div>
 
       <app-announcement-panel />
@@ -76,9 +74,7 @@ interface CrossTabRow {
       />
 
       @if (error()) {
-        <p
-          class="rounded-[4px] border-[1.5px] border-risk-high bg-red-50 px-4 py-3 text-sm text-risk-high"
-        >
+        <p class="rounded-[4px] border-[1.5px] border-risk-high bg-red-50 px-4 py-3 text-sm text-risk-high">
           {{ error() }}
         </p>
       }
@@ -111,9 +107,7 @@ interface CrossTabRow {
       </div>
 
       <section class="panel px-[26px] py-5">
-        <h2 class="m-0 mb-1 text-[16px] font-bold text-ink">
-          ตัวอย่างสถานะกระบวนการอนุมัติงบประมาณโครงการ
-        </h2>
+        <h2 class="m-0 mb-1 text-[16px] font-bold text-ink">ตัวอย่างสถานะกระบวนการอนุมัติงบประมาณโครงการ</h2>
         <p class="m-0 mb-5 text-[13px] text-muted">
           โครงการก่อสร้างถนนคอนกรีตเสริมเหล็ก สายบ้านหนองบัว-บ้านโคก (PRJ-2568-014)
         </p>
@@ -175,6 +169,134 @@ interface CrossTabRow {
         rowHeader="ประเภทโครงการ"
         [compactValueLabels]="true"
       />
+
+      <section class="panel overflow-hidden">
+        <div class="border-b-[1.5px] border-line px-[18px] py-4">
+          <h2 class="m-0 text-[16px] font-bold text-ink">รายการโครงการเรียงตาม Risk Score</h2>
+          <p class="m-0 mt-1 text-[13px] text-muted">ใช้ตัวกรองด้านบนเพื่อดูรายการตามปี ตำบล หรือระดับความเสี่ยง</p>
+        </div>
+        @if (!sortedProjects().length) {
+          <div class="p-4">
+            <app-empty-state />
+          </div>
+        } @else {
+          <div class="overflow-x-auto">
+            <table class="gov-table min-w-[900px]">
+              <thead>
+                <tr>
+                  <th>โครงการ</th>
+                  <th>ปี</th>
+                  <th>ประเภท</th>
+                  <th class="text-right!">งบประมาณ (บาท)</th>
+                  <th class="text-right!">ราคา/อ้างอิง</th>
+                  <th class="text-right!">Risk Score</th>
+                  <th>ระดับ</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (project of sortedProjects(); track project.project_id) {
+                  <tr>
+                    <td>
+                      <p class="m-0 font-bold text-ink">{{ project.project_name }}</p>
+                      <p class="m-0 mt-0.5 text-[11.5px] text-muted">ID {{ project.project_id }}</p>
+                    </td>
+                    <td>{{ project.budget_year }}</td>
+                    <td>{{ projectTypeLabel(project) }}</td>
+                    <td class="text-right">{{ number(project.budget_amount, 0) }}</td>
+                    <td class="text-right">{{ number(project.reference_price, 0) }}</td>
+                    <td class="text-right font-bold">{{ number(project.risk_score) }}</td>
+                    <td><app-risk-badge [level]="project.risk_level" /></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+
+      <section class="panel p-[18px]">
+        <div class="mb-4">
+          <h2 class="m-0 text-[16px] font-bold text-ink">ผู้รับจ้างที่ได้รับงานบ่อยที่สุด</h2>
+          <p class="m-0 mt-1 text-[13px] text-muted">แสดง Top 10 Vendors ตามจำนวนโครงการที่ได้รับในช่วงตัวกรองที่เลือก</p>
+        </div>
+
+        <div class="mb-4 grid gap-3.5 md:grid-cols-[1.2fr_0.8fr]">
+          <label class="block">
+            <span class="text-[12.5px] font-bold text-muted">ค้นหาผู้รับจ้าง</span>
+            <input
+              type="search"
+              class="gov-input mt-[5px]"
+              placeholder="พิมพ์ชื่อผู้รับจ้าง"
+              [value]="vendorSearchText()"
+              (input)="setVendorSearch($any($event.target).value)"
+            />
+          </label>
+
+          <label class="block">
+            <span class="text-[12.5px] font-bold text-muted">ประเภทโครงการ</span>
+            <select
+              class="gov-select mt-[5px]"
+              [value]="selectedProjectType() ?? 'all'"
+              (change)="setProjectType($any($event.target).value)"
+            >
+              <option value="all">ทุกประเภท</option>
+              @for (type of projectTypes(); track type) {
+                <option [value]="type">{{ type }}</option>
+              }
+            </select>
+          </label>
+        </div>
+
+        @if (!vendorRankings().length) {
+          <app-empty-state
+            title="ไม่พบข้อมูลผู้รับจ้างสำหรับตัวกรองที่เลือก"
+            message="ลองเปลี่ยนตัวกรองปี/ตำบลหรือคำค้นหาผู้รับจ้างใหม่อีกครั้ง"
+          />
+        } @else {
+          <div class="overflow-x-auto">
+            <table class="gov-table min-w-[900px]">
+              <thead>
+                <tr>
+                  <th>อันดับ</th>
+                  <th>ผู้รับจ้าง</th>
+                  <th class="text-right!">จำนวนโครงการ</th>
+                  <th class="text-right!">จำนวนครั้งที่ชนะ</th>
+                  <th class="text-right!">มูลค่าสัญญารวม</th>
+                  <th>รายชื่อโครงการ</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (vendor of vendorRankings(); track vendor.vendorName) {
+                  <tr>
+                    <td class="font-bold">{{ $index + 1 }}</td>
+                    <td>
+                      <div class="flex flex-wrap items-center gap-2">
+                        <span class="font-bold text-ink">{{ vendor.vendorName }}</span>
+                        @if (vendor.isRecurring) {
+                          <span class="rounded-[3px] bg-risk-low px-2 py-0.5 text-[11px] font-bold text-white">Recurring Vendor</span>
+                        }
+                        @if (vendor.isFrequentWinner) {
+                          <span class="rounded-[3px] bg-chart-blue-deep px-2 py-0.5 text-[11px] font-bold text-white">Frequent Winner</span>
+                        }
+                      </div>
+                    </td>
+                    <td class="text-right">{{ vendor.projectCount }}</td>
+                    <td class="text-right">{{ vendor.winCount }}</td>
+                    <td class="text-right">{{ money(vendor.totalContractValue) }}</td>
+                    <td class="text-muted">
+                      <div class="flex flex-wrap gap-1">
+                        @for (projectName of vendor.sampleProjects; track projectName) {
+                          <span class="rounded-[3px] border border-line-soft bg-zebra px-2 py-0.5 text-xs">{{ projectName }}</span>
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
     </section>
   `,
 })
@@ -238,11 +360,7 @@ export class ProjectRiskPageComponent implements OnInit {
     });
 
     const rows = [...groups.entries()]
-      .map(([type, counts]) => ({
-        type,
-        ...counts,
-        total: counts.high + counts.medium + counts.low,
-      }))
+      .map(([type, counts]) => ({ type, ...counts, total: counts.high + counts.medium + counts.low }))
       .sort((a, b) => b.total - a.total);
 
     const totals = rows.reduce(
@@ -280,9 +398,7 @@ export class ProjectRiskPageComponent implements OnInit {
       color: CHART_SERIES_COLORS[index % CHART_SERIES_COLORS.length],
       values: FISCAL_YEARS.map((year) =>
         this.multiYearProjects()
-          .filter(
-            (project) => project.budget_year === year && this.projectTypeLabel(project) === type,
-          )
+          .filter((project) => project.budget_year === year && this.projectTypeLabel(project) === type)
           .reduce((sum, project) => sum + (toNumber(project.budget_amount) ?? 0), 0),
       ),
     }));
@@ -303,8 +419,7 @@ export class ProjectRiskPageComponent implements OnInit {
     const search = this.vendorSearchText().trim().toLowerCase();
     return this.projects().filter((project) => {
       const typeMatches =
-        !this.selectedProjectType() ||
-        this.projectTypeLabel(project) === this.selectedProjectType();
+        !this.selectedProjectType() || this.projectTypeLabel(project) === this.selectedProjectType();
       const vendorName = this.vendorDisplayName(project).toLowerCase();
       const searchMatches = !search || vendorName.includes(search);
       return typeMatches && searchMatches;
