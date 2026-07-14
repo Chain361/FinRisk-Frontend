@@ -126,20 +126,6 @@ interface VendorRanking {
                 chartType="bar">
             </app-time-series-chart>
       </section>
-
-      <section class="panel p-4">
-        <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 class="text-base font-semibold">จำนวนโครงการตามระดับความเสี่ยง</h2>
-            <p class="text-sm text-slate-500">ปีที่ไม่มีโครงการจะแสดงเป็น 0 จริง ไม่ใช่ข้อมูลขาด</p>
-          </div>
-          <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
-            2566-2568
-          </span>
-        </div>
-        <app-time-series-chart [series]="riskSeries()" yAxisName="จำนวนโครงการ" />
-      </section>
-
       
       <div class="grid gap-4 xl:grid-cols-2">
         <section class="panel p-4">

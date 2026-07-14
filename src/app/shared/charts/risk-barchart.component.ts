@@ -1,4 +1,4 @@
-import { Component, Input, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnChanges, SimpleChanges, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import { Project } from '../../core/models/domain.models';
@@ -8,10 +8,23 @@ import {
   normalizeRiskLevel,
 } from '../utils/risk-utils';
 
+interface ChartItem {
+  year: number;
+  count: number;
+  percent: number;
+}
+
+interface ChartLevel {
+  name: string;
+  color: string;
+  data: ChartItem[];
+}
+
 @Component({
   selector: 'app-risk-bar-chart',
   standalone: true,
   imports: [CommonModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="space-y-5">
 
@@ -53,51 +66,40 @@ import {
     </div>
   `,
 })
-export class RiskBarChartComponent {
-
+export class RiskBarChartComponent implements OnChanges {
   @Input() projects: Project[] = [];
 
-  readonly chartData = computed(() => {
+  readonly chartData = signal<ChartLevel[]>([]);
 
-    const max = this.projects.length || 1;
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['projects']) {
+      this.chartData.set(this.buildChartData(this.projects));
+    }
+  }
 
-    return RISK_LEVELS.map(level => ({
+  private buildChartData(projects: Project[]): ChartLevel[] {
+    const max = projects.length || 1;
 
-      name:
-        level === 'high'
-          ? 'เสี่ยงสูง'
-          : level === 'medium'
-          ? 'เสี่ยงปานกลาง'
-          : 'เสี่ยงต่ำ',
+    return RISK_LEVELS.map((level) => {
+      const levelName = level === 'high' ? 'เสี่ยงสูง' : level === 'medium' ? 'เสี่ยงปานกลาง' : 'เสี่ยงต่ำ';
+      const color = level === 'high' ? '#ef4444' : level === 'medium' ? '#f59e0b' : '#22c55e';
 
-      color:
-        level === 'high'
-          ? '#ef4444'
-          : level === 'medium'
-          ? '#f59e0b'
-          : '#22c55e',
-
-      data: FISCAL_YEARS.map(year => {
-
-        const count = this.projects.filter(p =>
-          p.budget_year === year &&
-          normalizeRiskLevel(p.risk_level) === level
-        ).length;
+      const data: ChartItem[] = FISCAL_YEARS.map((year) => {
+        let count = 0;
+        for (const project of projects) {
+          if (project.budget_year === year && normalizeRiskLevel(project.risk_level) === level) {
+            count += 1;
+          }
+        }
 
         return {
-
           year,
-
           count,
-
-          percent: (count / max) * 100
-
+          percent: (count / max) * 100,
         };
+      });
 
-      })
-
-    }));
-
-  });
-
+      return { name: levelName, color, data };
+    });
+  }
 }
