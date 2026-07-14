@@ -60,64 +60,69 @@ import {
 
       @if (loadingProjects()) {
         <div class="panel p-6 text-sm text-muted">กำลังโหลดโครงการ...</div>
-      } @else if (!filteredProjects().length) {
-        <div class="panel p-4">
-          <app-empty-state title="ไม่พบโครงการ" message="ลองเปลี่ยนคำค้น ปี ตำบล หรือระดับความเสี่ยง" />
-        </div>
-      } @else if (!selectedProjectId()) {
-        <section class="panel overflow-hidden">
-          <div class="border-b-[1.5px] border-line px-4 py-3.5">
-            <div class="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <h2 class="m-0 text-[15px] font-bold text-ink">รายการโครงการเรียงตาม Risk Score</h2>
-                <p class="m-0 mt-1 text-[12.5px] text-muted">คลิกโครงการเพื่อดูรายละเอียดและปัจจัยที่ทำให้เสี่ยง</p>
-              </div>
-              <label class="block w-full max-w-md">
-                <span class="sr-only">ค้นหาโครงการ</span>
-                <input
-                  type="search"
-                  class="gov-input"
-                  placeholder="ค้นหาชื่อโครงการ หรือ Project ID"
-                  [value]="searchQuery()"
-                  (input)="setSearch($any($event.target).value)"
-                />
-              </label>
-            </div>
-          </div>
-
-          <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-slate-200 text-sm">
-              <thead class="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500">
-                <tr>
-                  <th class="px-4 py-3">โครงการ</th>
-                  <th class="px-4 py-3">ปี</th>
-                  <th class="px-4 py-3">ประเภท</th>
-                  <th class="px-4 py-3 text-right">งบประมาณ</th>
-                  <th class="px-4 py-3 text-right">ราคา/อ้างอิง</th>
-                  <th class="px-4 py-3 text-right">Risk Score</th>
-                  <th class="px-4 py-3">ระดับ</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100 bg-white">
-                @for (project of filteredProjects(); track project.project_id) {
-                  <tr class="cursor-pointer hover:bg-slate-50" (click)="selectProject(project.project_id)">
-                    <td class="max-w-md px-4 py-3">
-                      <p class="line-clamp-2 font-semibold text-slate-900">{{ project.project_name }}</p>
-                      <p class="text-xs text-slate-500">ID {{ project.project_id }}</p>
-                    </td>
-                    <td class="px-4 py-3">{{ project.budget_year }}</td>
-                    <td class="px-4 py-3">{{ project.project_type || project.purchase_method_group || '-' }}</td>
-                    <td class="px-4 py-3 text-right">{{ money(project.budget_amount) }}</td>
-                    <td class="px-4 py-3 text-right">{{ number(project.price_ratio, 3) }}</td>
-                    <td class="px-4 py-3 text-right font-semibold">{{ number(project.risk_score, 2) }}</td>
-                    <td class="px-4 py-3"><app-risk-badge [level]="project.risk_level" /></td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        </section>
       } @else {
+        @if (!selectedProjectId()) {
+          <section class="panel overflow-hidden">
+            <div class="border-b-[1.5px] border-line px-4 py-3.5">
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 class="m-0 text-[15px] font-bold text-ink">รายการโครงการเรียงตาม Risk Score</h2>
+                  <p class="m-0 mt-1 text-[12.5px] text-muted">คลิกโครงการเพื่อดูรายละเอียดและปัจจัยที่ทำให้เสี่ยง</p>
+                </div>
+                <label class="block w-full max-w-md">
+                  <span class="sr-only">ค้นหาโครงการ</span>
+                  <input
+                    type="search"
+                    class="gov-input"
+                    placeholder="ค้นหาชื่อโครงการ หรือ Project ID"
+                    [value]="searchQuery()"
+                    (input)="setSearch($any($event.target).value)"
+                  />
+                </label>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-slate-200 text-sm">
+                <thead class="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500">
+                  <tr>
+                    <th class="px-4 py-3">โครงการ</th>
+                    <th class="px-4 py-3">ปี</th>
+                    <th class="px-4 py-3">ประเภท</th>
+                    <th class="px-4 py-3 text-right">งบประมาณ</th>
+                    <th class="px-4 py-3 text-right">ราคา/อ้างอิง</th>
+                    <th class="px-4 py-3 text-right">Risk Score</th>
+                    <th class="px-4 py-3">ระดับ</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 bg-white">
+                  @if (!filteredProjects().length) {
+                    <tr>
+                      <td colspan="7" class="px-4 py-12">
+                        <app-empty-state title="ไม่พบโครงการ" message="ลองเปลี่ยนคำค้น ปี ตำบล หรือระดับความเสี่ยง" />
+                      </td>
+                    </tr>
+                  } @else {
+                    @for (project of filteredProjects(); track project.project_id) {
+                      <tr class="cursor-pointer hover:bg-slate-50" (click)="selectProject(project.project_id)">
+                        <td class="max-w-md px-4 py-3">
+                          <p class="line-clamp-2 font-semibold text-slate-900">{{ project.project_name }}</p>
+                          <p class="text-xs text-slate-500">ID {{ project.project_id }}</p>
+                        </td>
+                        <td class="px-4 py-3">{{ project.budget_year }}</td>
+                        <td class="px-4 py-3">{{ project.project_type || project.purchase_method_group || '-' }}</td>
+                        <td class="px-4 py-3 text-right">{{ money(project.budget_amount) }}</td>
+                        <td class="px-4 py-3 text-right">{{ number(project.price_ratio, 3) }}</td>
+                        <td class="px-4 py-3 text-right font-semibold">{{ number(project.risk_score, 2) }}</td>
+                        <td class="px-4 py-3"><app-risk-badge [level]="project.risk_level" /></td>
+                      </tr>
+                    }
+                  }
+                </tbody>
+              </table>
+            </div>
+          </section>
+        } @else {
         <div class="grid items-start gap-4 xl:grid-cols-[340px_1fr]">
           <section class="panel overflow-hidden">
             <div class="border-b-[1.5px] border-line px-4 py-3.5">
@@ -347,6 +352,7 @@ import {
             }
           </section>
         </div>
+        }
       }
 
       <app-confirm-modal
