@@ -59,11 +59,6 @@ const NAV_GROUPS: NavGroup[] = [
       { code: 'F3', label: 'Risk Factors', path: '/risk-factors' },
     ],
   },
-  {
-    id: 'trend',
-    label: 'แนวโน้มและเปรียบเทียบ',
-    items: [{ code: 'F4', label: 'Trends', path: '/trends' }],
-  },
 ];
 
 @Component({
