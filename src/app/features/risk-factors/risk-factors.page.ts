@@ -11,11 +11,9 @@ import {
   Subdistrict,
 } from '../../core/models/domain.models';
 import { FilterBarComponent } from '../../shared/filters/filter-bar.component';
-import { ConfirmModalComponent } from '../../shared/ui/confirm-modal.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { InfoTooltipComponent } from '../../shared/ui/info-tooltip.component';
 import { RiskBadgeComponent } from '../../shared/ui/risk-badge.component';
-import { StepperComponent, StepperStep } from '../../shared/ui/stepper.component';
 import {
   formatMoney,
   formatNumber,
@@ -28,12 +26,10 @@ import {
   selector: 'app-risk-factors-page',
   standalone: true,
   imports: [
-    ConfirmModalComponent,
     EmptyStateComponent,
     FilterBarComponent,
     InfoTooltipComponent,
     RiskBadgeComponent,
-    StepperComponent,
   ],
   template: `
     <section class="page-shell">
@@ -174,12 +170,6 @@ import {
           </section>
 
           <section class="grid gap-4">
-            @if (savedAt()) {
-              <div class="rounded-[4px] border-[1.5px] border-risk-low bg-[#eafaf0] px-4 py-3 text-[13px] font-bold text-[#0f5132]">
-                ✓ ระบบได้ทำการบันทึกผลการตรวจสอบเรียบร้อยแล้ว เมื่อเวลา {{ savedAt() }} น.
-              </div>
-            }
-
             @if (loadingDetail()) {
               <div class="panel p-6 text-sm text-muted">กำลังโหลดรายละเอียดโครงการ...</div>
             } @else if (projectDetail()) {
@@ -271,11 +261,6 @@ import {
                   <p class="m-0 mt-1 text-[13px] text-slate-700">ราคาสัญญาเทียบงบประมาณ = (ราคาสัญญา − งบประมาณ) ÷ งบประมาณ × 100</p>
                 </div>
 
-                <div class="mt-4 flex justify-end">
-                  <button type="button" class="gov-btn-primary h-11" (click)="modalOpen.set(true)">
-                    ยืนยันและบันทึกผลการตรวจสอบ
-                  </button>
-                </div>
               </article>
 
               <section class="panel p-[18px]">
@@ -307,11 +292,6 @@ import {
                     }
                   </div>
                 }
-              </section>
-
-              <section class="panel px-6 py-5">
-                <h2 class="m-0 mb-5 text-[16px] font-bold text-ink">ขั้นตอนการตรวจสอบโครงการนี้</h2>
-                <app-stepper [steps]="reviewSteps()" />
               </section>
 
               <section class="panel p-[18px]">
@@ -355,13 +335,6 @@ import {
         }
       }
 
-      <app-confirm-modal
-        [open]="modalOpen()"
-        title="ยืนยันการบันทึกข้อมูล"
-        message="ท่านตรวจสอบข้อมูลครบถ้วนแล้ว และต้องการยืนยันการบันทึกผลการตรวจสอบโครงการนี้ใช่หรือไม่?"
-        (confirmed)="confirmSave()"
-        (cancelled)="modalOpen.set(false)"
-      />
     </section>
   `,
 })
@@ -382,9 +355,6 @@ export class RiskFactorsPageComponent implements OnInit {
   readonly selectedYear = signal<number | null>(2568);
   readonly selectedRiskLevel = signal<string | null>(null);
   readonly selectedProjectId = signal<string | null>(null);
-
-  readonly modalOpen = signal(false);
-  readonly savedAt = signal<string | null>(null);
 
   readonly sortedProjects = computed(() => sortProjectsByRisk(this.projects()));
   readonly filteredProjects = computed(() => {
@@ -426,16 +396,6 @@ export class RiskFactorsPageComponent implements OnInit {
         seen.add(factor.factor_code);
         return true;
       });
-  });
-
-  readonly reviewSteps = computed<StepperStep[]>(() => {
-    const saved = Boolean(this.savedAt());
-    return [
-      { label: 'รับเรื่อง', state: 'done' },
-      { label: 'ตรวจสอบเอกสาร', state: 'done' },
-      { label: 'วิเคราะห์ปัจจัยเสี่ยง', state: saved ? 'done' : 'current' },
-      { label: 'สรุปผลและแจ้งเตือน', state: saved ? 'current' : 'upcoming' },
-    ];
   });
 
   ngOnInit(): void {
@@ -484,8 +444,6 @@ export class RiskFactorsPageComponent implements OnInit {
 
   selectProject(projectId: string | number): void {
     this.selectedProjectId.set(String(projectId));
-    this.savedAt.set(null);
-    this.modalOpen.set(false);
     this.loadProjectDetail(projectId);
   }
 
@@ -493,17 +451,6 @@ export class RiskFactorsPageComponent implements OnInit {
     this.selectedProjectId.set(null);
     this.projectDetail.set(null);
     this.loadingDetail.set(false);
-    this.modalOpen.set(false);
-  }
-
-  confirmSave(): void {
-    // Mock save flow: backend is read-only, so the confirmation only records
-    // a local timestamp for the success banner and stepper state.
-    const now = new Date();
-    const hh = String(now.getHours()).padStart(2, '0');
-    const mm = String(now.getMinutes()).padStart(2, '0');
-    this.modalOpen.set(false);
-    this.savedAt.set(`${hh}:${mm}`);
   }
 
   money(value: number | string | null | undefined): string {
