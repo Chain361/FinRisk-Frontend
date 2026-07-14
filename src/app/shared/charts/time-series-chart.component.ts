@@ -28,6 +28,7 @@ export class TimeSeriesChartComponent {
   readonly years = input<readonly number[]>(FISCAL_YEARS);
   readonly series = input<TimeSeries[]>([]);
   readonly yAxisName = input('');
+  readonly chartType = input<'line' | 'bar'>('line');
 
   readonly chartOptions = computed<EChartsOption>(() => {
     const years = [...this.years()];
@@ -53,14 +54,18 @@ export class TimeSeriesChartComponent {
         axisLabel: { color: '#64748b' },
         splitLine: { lineStyle: { color: '#e2e8f0' } },
       },
-      series: this.series().map((item) => ({
-        name: item.name,
-        type: 'line',
-        smooth: false,
-        connectNulls: false,
-        symbolSize: 9,
-        lineStyle: { width: 3, type: item.dashed ? 'dashed' : 'solid' },
-        emphasis: { focus: 'series' },
+    series: this.series().map((item) => ({
+      name: item.name,
+      type: this.chartType(),
+      connectNulls: false,
+      symbolSize: this.chartType() === 'line' ? 9 : 0,
+      lineStyle: {
+        width: 3,
+        type: item.dashed ? 'dashed' : 'solid',
+      },
+      emphasis: {
+        focus: 'series',
+        },
         data: years.map((year) => {
           const point = item.points.find((candidate) => candidate.year === year);
           return {

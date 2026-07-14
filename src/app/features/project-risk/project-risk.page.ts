@@ -79,6 +79,30 @@ interface RepeatedEntity {
         </div>
         <app-donut-chart [byLevel]="byLevel()" />
       </section>
+      
+      <section class="panel p-4">
+            <div class="mb-3">
+              <h2 class="text-base font-semibold">งบประมาณรวมแต่ละปี</h2>
+            </div>
+
+            <app-time-series-chart
+            [series]="budgetSeries()"
+                yAxisName="งบประมาณ (บาท)"
+                chartType="bar">
+              </app-time-series-chart>
+            </section>
+
+            <section class="panel p-4">
+              <div class="mb-3">
+                <h2 class="text-base font-semibold">Risk Score เฉลี่ยแต่ละปี</h2>
+              </div>
+
+            <app-time-series-chart
+              [series]="averageRiskSeries()"
+                yAxisName="Average Risk Score"
+                chartType="bar">
+            </app-time-series-chart>
+      </section>
 
       <section class="panel p-4">
         <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -118,7 +142,6 @@ interface RepeatedEntity {
             <h2 class="text-base font-semibold">โครงการ/ผู้รับจ้าง/วิธีจัดซื้อที่ซ้ำข้ามปี</h2>
             <p class="text-sm text-slate-500">ใช้ vendor field ถ้ามีจาก API; ถ้าไม่มีจะ fallback เป็นวิธีจัดซื้อ/ประเภทโครงการ</p>
           </div>
-
           @if (!repeatedEntities().length) {
             <div class="p-4">
               <app-empty-state title="ยังไม่พบรายการซ้ำ ≥ 2 ปี" message="ข้อมูลใน scope ปัจจุบันอาจมีปีเดียวหรือไม่มี vendor field" />
@@ -188,7 +211,8 @@ export class ProjectRiskPageComponent implements OnInit {
   readonly multiYearProjects = signal<Project[]>([]);
   readonly summary = signal<RiskSummary | null>(null);
   readonly riskSeries = signal<TimeSeries[]>([]);
-  readonly annualRisks = signal<AnnualRisk[]>([]);
+  readonly budgetSeries = signal<TimeSeries[]>([]);
+  readonly averageRiskSeries = signal<TimeSeries[]>([]);  readonly annualRisks = signal<AnnualRisk[]>([]);
 
   readonly selectedSubdistrictId = signal<number | null>(null);
   readonly selectedYear = signal<number | null>(2568);
@@ -384,6 +408,57 @@ export class ProjectRiskPageComponent implements OnInit {
       next: (rowsByYear) => {
         const all = rowsByYear.flat();
         this.multiYearProjects.set(all);
+        // -------------------------
+// งบประมาณรวมแต่ละปี
+// -------------------------
+this.budgetSeries.set([
+  {
+    name: 'งบประมาณรวม',
+    color: '#2563eb',
+    points: FISCAL_YEARS.map((year, index) => ({
+      year,
+      value: rowsByYear[index].reduce(
+        (sum, project) => sum + Number(project.budget_amount ?? 0),
+        0
+      ),
+      computable: true,
+      tooltip: 'ผลรวมงบประมาณ',
+    })),
+  },
+]);
+
+// -------------------------
+// Risk Score เฉลี่ยแต่ละปี
+// -------------------------
+this.averageRiskSeries.set([
+  {
+    name: 'Average Risk Score',
+    color: '#9333ea',
+    points: FISCAL_YEARS.map((year, index) => {
+
+      const projects = rowsByYear[index];
+
+      const avg =
+        projects.length === 0
+          ? 0
+          : projects.reduce(
+              (sum, project) => sum + Number(project.risk_score ?? 0),
+              0
+            ) / projects.length;
+
+      return {
+        year,
+        value: Number(avg.toFixed(2)),
+        computable: true,
+        tooltip: 'Risk Score เฉลี่ย',
+      };
+    }),
+  },
+]);
+
+// -------------------------
+// จำนวนโครงการแต่ละระดับ
+// -------------------------
         this.riskSeries.set(
           RISK_LEVELS.map((level) => ({
             name: level === 'high' ? 'เสี่ยงสูง' : level === 'medium' ? 'เสี่ยงปานกลาง' : 'เสี่ยงต่ำ',
