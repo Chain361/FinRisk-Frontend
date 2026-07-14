@@ -6,6 +6,7 @@ import { AnnualRisk, Project, ProjectFilters, RiskSummary, Subdistrict } from '.
 import { TimeSeries, TimeSeriesChartComponent } from '../../shared/charts/time-series-chart.component';
 import { DonutChartComponent } from '../../shared/charts/donut-chart.component';
 import { FilterBarComponent } from '../../shared/filters/filter-bar.component';
+import { RiskBarChartComponent } from '../../shared/charts/risk-barchart.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { KpiCardComponent } from '../../shared/ui/kpi-card.component';
 import {
@@ -37,6 +38,7 @@ interface RepeatedEntity {
     FilterBarComponent,
     KpiCardComponent,
     TimeSeriesChartComponent,
+    RiskBarChartComponent,
   ],
   template: `
     <section class="page-shell">
@@ -64,22 +66,32 @@ interface RepeatedEntity {
       }
 
       <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <app-kpi-card label="โครงการทั้งหมด" [value]="totalProjects()" hint="ตาม scope และตัวกรองปัจจุบัน" accentClass="bg-slate-900" />
-        <app-kpi-card label="เสี่ยงสูง" [value]="byLevel()['high'] ?? 0" hint="ต้องตรวจ evidence ต่อ" accentClass="bg-red-500" />
-        <app-kpi-card label="เสี่ยงปานกลาง" [value]="byLevel()['medium'] ?? 0" hint="มีสัญญาณบางส่วน" accentClass="bg-amber-500" />
-        <app-kpi-card label="เสี่ยงต่ำ" [value]="byLevel()['low'] ?? 0" hint="ยังไม่ใช่คำตัดสิน" accentClass="bg-emerald-500" />
+        <app-kpi-card label="โครงการทั้งหมด" [value]="totalProjects()" hint="" accentClass="bg-slate-900" />
+        <app-kpi-card label="เสี่ยงสูง" [value]="byLevel()['high'] ?? 0" hint="" accentClass="bg-red-500" />
+        <app-kpi-card label="เสี่ยงปานกลาง" [value]="byLevel()['medium'] ?? 0" hint="" accentClass="bg-amber-500" />
+        <app-kpi-card label="เสี่ยงต่ำ" [value]="byLevel()['low'] ?? 0" hint="" accentClass="bg-emerald-500" />
       </div>
 
-      <section class="panel p-4">
-        <div class="flex items-center justify-between gap-3">
-          <div>
-            <h2 class="text-base font-semibold">สัดส่วนความเสี่ยง</h2>
-            <p class="text-sm text-slate-500">ข้อมูลจาก /risk/summary หรือคำนวณจากรายการเมื่อมีตัวกรอง</p>
+      <div class="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+        <section class="panel p-4">
+          <div class="flex items-center justify-between gap-3 mb-4">
+            <div>
+              <h2 class="text-base font-semibold">สัดส่วนความเสี่ยง</h2>
+              <p class="text-sm text-slate-500">ข้อมูลจาก /risk/summary หรือคำนวณจากรายการเมื่อมีตัวกรอง</p>
+            </div>
           </div>
-        </div>
-        <app-donut-chart [byLevel]="byLevel()" />
-      </section>
-      
+          <app-donut-chart [byLevel]="byLevel()" />
+        </section>
+
+        <section class="panel p-4">
+          <div class="mb-3">
+            <h2 class="text-base font-semibold">Risk Bar Chart ตามปีงบประมาณ</h2>
+            <p class="text-sm text-slate-500">นับจำนวนโครงการในแต่ละระดับความเสี่ยงจาก /projects</p>
+          </div>
+          <app-risk-bar-chart [projects]="barchartProjects()" />
+        </section>
+      </div>
+
       <section class="panel p-4">
             <div class="mb-3">
               <h2 class="text-base font-semibold">งบประมาณรวมแต่ละปี</h2>
@@ -208,6 +220,7 @@ export class ProjectRiskPageComponent implements OnInit {
   readonly error = signal('');
   readonly subdistricts = signal<Subdistrict[]>([]);
   readonly projects = signal<Project[]>([]);
+  readonly barchartProjects = signal<Project[]>([]);
   readonly multiYearProjects = signal<Project[]>([]);
   readonly summary = signal<RiskSummary | null>(null);
   readonly riskSeries = signal<TimeSeries[]>([]);
@@ -408,6 +421,7 @@ export class ProjectRiskPageComponent implements OnInit {
       next: (rowsByYear) => {
         const all = rowsByYear.flat();
         this.multiYearProjects.set(all);
+        this.barchartProjects.set(all);
         // -------------------------
 // งบประมาณรวมแต่ละปี
 // -------------------------
