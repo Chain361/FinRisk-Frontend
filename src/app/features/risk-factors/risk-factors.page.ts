@@ -1,4 +1,4 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+﻿import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { forkJoin } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
@@ -316,17 +316,17 @@ import {
                     <p class="m-0 mt-1 text-[13px] text-muted">รายการ factor ทั้งหมดในระบบ เพื่อใช้อ้างอิงประกอบการตรวจสอบ</p>
                   </div>
                   <span class="rounded-[20px] border border-line bg-zebra px-3 py-1 text-xs font-bold text-slate-700">
-                    trigger {{ triggeredFactors().length }} รายการ
+                    trigger {{ selectedProjectCatalog().length }} รายการ
                   </span>
                 </div>
 
-                @if (!catalog().length) {
+                @if (!selectedProjectCatalog().length) {
                   <div class="mt-3">
                     <app-empty-state title="ยังไม่มีข้อมูล catalog" message="รอให้ backend ส่งรายการ risk factor" />
                   </div>
                 } @else {
                   <div class="mt-3.5 grid gap-2.5 md:grid-cols-2">
-                    @for (factor of catalog(); track factor.factor_code) {
+                    @for (factor of selectedProjectCatalog(); track factor.factor_code) {
                       <div class="rounded-[3px] border border-line px-3 py-2.5">
                         <div class="flex items-start justify-between gap-1.5">
                           <p class="m-0 text-[13px] font-bold text-ink">{{ factor.factor_code }} · {{ factor.name_th }}</p>
@@ -397,6 +397,29 @@ export class RiskFactorsPageComponent implements OnInit {
   readonly triggeredFactors = computed(() => {
     const factors = this.projectDetail()?.risk_factors ?? [];
     return factors.filter((factor) => toBool(factor.triggered));
+  });
+
+  readonly selectedProjectCatalog = computed(() => {
+    const factors = this.triggeredFactors();
+    const catalog = this.catalog();
+    const seen = new Set<string>();
+    return factors
+      .map(
+        (factor) =>
+          catalog.find((item) => item.factor_code === factor.factor_code) ?? {
+            factor_code: factor.factor_code,
+            name_th: factor.name_th,
+            severity: factor.severity ?? null,
+            description_th: factor.evidence_text ?? null,
+          },
+      )
+      .filter((factor) => {
+        if (seen.has(factor.factor_code)) {
+          return false;
+        }
+        seen.add(factor.factor_code);
+        return true;
+      });
   });
 
   readonly reviewSteps = computed<StepperStep[]>(() => {
@@ -609,3 +632,4 @@ export class RiskFactorsPageComponent implements OnInit {
     return ((leftValue - rightValue) / rightValue) * 100;
   }
 }
+
