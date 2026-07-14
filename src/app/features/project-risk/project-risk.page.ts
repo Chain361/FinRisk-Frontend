@@ -3,13 +3,11 @@ import { forkJoin } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
 import { AnnualRisk, Project, ProjectFilters, RiskSummary, Subdistrict } from '../../core/models/domain.models';
-import { RiskHeatmapComponent } from '../../shared/charts/risk-heatmap.component';
 import { TimeSeries, TimeSeriesChartComponent } from '../../shared/charts/time-series-chart.component';
 import { DonutChartComponent } from '../../shared/charts/donut-chart.component';
 import { FilterBarComponent } from '../../shared/filters/filter-bar.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { KpiCardComponent } from '../../shared/ui/kpi-card.component';
-import { RiskBadgeComponent } from '../../shared/ui/risk-badge.component';
 import {
   countByRisk,
   FISCAL_YEARS,
@@ -38,8 +36,6 @@ interface RepeatedEntity {
     EmptyStateComponent,
     FilterBarComponent,
     KpiCardComponent,
-    RiskBadgeComponent,
-    RiskHeatmapComponent,
     TimeSeriesChartComponent,
   ],
   template: `
@@ -74,25 +70,15 @@ interface RepeatedEntity {
         <app-kpi-card label="เสี่ยงต่ำ" [value]="byLevel()['low'] ?? 0" hint="ยังไม่ใช่คำตัดสิน" accentClass="bg-emerald-500" />
       </div>
 
-      <div class="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
-        <section class="panel p-4">
-          <div class="flex items-center justify-between gap-3">
-            <div>
-              <h2 class="text-base font-semibold">สัดส่วนความเสี่ยง</h2>
-              <p class="text-sm text-slate-500">ข้อมูลจาก /risk/summary หรือคำนวณจากรายการเมื่อมีตัวกรอง</p>
-            </div>
+      <section class="panel p-4">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <h2 class="text-base font-semibold">สัดส่วนความเสี่ยง</h2>
+            <p class="text-sm text-slate-500">ข้อมูลจาก /risk/summary หรือคำนวณจากรายการเมื่อมีตัวกรอง</p>
           </div>
-          <app-donut-chart [byLevel]="byLevel()" />
-        </section>
-
-        <section class="panel p-4">
-          <div class="mb-3">
-            <h2 class="text-base font-semibold">Risk Heatmap ตามปีงบประมาณ</h2>
-            <p class="text-sm text-slate-500">นับจำนวนโครงการในแต่ละระดับความเสี่ยงจาก /projects</p>
-          </div>
-          <app-risk-heatmap [projects]="heatmapProjects()" />
-        </section>
-      </div>
+        </div>
+        <app-donut-chart [byLevel]="byLevel()" />
+      </section>
 
       <section class="panel p-4">
         <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -199,7 +185,7 @@ export class ProjectRiskPageComponent implements OnInit {
   readonly error = signal('');
   readonly subdistricts = signal<Subdistrict[]>([]);
   readonly projects = signal<Project[]>([]);
-  readonly heatmapProjects = signal<Project[]>([]);
+  readonly multiYearProjects = signal<Project[]>([]);
   readonly summary = signal<RiskSummary | null>(null);
   readonly riskSeries = signal<TimeSeries[]>([]);
   readonly annualRisks = signal<AnnualRisk[]>([]);
@@ -235,7 +221,7 @@ export class ProjectRiskPageComponent implements OnInit {
       name: type,
       color: colors[index % colors.length],
       points: FISCAL_YEARS.map((year) => {
-        const projects = this.heatmapProjects().filter((project) => project.budget_year === year && this.projectType(project) === type);
+        const projects = this.multiYearProjects().filter((project) => project.budget_year === year && this.projectType(project) === type);
         const values = projects.map((project) => toNumber(project.budget_amount)).filter((value): value is number => value !== null);
         const average = values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
         return {
@@ -260,7 +246,7 @@ export class ProjectRiskPageComponent implements OnInit {
         color: item.color,
         points: FISCAL_YEARS.map((year) => ({
           year,
-          value: this.heatmapProjects().filter(
+          value: this.multiYearProjects().filter(
             (project) => project.budget_year === year && normalizeRiskLevel(project.risk_level) === item.level,
           ).length,
           computable: true,
@@ -269,14 +255,14 @@ export class ProjectRiskPageComponent implements OnInit {
       }));
     }
 
-    const ids = [...new Set(this.heatmapProjects().map((project) => project.subdistrict_id))];
+    const ids = [...new Set(this.multiYearProjects().map((project) => project.subdistrict_id))];
     const colors = ['#dc2626', '#2563eb', '#0891b2', '#7c3aed', '#ea580c'];
     return ids.map((id, index) => ({
       name: this.subdistrictName(id),
       color: colors[index % colors.length],
       points: FISCAL_YEARS.map((year) => ({
         year,
-        value: this.heatmapProjects().filter(
+        value: this.multiYearProjects().filter(
           (project) => project.budget_year === year && project.subdistrict_id === id && normalizeRiskLevel(project.risk_level) === 'high',
         ).length,
         computable: true,
@@ -287,7 +273,7 @@ export class ProjectRiskPageComponent implements OnInit {
 
   readonly repeatedEntities = computed<RepeatedEntity[]>(() => {
     const groups = new Map<string, { years: Set<number>; count: number; totalBudget: number }>();
-    this.heatmapProjects().forEach((project) => {
+    this.multiYearProjects().forEach((project) => {
       const label = this.entityLabel(project);
       const current = groups.get(label) ?? { years: new Set<number>(), count: 0, totalBudget: 0 };
       current.years.add(project.budget_year);
@@ -397,7 +383,7 @@ export class ProjectRiskPageComponent implements OnInit {
     forkJoin(requests).subscribe({
       next: (rowsByYear) => {
         const all = rowsByYear.flat();
-        this.heatmapProjects.set(all);
+        this.multiYearProjects.set(all);
         this.riskSeries.set(
           RISK_LEVELS.map((level) => ({
             name: level === 'high' ? 'เสี่ยงสูง' : level === 'medium' ? 'เสี่ยงปานกลาง' : 'เสี่ยงต่ำ',
@@ -432,7 +418,7 @@ export class ProjectRiskPageComponent implements OnInit {
 
   private topProjectTypes(): string[] {
     const counts = new Map<string, number>();
-    this.heatmapProjects().forEach((project) => {
+    this.multiYearProjects().forEach((project) => {
       const type = this.projectType(project);
       counts.set(type, (counts.get(type) ?? 0) + 1);
     });
