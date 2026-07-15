@@ -136,7 +136,7 @@ import {
                   <h2 class="m-0 text-[15px] font-bold text-ink">รายการโครงการ</h2>
                   <p class="m-0 mt-1 text-[12.5px] text-muted">เลือกโครงการเพื่อดูรายละเอียด</p>
                 </div>
-                <div class="flex w-full max-w-[260px] flex-col gap-2">
+                <div class="flex w-full max-w-[305px] flex-col gap-2">
                   <button
                     type="button"
                     class="inline-flex h-10 items-center justify-center rounded-[3px] border-[1.5px] border-line bg-white px-3 text-[13.5px] font-bold text-slate-700 hover:bg-zebra"

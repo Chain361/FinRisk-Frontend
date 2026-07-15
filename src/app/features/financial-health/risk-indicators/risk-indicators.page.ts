@@ -53,12 +53,9 @@ interface IncomeStatementTotals {
   selector: 'app-risk-indicators-page',
   standalone: true,
   imports: [
-    BarChartComponent,
-    CompositionBarComponent,
     EmptyStateComponent,
     FilterBarComponent,
     InfoTooltipComponent,
-    KpiCardComponent,
   ],
   template: `
     <section class="page-shell">

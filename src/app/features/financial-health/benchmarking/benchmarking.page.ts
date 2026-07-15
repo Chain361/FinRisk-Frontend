@@ -54,11 +54,8 @@ interface IncomeStatementTotals {
   standalone: true,
   imports: [
     BarChartComponent,
-    CompositionBarComponent,
     EmptyStateComponent,
     FilterBarComponent,
-    InfoTooltipComponent,
-    KpiCardComponent,
   ],
   template: `
     <section class="page-shell">

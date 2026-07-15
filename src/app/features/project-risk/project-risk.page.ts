@@ -69,7 +69,6 @@ interface Anomaly {
     EmptyStateComponent,
     FilterBarComponent,
     KpiCardComponent,
-    RiskBadgeComponent,
     StepperComponent,
   ],
   template: `
