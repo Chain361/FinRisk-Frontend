@@ -106,25 +106,25 @@ interface Anomaly {
         <app-kpi-card
           label="โครงการทั้งหมด"
           [value]="totalProjects()"
-          hint="ตาม scope และตัวกรองปัจจุบัน"
+          hint=""
           accentClass="bg-navy"
         />
         <app-kpi-card
           label="เสี่ยงสูง"
           [value]="byLevel()['high'] ?? 0"
-          hint="ต้องตรวจหลักฐานเพิ่มเติม"
+          hint=""
           accentClass="bg-risk-high"
         />
         <app-kpi-card
           label="เสี่ยงปานกลาง"
           [value]="byLevel()['medium'] ?? 0"
-          hint="มีสัญญาณบางส่วน"
+          hint=""
           accentClass="bg-risk-medium"
         />
         <app-kpi-card
           label="เสี่ยงต่ำ"
           [value]="byLevel()['low'] ?? 0"
-          hint="ยังไม่ใช่คำตัดสิน"
+          hint=""
           accentClass="bg-risk-low"
         />
       </div>
@@ -230,78 +230,6 @@ interface Anomaly {
         />
       </div>
 
-      <section class="panel overflow-hidden">
-        <div class="border-b-[1.5px] border-line px-[18px] py-4">
-          <h2 class="m-0 text-[16px] font-bold text-ink">
-            โครงการ/ผู้รับจ้าง/วิธีจัดซื้อที่ซ้ำข้ามปี
-          </h2>
-          <p class="m-0 mt-1 text-[13px] text-muted">
-            นับจากผู้รับจ้างที่ปรากฏตั้งแต่ 2 ปีงบประมาณขึ้นไป
-          </p>
-        </div>
-
-        @if (!repeatedEntities().length) {
-          <div class="p-4">
-            <app-empty-state
-              title="ยังไม่พบรายการซ้ำ ≥ 2 ปี"
-              message="ข้อมูลใน scope ปัจจุบันอาจมีปีเดียวหรือไม่มี vendor field"
-            />
-          </div>
-        } @else {
-          <div class="overflow-x-auto">
-            <table class="gov-table">
-              <thead>
-                <tr>
-                  <th>รายการ</th>
-                  <th>ปีที่พบ</th>
-                  <th class="text-right!">จำนวน</th>
-                  <th class="text-right!">งบรวม (บาท)</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (entity of repeatedEntities(); track entity.label) {
-                  <tr>
-                    <td class="font-bold">{{ entity.label }}</td>
-                    <td>{{ entity.years.join(', ') }}</td>
-                    <td class="text-right">{{ entity.count }}</td>
-                    <td class="text-right">{{ money(entity.totalBudget) }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        }
-      </section>
-
-      <section class="panel p-[18px]">
-        <h2 class="m-0 mb-0.5 text-[16px] font-bold text-ink">Financial Risk Coverage</h2>
-        <p class="m-0 mb-3.5 text-[13px] text-muted">
-          สรุปจำนวนปัจจัยที่ตรวจสอบได้และประเมินไม่ได้รายปี
-        </p>
-        <div class="grid gap-3.5 md:grid-cols-3">
-          @for (year of FISCAL_YEARS; track year) {
-            <div class="rounded-[4px] border-[1.5px] border-line p-3.5">
-              <div class="flex items-center justify-between">
-                <p class="m-0 text-sm font-extrabold text-ink">ปี {{ year }}</p>
-                <p class="m-0 text-xs text-muted">{{ annualRowsForYear(year).length }} factors</p>
-              </div>
-              <div class="mt-3 grid grid-cols-2 gap-2 text-center text-xs">
-                <div
-                  class="rounded-[3px] border border-[#a9d9bb] bg-[#e9f6ee] px-1 py-2 text-[#0f5132]"
-                >
-                  <p class="m-0 text-[16px] font-extrabold">{{ annualComputableCount(year) }}</p>
-                  <p class="m-0 mt-0.5">คำนวณได้</p>
-                </div>
-                <div class="rounded-[3px] border border-[#c7cfd8] bg-page px-1 py-2 text-slate-700">
-                  <p class="m-0 text-[16px] font-extrabold">{{ annualNotComputableCount(year) }}</p>
-                  <p class="m-0 mt-0.5">ประเมินไม่ได้</p>
-                </div>
-              </div>
-            </div>
-          }
-        </div>
-      </section>
-
       <section class="panel p-[18px]">
         <div class="mb-4">
           <h2 class="m-0 text-[16px] font-bold text-ink">ผู้รับจ้างที่ได้รับงานบ่อยที่สุด</h2>
@@ -396,6 +324,84 @@ interface Anomaly {
           </div>
         }
       </section>
+
+      <div class="grid gap-3 md:grid-cols-1 xl:grid-cols-2">
+        <section class="panel overflow-hidden">
+          <div class="border-b-[1.5px] border-line px-[18px] py-4">
+            <h2 class="m-0 text-[16px] font-bold text-ink">
+              โครงการ/ผู้รับจ้าง/วิธีจัดซื้อที่ซ้ำข้ามปี
+            </h2>
+            <p class="m-0 mt-1 text-[13px] text-muted">
+              นับจากผู้รับจ้างที่ปรากฏตั้งแต่ 2 ปีงบประมาณขึ้นไป
+            </p>
+          </div>
+
+          @if (!repeatedEntities().length) {
+            <div class="p-4">
+              <app-empty-state
+                title="ยังไม่พบรายการซ้ำ ≥ 2 ปี"
+                message="ข้อมูลใน scope ปัจจุบันอาจมีปีเดียวหรือไม่มี vendor field"
+              />
+            </div>
+          } @else {
+            <div class="overflow-x-auto">
+              <table class="gov-table">
+                <thead>
+                  <tr>
+                    <th>รายการ</th>
+                    <th>ปีที่พบ</th>
+                    <th class="text-right!">จำนวน</th>
+                    <th class="text-right!">งบรวม (บาท)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (entity of repeatedEntities(); track entity.label) {
+                    <tr>
+                      <td class="font-bold">{{ entity.label }}</td>
+                      <td>{{ entity.years.join(', ') }}</td>
+                      <td class="text-right">{{ entity.count }}</td>
+                      <td class="text-right">{{ money(entity.totalBudget) }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </section>
+
+        <section class="panel p-[18px]">
+          <h2 class="m-0 mb-0.5 text-[16px] font-bold text-ink">Financial Risk Coverage</h2>
+          <p class="m-0 mb-3.5 text-[13px] text-muted">
+            สรุปจำนวนปัจจัยที่ตรวจสอบได้และประเมินไม่ได้รายปี
+          </p>
+          <div class="grid gap-3.5 grid-cols-3">
+            @for (year of FISCAL_YEARS; track year) {
+              <div class="rounded-[4px] border-[1.5px] border-line p-3.5">
+                <div class="flex items-center justify-between">
+                  <p class="m-0 text-sm font-extrabold text-ink">ปี {{ year }}</p>
+                  <p class="m-0 text-xs text-muted">{{ annualRowsForYear(year).length }} factors</p>
+                </div>
+                <div class="mt-3 grid grid-cols-2 gap-2 text-center text-xs">
+                  <div
+                    class="rounded-[3px] border border-[#a9d9bb] bg-[#e9f6ee] px-1 py-2 text-[#0f5132]"
+                  >
+                    <p class="m-0 text-[16px] font-extrabold">{{ annualComputableCount(year) }}</p>
+                    <p class="m-0 mt-0.5">คำนวณได้</p>
+                  </div>
+                  <div
+                    class="rounded-[3px] border border-[#c7cfd8] bg-page px-1 py-2 text-slate-700"
+                  >
+                    <p class="m-0 text-[16px] font-extrabold">
+                      {{ annualNotComputableCount(year) }}
+                    </p>
+                    <p class="m-0 mt-0.5">ประเมินไม่ได้</p>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </section>
+      </div>
     </section>
   `,
 })
