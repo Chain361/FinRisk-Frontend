@@ -75,7 +75,7 @@ interface Anomaly {
     <section class="page-shell">
       <div>
         <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F1</p>
-        <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">Project Risk Dashboard</h1>
+        <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">แดชบอร์ดความเสี่ยงโครงการ</h1>
         <p class="m-0 mt-1.5 text-sm text-muted">
           สรุปจำนวนโครงการตามระดับความเสี่ยง และรายการที่ควรตรวจสอบต่อ
         </p>

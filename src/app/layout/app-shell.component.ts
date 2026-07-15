@@ -23,7 +23,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     id: 'overview',
     label: 'ภาพรวมความเสี่ยง',
-    items: [{ code: 'F1', label: 'Project Risk Dashboard', path: '/project-risk' }],
+    items: [{ code: 'F1', label: 'แดชบอร์ดความเสี่ยงโครงการ', path: '/project-risk' }],
   },
   {
     id: 'finance',
@@ -56,7 +56,7 @@ const NAV_GROUPS: NavGroup[] = [
           },
         ],
       },
-      { code: 'F3', label: 'Risk Factors', path: '/risk-factors' },
+      { code: 'F3', label: 'วิเคราะห์ปัจจัยความเสี่ยง', path: '/risk-factors' },
     ],
   },
 ];

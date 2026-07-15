@@ -35,7 +35,7 @@ import {
     <section class="page-shell">
       <div>
         <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F3</p>
-        <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">Risk Factor Analysis</h1>
+        <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">วิเคราะห์ปัจจัยความเสี่ยง</h1>
         <p class="m-0 mt-1.5 text-sm text-muted">เปิดดูรายละเอียดโครงการ ปัจจัยเสี่ยงที่ trigger และสูตรการคำนวณ</p>
       </div>
 
