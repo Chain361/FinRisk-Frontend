@@ -15,7 +15,6 @@ import { AnnouncementPanelComponent } from '../../shared/ui/announcement-panel.c
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { KpiCardComponent } from '../../shared/ui/kpi-card.component';
 import { RiskBadgeComponent } from '../../shared/ui/risk-badge.component';
-import { StepperComponent, StepperStep } from '../../shared/ui/stepper.component';
 import { CHART_SERIES_COLORS, RISK_SERIES } from '../../shared/utils/design-tokens';
 import {
   countByRisk,
@@ -68,8 +67,7 @@ interface Anomaly {
     BarChartComponent,
     EmptyStateComponent,
     FilterBarComponent,
-    KpiCardComponent,
-    StepperComponent,
+    KpiCardComponent
   ],
   template: `
     <section class="page-shell">
@@ -128,16 +126,6 @@ interface Anomaly {
           accentClass="bg-risk-low"
         />
       </div>
-
-      <section class="panel px-[26px] py-5">
-        <h2 class="m-0 mb-1 text-[16px] font-bold text-ink">
-          ตัวอย่างสถานะกระบวนการอนุมัติงบประมาณโครงการ
-        </h2>
-        <p class="m-0 mb-5 text-[13px] text-muted">
-          โครงการก่อสร้างถนนคอนกรีตเสริมเหล็ก สายบ้านหนองบัว-บ้านโคก (PRJ-2568-014)
-        </p>
-        <app-stepper [steps]="approvalSteps" />
-      </section>
 
       <section class="panel p-[18px]">
         <h2 class="m-0 mb-0.5 text-[16px] font-bold text-ink">สัดส่วนความเสี่ยงตามประเภทโครงการ</h2>
@@ -409,13 +397,6 @@ export class ProjectRiskPageComponent implements OnInit {
   private readonly api = inject(ApiService);
 
   readonly fiscalYearLabels = FISCAL_YEARS.map(String);
-
-  readonly approvalSteps: StepperStep[] = [
-    { label: 'สร้างคำขอ', state: 'done' },
-    { label: 'รอ อปท. ตรวจสอบ', state: 'done' },
-    { label: 'อนุมัติ', state: 'current' },
-    { label: 'เบิกจ่าย', state: 'upcoming' },
-  ];
 
   readonly loading = signal(false);
   readonly error = signal('');
