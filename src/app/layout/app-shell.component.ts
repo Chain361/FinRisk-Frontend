@@ -28,7 +28,25 @@ const NAV_GROUPS: NavGroup[] = [
   {
     id: 'overview',
     label: 'ภาพรวมความเสี่ยง',
-    items: [{ code: 'F1', label: 'แดชบอร์ดความเสี่ยงโครงการ', path: '/project-risk' }],
+    items: [
+      {
+        code: 'F1',
+        label: 'แดชบอร์ดความเสี่ยงโครงการ',
+        path: '/project-risk',
+        children: [
+          {
+            code: 'F1.1',
+            label: 'ภาพรวมสุขภาพความเสี่ยงโครงการ',
+            path: '/project-risk/overview',
+          },
+          {
+            code: 'F1.2',
+            label: 'วิเคราะห์ข้อมูลโครงการเชิงลึก',
+            path: '/project-risk/insights',
+          },
+        ],
+      },
+    ],
   },
   {
     id: 'finance',
@@ -181,7 +199,9 @@ const NAV_GROUPS: NavGroup[] = [
               </p>
               <p class="m-0 mt-0.5 text-[11px] text-muted">
                 {{ auth.roleLabel() }} ·
-                <span [class]="auth.isScopedRole() ? 'font-bold text-[#8a2a1f]' : 'font-bold text-navy'">
+                <span
+                  [class]="auth.isScopedRole() ? 'font-bold text-[#8a2a1f]' : 'font-bold text-navy'"
+                >
                   {{ auth.isScopedRole() ? 'ขอบเขต: ตำบลของตน' : 'ขอบเขต: ทุกตำบล' }}
                 </span>
               </p>
@@ -244,7 +264,9 @@ export class AppShellComponent {
       ...group,
       items: group.items
         .filter(canSee)
-        .map((item) => (item.children ? { ...item, children: item.children.filter(canSee) } : item)),
+        .map((item) =>
+          item.children ? { ...item, children: item.children.filter(canSee) } : item,
+        ),
     })).filter((group) => group.items.length > 0);
   });
 

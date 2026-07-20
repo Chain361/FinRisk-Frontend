@@ -9,8 +9,6 @@ import {
   CompositionBarComponent,
   CompositionSegment,
 } from '../../../shared/ui/composition-bar.component';
-import { EmptyStateComponent } from '../../../shared/ui/empty-state.component';
-import { InfoTooltipComponent } from '../../../shared/ui/info-tooltip.component';
 import { KpiCardComponent } from '../../../shared/ui/kpi-card.component';
 import { PALETTE } from '../../../shared/utils/design-tokens';
 import {
@@ -52,11 +50,7 @@ interface IncomeStatementTotals {
 @Component({
   selector: 'app-investment-trends-page',
   standalone: true,
-  imports: [
-    BarChartComponent,
-    FilterBarComponent,
-    KpiCardComponent,
-  ],
+  imports: [BarChartComponent, FilterBarComponent, KpiCardComponent],
   template: `
     <section class="page-shell">
       <div>
@@ -64,6 +58,7 @@ interface IncomeStatementTotals {
         <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">
           แนวโน้มการลงทุนและการจัดซื้อจัดจ้าง
         </h1>
+        <p class="m-0 mt-1.5 text-sm text-muted">วิเคราะห์แนวโน้มการลงทุน และการจัดซื้อจัดจ้าง</p>
       </div>
 
       <app-filter-bar
