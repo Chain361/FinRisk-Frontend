@@ -9,8 +9,6 @@ import {
   CompositionBarComponent,
   CompositionSegment,
 } from '../../../shared/ui/composition-bar.component';
-import { EmptyStateComponent } from '../../../shared/ui/empty-state.component';
-import { InfoTooltipComponent } from '../../../shared/ui/info-tooltip.component';
 import { KpiCardComponent } from '../../../shared/ui/kpi-card.component';
 import { PALETTE } from '../../../shared/utils/design-tokens';
 import {
@@ -52,17 +50,15 @@ interface IncomeStatementTotals {
 @Component({
   selector: 'app-overview-page',
   standalone: true,
-  imports: [
-    BarChartComponent,
-    CompositionBarComponent,
-    FilterBarComponent,
-    KpiCardComponent,
-  ],
+  imports: [BarChartComponent, CompositionBarComponent, FilterBarComponent, KpiCardComponent],
   template: `
     <section class="page-shell">
       <div>
         <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F2.1</p>
         <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">ภาพรวมสุขภาพการคลัง</h1>
+        <p class="m-0 mt-1.5 text-sm text-muted">
+          แสดงภาพรวมรายได้ รายจ่าย สินทรัพย์ หนี้สิน และฐานะการคลัง
+        </p>
       </div>
 
       <app-filter-bar

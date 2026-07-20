@@ -17,17 +17,27 @@ export const routes: Routes = [
       { path: '', pathMatch: 'full', redirectTo: 'project-risk' },
       {
         path: 'project-risk',
-        loadComponent: () =>
-          import('./features/project-risk/project-risk.page').then(
-            (m) => m.ProjectRiskOverviewPageComponent,
-          ),
-      },
-      {
-        path: 'project-risk/analysis',
-        loadComponent: () =>
-          import('./features/project-risk/project-risk.page.analysis').then(
-            (m) => m.ProjectRiskAnalysisPageComponent,
-          ),
+        children: [
+          {
+            path: 'overview',
+            loadComponent: () =>
+              import('./features/project-risk/overview/overview.page').then(
+                (m) => m.OverviewPageComponent,
+              ),
+          },
+          {
+            path: 'insights',
+            loadComponent: () =>
+              import('./features/project-risk/insights/insights.page').then(
+                (m) => m.InsightsPageComponent,
+              ),
+          },
+          {
+            path: '',
+            redirectTo: 'overview',
+            pathMatch: 'full',
+          },
+        ],
       },
       {
         path: 'financial-health',
