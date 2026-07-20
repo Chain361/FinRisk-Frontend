@@ -1,25 +1,45 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+﻿import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { forkJoin } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
-import { Project, ProjectDetail, ProjectFilters, ProjectRiskFactor, RiskFactorCatalog, Subdistrict } from '../../core/models/domain.models';
+import {
+  Project,
+  ProjectDetail,
+  ProjectFilters,
+  ProjectRiskFactor,
+  RiskFactorCatalog,
+  Subdistrict,
+} from '../../core/models/domain.models';
+import { RiskMatrixComponent } from '../../shared/charts/risk-matrix.component';
 import { FilterBarComponent } from '../../shared/filters/filter-bar.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
+import { InfoTooltipComponent } from '../../shared/ui/info-tooltip.component';
 import { RiskBadgeComponent } from '../../shared/ui/risk-badge.component';
-import { formatMoney, formatNumber, sortProjectsByRisk, toBool, toNumber } from '../../shared/utils/risk-utils';
+import {
+  bandColor,
+  formatMoney,
+  formatNumber,
+  sortProjectsByRisk,
+  toBool,
+  toNumber,
+} from '../../shared/utils/risk-utils';
 
 @Component({
   selector: 'app-risk-factors-page',
   standalone: true,
-  imports: [EmptyStateComponent, FilterBarComponent, RiskBadgeComponent],
+  imports: [
+    EmptyStateComponent,
+    FilterBarComponent,
+    InfoTooltipComponent,
+    RiskBadgeComponent,
+    RiskMatrixComponent,
+  ],
   template: `
     <section class="page-shell">
       <div>
-        <p class="text-sm font-semibold text-slate-500">F3</p>
-        <h1 class="text-2xl font-semibold text-slate-950">Risk Factor Analysis</h1>
-        <p class="mt-1 text-sm text-slate-500">
-          เปิดดูรายละเอียดโครงการ รายการ risk factor ที่ trigger และคำอธิบายสูตรที่ใช้คำนวณ
-        </p>
+        <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F3</p>
+        <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">วิเคราะห์ปัจจัยความเสี่ยง</h1>
+        <p class="m-0 mt-1.5 text-sm text-muted">เปิดดูรายละเอียดโครงการ ปัจจัยเสี่ยงที่ trigger และสูตรการคำนวณ</p>
       </div>
 
       <app-filter-bar
@@ -43,103 +63,125 @@ import { formatMoney, formatNumber, sortProjectsByRisk, toBool, toNumber } from 
       />
 
       @if (error()) {
-        <p class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ error() }}</p>
+        <p class="rounded-[4px] border-[1.5px] border-risk-high bg-red-50 px-4 py-3 text-sm text-risk-high">{{ error() }}</p>
       }
 
       @if (loadingProjects()) {
-        <div class="panel p-6 text-sm text-slate-500">กำลังโหลดโครงการ...</div>
-      } @else if (!filteredProjects().length) {
-        <div class="panel p-4">
-          <app-empty-state title="ไม่พบโครงการ" message="ลองเปลี่ยนคำค้น ปี ตำบล หรือระดับความเสี่ยง" />
-        </div>
-      } @else if (!projectDetail()) {
-        <section class="panel overflow-hidden">
-          <div class="panel flex flex-wrap items-center justify-between gap-3 p-4">
-            <div>
-              <h2 class="text-base font-semibold">รายการโครงการเรียงตาม Risk Score</h2>
-              <p class="text-sm text-slate-500">คลิกโครงการเพื่อเปลี่ยนเป็นหน้า Risk Factors</p>
-            </div>
-            <label class="relative w-full max-w-md">
-              <span class="sr-only">ค้นหาโครงการ</span>
-              <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">⌕</span>
-              <input
-                type="search"
-                class="h-11 w-full rounded-md border border-slate-300 bg-white pl-9 pr-3 text-sm outline-none transition focus:border-slate-900"
-                placeholder="ค้นหาชื่อโครงการ หรือ Project ID"
-                [value]="searchQuery()"
-                (input)="setSearch($any($event.target).value)"
-              />
-            </label>
-          </div>
-
-          <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-slate-200 text-sm">
-              <thead class="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500">
-                <tr>
-                  <th class="px-4 py-3">โครงการ</th>
-                  <th class="px-4 py-3">ปี</th>
-                  <th class="px-4 py-3">ประเภท</th>
-                  <th class="px-4 py-3 text-right">งบประมาณ</th>
-                  <th class="px-4 py-3 text-right">ราคา/อ้างอิง</th>
-                  <th class="px-4 py-3 text-right">Risk Score</th>
-                  <th class="px-4 py-3">ระดับ</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100 bg-white">
-                @for (project of filteredProjects(); track project.project_id) {
-                  <tr class="cursor-pointer hover:bg-slate-50" (click)="selectProject(project.project_id)">
-                    <td class="max-w-md px-4 py-3">
-                      <p class="line-clamp-2 font-semibold text-slate-900">{{ project.project_name }}</p>
-                      <p class="text-xs text-slate-500">ID {{ project.project_id }}</p>
-                    </td>
-                    <td class="px-4 py-3">{{ project.budget_year }}</td>
-                    <td class="px-4 py-3">{{ project.project_type || project.purchase_method_group || '-' }}</td>
-                    <td class="px-4 py-3 text-right">{{ money(project.budget_amount) }}</td>
-                    <td class="px-4 py-3 text-right">{{ number(project.price_ratio, 3) }}</td>
-                    <td class="px-4 py-3 text-right font-semibold">{{ number(project.risk_score, 2) }}</td>
-                    <td class="px-4 py-3"><app-risk-badge [level]="project.risk_level" /></td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        </section>
+        <div class="panel p-6 text-sm text-muted">กำลังโหลดโครงการ...</div>
       } @else {
-        <div class="grid gap-4 xl:grid-cols-[390px_1fr]">
+        @if (!selectedProjectId()) {
           <section class="panel overflow-hidden">
-            <div class="border-b border-slate-200 p-4">
-              <div class="flex items-start justify-between gap-3">
+            <div class="border-b-[1.5px] border-line px-4 py-3.5">
+              <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <h2 class="text-base font-semibold">รายการโครงการ</h2>
-                  <p class="text-sm text-slate-500">เลือกโครงการด้านซ้ายเพื่อดูรายละเอียด</p>
+                  <h2 class="m-0 text-[15px] font-bold text-ink">รายการโครงการเรียงตาม Risk Score</h2>
+                  <p class="m-0 mt-1 text-[12.5px] text-muted">คลิกโครงการเพื่อดูรายละเอียดและปัจจัยที่ทำให้เสี่ยง</p>
                 </div>
-                <button
-                  type="button"
-                  class="rounded-md border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-                  (click)="clearSelection()"
-                >
-                  กลับไปรายการ
-                </button>
+                <label class="block w-full max-w-md">
+                  <span class="sr-only">ค้นหาโครงการ</span>
+                  <input
+                    type="search"
+                    class="gov-input"
+                    placeholder="ค้นหาชื่อโครงการ หรือ Project ID"
+                    [value]="searchQuery()"
+                    (input)="setSearch($any($event.target).value)"
+                  />
+                </label>
               </div>
             </div>
 
-            <div class="max-h-[680px] overflow-y-auto">
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-slate-200 text-sm">
+                <thead class="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500">
+                  <tr>
+                    <th class="px-4 py-3">โครงการ</th>
+                    <th class="px-4 py-3">ปี</th>
+                    <th class="px-4 py-3">ประเภท</th>
+                    <th class="px-4 py-3 text-right">งบประมาณ</th>
+                    <th class="px-4 py-3 text-right">ราคา/อ้างอิง</th>
+                    <th class="px-4 py-3 text-right">Risk Score</th>
+                    <th class="px-4 py-3">ระดับ 5×5</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 bg-white">
+                  @if (!filteredProjects().length) {
+                    <tr>
+                      <td colspan="7" class="px-4 py-12">
+                        <app-empty-state title="ไม่พบโครงการ" message="ลองเปลี่ยนคำค้น ปี ตำบล หรือระดับความเสี่ยง" />
+                      </td>
+                    </tr>
+                  } @else {
+                    @for (project of filteredProjects(); track project.project_id) {
+                      <tr class="cursor-pointer hover:bg-slate-50" (click)="selectProject(project.project_id)">
+                        <td class="max-w-md px-4 py-3">
+                          <p class="line-clamp-2 font-semibold text-slate-900">{{ project.project_name }}</p>
+                          <p class="text-xs text-slate-500">ID {{ project.project_id }}</p>
+                        </td>
+                        <td class="px-4 py-3">{{ project.budget_year }}</td>
+                        <td class="px-4 py-3">{{ project.project_type || project.purchase_method_group || '-' }}</td>
+                        <td class="px-4 py-3 text-right">{{ money(project.budget_amount) }}</td>
+                        <td class="px-4 py-3 text-right">{{ number(project.price_ratio, 3) }}</td>
+                        <td class="px-4 py-3 text-right font-semibold">{{ number(project.risk_score, 2) }}</td>
+                        <td class="px-4 py-3">
+                          @if (project.matrix_level) {
+                            <span class="inline-flex items-center rounded-[3px] px-2.5 py-1 text-[12px] font-extrabold text-white" [style.background]="bandColor(project.matrix_level)">{{ project.matrix_level }}</span>
+                          } @else {
+                            <app-risk-badge [level]="project.risk_level" />
+                          }
+                        </td>
+                      </tr>
+                    }
+                  }
+                </tbody>
+              </table>
+            </div>
+          </section>
+        } @else {
+        <div class="grid items-start gap-4 xl:grid-cols-[340px_1fr]">
+          <section class="panel overflow-hidden">
+            <div class="border-b-[1.5px] border-line px-4 py-3.5">
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 class="m-0 text-[15px] font-bold text-ink">รายการโครงการ</h2>
+                  <p class="m-0 mt-1 text-[12.5px] text-muted">เลือกโครงการเพื่อดูรายละเอียด</p>
+                </div>
+                <div class="flex w-full max-w-[305px] flex-col gap-2">
+                  <button
+                    type="button"
+                    class="inline-flex h-10 items-center justify-center rounded-[3px] border-[1.5px] border-line bg-white px-3 text-[13.5px] font-bold text-slate-700 hover:bg-zebra"
+                    (click)="clearSelection()"
+                  >
+                    กลับไปรายการ
+                  </button>
+                  <label class="block">
+                    <span class="sr-only">ค้นหาโครงการ</span>
+                    <input
+                      type="search"
+                      class="gov-input"
+                      placeholder="ค้นหาชื่อโครงการ หรือ Project ID"
+                      [value]="searchQuery()"
+                      (input)="setSearch($any($event.target).value)"
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="max-h-[620px] overflow-y-auto">
               @for (project of filteredProjects(); track project.project_id) {
                 <button
                   type="button"
-                  class="block w-full border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50"
-                  [class.bg-slate-100]="String(project.project_id) === selectedProjectId()"
+                  class="block w-full cursor-pointer border-b border-row-active px-4 py-3 text-left"
+                  [class]="String(project.project_id) === selectedProjectId() ? 'bg-row-active' : 'bg-white hover:bg-zebra'"
                   (click)="selectProject(project.project_id)"
                 >
-                  <div class="flex items-start justify-between gap-3">
-                    <p class="line-clamp-2 text-sm font-semibold text-slate-900">{{ project.project_name }}</p>
+                  <div class="flex items-start justify-between gap-2">
+                    <p class="m-0 line-clamp-2 text-[13.5px] font-bold text-ink">{{ project.project_name }}</p>
                     <app-risk-badge [level]="project.risk_level" />
                   </div>
-                  <div class="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
-                    <span>ปี {{ project.budget_year }}</span>
-                    <span>Score {{ number(project.risk_score, 2) }}</span>
-                    <span>{{ money(project.budget_amount) }}</span>
-                  </div>
+                  <p class="m-0 mt-1.5 text-xs text-muted">
+                    ปี {{ project.budget_year }} · Score {{ number(project.risk_score, 2) }} · {{ money(project.budget_amount) }} บาท
+                  </p>
                 </button>
               }
             </div>
@@ -147,170 +189,272 @@ import { formatMoney, formatNumber, sortProjectsByRisk, toBool, toNumber } from 
 
           <section class="grid gap-4">
             @if (loadingDetail()) {
-              <div class="panel p-6 text-sm text-slate-500">กำลังโหลดรายละเอียดโครงการ...</div>
-            } @else {
-            <article class="panel p-4">
-              <div class="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <p class="text-sm font-semibold text-slate-500">Project ID {{ projectDetail()?.project_id }}</p>
-                  <h2 class="mt-1 text-xl font-semibold text-slate-950">{{ projectDetail()?.project_name }}</h2>
-                  <p class="mt-2 text-sm text-slate-500">
-                    ปี {{ projectDetail()?.budget_year }} · {{ projectDetail()?.project_type || projectDetail()?.purchase_method_group || '-' }}
-                  </p>
+              <div class="panel p-6 text-sm text-muted">กำลังโหลดรายละเอียดโครงการ...</div>
+            } @else if (projectDetail()) {
+              <article class="panel p-[18px]">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p class="m-0 text-[12.5px] font-bold text-muted">Project ID {{ projectDetail()?.project_id }}</p>
+                    <h2 class="m-0 mt-1 text-[19px] font-extrabold text-ink">{{ projectDetail()?.project_name }}</h2>
+                    <p class="m-0 mt-1.5 text-[13px] text-muted">
+                      ปี {{ projectDetail()?.budget_year }} ·
+                      {{ projectDetail()?.project_type || projectDetail()?.purchase_method_group || '-' }}
+                    </p>
+                  </div>
+                  <div class="flex flex-col items-end gap-1.5">
+                    @if (scoreInfo().matrix_level) {
+                      <span
+                        class="inline-flex items-center rounded-[3px] px-3 py-1 text-[13px] font-extrabold text-white"
+                        [style.background]="bandColor(scoreInfo().matrix_level)"
+                        title="ระดับความเสี่ยงตามกรอบ โอกาส × ผลกระทบ 5×5"
+                      >ระดับ{{ scoreInfo().matrix_level }}</span>
+                    }
+                    <span class="text-[11px] font-bold text-muted">Risk Score {{ number(scoreInfo().risk_score, 0) }}/100</span>
+                  </div>
                 </div>
-                <app-risk-badge [level]="projectDetail()?.risk_level" />
-              </div>
 
-              <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <div class="rounded-md bg-slate-50 p-3">
-                  <p class="text-xs font-semibold text-slate-500">งบประมาณ</p>
-                  <p class="mt-1 text-lg font-semibold">{{ money(projectDetail()?.budget_amount) }}</p>
-                </div>
-                <div class="rounded-md bg-slate-50 p-3">
-                  <p class="text-xs font-semibold text-slate-500">ราคากลาง</p>
-                  <p class="mt-1 text-lg font-semibold">{{ money(projectDetail()?.reference_price) }}</p>
-                </div>
-                <div class="rounded-md bg-slate-50 p-3">
-                  <p class="text-xs font-semibold text-slate-500">ราคาสัญญา</p>
-                  <p class="mt-1 text-lg font-semibold">{{ money(contractValue()) }}</p>
-                </div>
-                <div class="rounded-md bg-slate-50 p-3">
-                  <p class="text-xs font-semibold text-slate-500">Risk Score</p>
-                  <p class="mt-1 text-lg font-semibold">{{ number(projectDetail()?.risk_score, 2) }}</p>
-                </div>
-              </div>
+                @if (projectDetail()?.source_file || projectDetail()?.data_quality_note) {
+                  <div class="mt-3 rounded-[3px] border border-line-soft bg-[#fbfcfd] px-3 py-2 text-[11.5px] text-muted">
+                    @if (projectDetail()?.source_file) {
+                      <p class="m-0"><span class="font-bold text-slate-600">ที่มาข้อมูล:</span> {{ projectDetail()?.source_file }}</p>
+                    }
+                    @if (projectDetail()?.data_quality_note) {
+                      <p class="m-0 mt-0.5"><span class="font-bold text-[#8a2a1f]">ข้อจำกัดข้อมูล:</span> {{ projectDetail()?.data_quality_note }}</p>
+                    }
+                  </div>
+                }
 
-              <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <div class="rounded-md bg-slate-50 p-3">
-                  <p class="text-xs font-semibold text-slate-500">หน่วยงาน</p>
-                  <p class="mt-1 text-sm font-semibold text-slate-900">{{ projectDeptName() }}</p>
+                <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                    <p class="m-0 text-[11.5px] font-bold text-muted">งบประมาณ</p>
+                    <p class="m-0 mt-1 text-[15px] font-extrabold text-ink">{{ money(projectDetail()?.budget_amount) }}</p>
+                  </div>
+                  <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                    <p class="m-0 text-[11.5px] font-bold text-muted">ราคากลาง</p>
+                    <p class="m-0 mt-1 text-[15px] font-extrabold text-ink">{{ money(projectDetail()?.reference_price) }}</p>
+                  </div>
+                  <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                    <p class="m-0 text-[11.5px] font-bold text-muted">ราคาสัญญา</p>
+                    <p class="m-0 mt-1 text-[15px] font-extrabold text-ink">{{ money(contractValue()) }}</p>
+                  </div>
+                  <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                    <p class="m-0 text-[11.5px] font-bold text-muted">Risk Score</p>
+                    <p class="m-0 mt-1 text-[15px] font-extrabold text-ink">{{ number(projectDetail()?.risk_score, 2) }}</p>
+                  </div>
                 </div>
-                <div class="rounded-md bg-slate-50 p-3">
-                  <p class="text-xs font-semibold text-slate-500">สถานะโครงการ</p>
-                  <p class="mt-1 text-sm font-semibold text-slate-900">{{ projectStatus() }}</p>
-                </div>
-                <div class="rounded-md bg-slate-50 p-3">
-                  <p class="text-xs font-semibold text-slate-500">เลขที่สัญญา</p>
-                  <p class="mt-1 text-sm font-semibold text-slate-900">{{ contractNo() }}</p>
-                </div>
-                <div class="rounded-md bg-slate-50 p-3">
-                  <p class="text-xs font-semibold text-slate-500">สถานะสัญญา</p>
-                  <p class="mt-1 text-sm font-semibold text-slate-900">{{ contractStatus() }}</p>
-                </div>
-              </div>
 
-              <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <div class="rounded-md bg-slate-50 p-3">
-                  <p class="text-xs font-semibold text-slate-500">ผู้ขาย/ผู้รับจ้าง</p>
-                  <p class="mt-1 text-sm font-semibold text-slate-900">{{ vendorLabel() }}</p>
+                <div class="mt-2.5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                    <p class="m-0 text-[11.5px] font-bold text-muted">หน่วยงาน</p>
+                    <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">{{ projectDeptName() }}</p>
+                  </div>
+                  <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                    <p class="m-0 text-[11.5px] font-bold text-muted">สถานะโครงการ</p>
+                    <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">{{ projectStatus() }}</p>
+                  </div>
+                  <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                    <p class="m-0 text-[11.5px] font-bold text-muted">เลขที่สัญญา</p>
+                    <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">{{ contractNo() }}</p>
+                  </div>
+                  <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                    <p class="m-0 text-[11.5px] font-bold text-muted">สถานะสัญญา</p>
+                    <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">{{ contractStatus() }}</p>
+                  </div>
                 </div>
-                <div class="rounded-md bg-slate-50 p-3">
-                  <p class="text-xs font-semibold text-slate-500">ประเภทจัดซื้อจัดจ้าง</p>
-                  <p class="mt-1 text-sm font-semibold text-slate-900">{{ purchaseMethodLabel() }}</p>
-                </div>
-                <div class="rounded-md bg-slate-50 p-3">
-                  <p class="text-xs font-semibold text-slate-500">สัญญาเทียบราคากลาง</p>
-                  <p class="mt-1 text-sm font-semibold text-slate-900">{{ comparisonLabel(contractValue(), projectDetail()?.reference_price) }}</p>
-                  <p class="mt-1 text-xs text-slate-500">{{ percentageLabel(contractValue(), projectDetail()?.reference_price) }}</p>
-                </div>
-                <div class="rounded-md bg-slate-50 p-3">
-                  <p class="text-xs font-semibold text-slate-500">สัญญาเทียบงบประมาณ</p>
-                  <p class="mt-1 text-sm font-semibold text-slate-900">{{ comparisonLabel(contractValue(), projectDetail()?.budget_amount) }}</p>
-                  <p class="mt-1 text-xs text-slate-500">{{ percentageLabel(contractValue(), projectDetail()?.budget_amount) }}</p>
-                </div>
-              </div>
 
-              <div class="mt-4 rounded-lg border border-slate-200 bg-white p-4">
-                <h3 class="text-sm font-semibold text-slate-950">สูตรที่ใช้คำนวณ</h3>
-                <div class="mt-2 grid gap-2 text-sm text-slate-600 md:grid-cols-2">
-                  <p>ราคาสัญญาเทียบราคากลาง = (ราคาสัญญา - ราคากลาง) / ราคากลาง × 100</p>
-                  <p>ราคาสัญญาเทียบงบประมาณ = (ราคาสัญญา - งบประมาณ) / งบประมาณ × 100</p>
+                <div class="mt-2.5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                    <p class="m-0 text-[11.5px] font-bold text-muted">ผู้ขาย/ผู้รับจ้าง</p>
+                    <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">{{ vendorLabel() }}</p>
+                  </div>
+                  <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                    <p class="m-0 text-[11.5px] font-bold text-muted">ประเภทจัดซื้อจัดจ้าง</p>
+                    <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">{{ purchaseMethodLabel() }}</p>
+                  </div>
+                  <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                    <p class="m-0 text-[11.5px] font-bold text-muted">สัญญาเทียบราคากลาง</p>
+                    <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">
+                      {{ comparisonLabel(contractValue(), projectDetail()?.reference_price) }}
+                    </p>
+                    <p class="m-0 mt-1 text-xs text-muted">{{ percentageLabel(contractValue(), projectDetail()?.reference_price) }}</p>
+                  </div>
+                  <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                    <p class="m-0 text-[11.5px] font-bold text-muted">สัญญาเทียบงบประมาณ</p>
+                    <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">
+                      {{ comparisonLabel(contractValue(), projectDetail()?.budget_amount) }}
+                    </p>
+                    <p class="m-0 mt-1 text-xs text-muted">{{ percentageLabel(contractValue(), projectDetail()?.budget_amount) }}</p>
+                  </div>
                 </div>
-              </div>
-            </article>
 
-            <section class="panel p-4">
-              <div class="mb-3">
-                <h2 class="text-base font-semibold">ปัจจัยที่ทำให้เสี่ยง</h2>
-              </div>
+                <div class="mt-3.5 rounded-[3px] border border-line-soft bg-[#fbfcfd] p-3.5">
+                  <div class="flex items-center gap-2">
+                    <h3 class="m-0 text-sm font-bold text-ink">สูตรที่ใช้คำนวณ</h3>
+                    <app-info-tooltip
+                      text="อ้างอิงตามหนังสือซักซ้อมแนวทางการคำนวณราคากลางและการเปรียบเทียบราคาสัญญา กรมส่งเสริมการปกครองท้องถิ่น"
+                      [width]="280"
+                    />
+                  </div>
+                  <p class="m-0 mt-2 text-[13px] text-slate-700">ราคาสัญญาเทียบราคากลาง = (ราคาสัญญา − ราคากลาง) ÷ ราคากลาง × 100</p>
+                  <p class="m-0 mt-1 text-[13px] text-slate-700">ราคาสัญญาเทียบงบประมาณ = (ราคาสัญญา − งบประมาณ) ÷ งบประมาณ × 100</p>
+                </div>
 
-              @if (!triggeredFactors().length) {
-                <app-empty-state title="ไม่พบ factor ที่ trigger" message="โครงการนี้อาจไม่ไม่มีสัญญาณตามเกณฑ์ที่กำหนดไว้" />
-              } @else {
-                <div class="grid gap-3">
-                  @for (factor of triggeredFactors(); track factor.factor_code) {
-                    <article class="rounded-lg border border-slate-200 p-4">
-                      <div class="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                          <p class="text-sm font-semibold text-slate-950">{{ factor.name_th }}</p>
-                          <p class="text-xs text-slate-500">{{ factor.factor_code }} · severity {{ factor.severity || '-' }}</p>
-                        </div>
+              </article>
+
+              <section class="panel p-[18px]">
+                <div class="flex items-center gap-2">
+                  <h2 class="m-0 text-[16px] font-bold text-ink">การประเมินความเสี่ยง (โอกาส × ผลกระทบ 5×5)</h2>
+                  <app-info-tooltip
+                    text="อ้างอิงมาตรฐานการบริหารจัดการความเสี่ยงสำหรับหน่วยงานของรัฐ (กระทรวงการคลัง) และ COSO ERM — ระดับความเสี่ยง = โอกาส × ผลกระทบ (1–25)"
+                    [width]="300"
+                  />
+                </div>
+                <div class="mt-3.5 grid items-start gap-5 lg:grid-cols-[auto_1fr]">
+                  <app-risk-matrix [likelihood]="scoreInfo().matrix_likelihood" [impact]="scoreInfo().matrix_impact" />
+                  <div class="grid gap-2.5">
+                    <div class="grid grid-cols-3 gap-2.5">
+                      <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                        <p class="m-0 text-[11.5px] font-bold text-muted">โอกาสรวม</p>
+                        <p class="m-0 mt-1 text-[19px] font-extrabold text-ink">{{ number(scoreInfo().matrix_likelihood, 0) }}<span class="text-[12px] font-bold text-muted">/5</span></p>
                       </div>
-
-                      <div class="mt-4">
-                        <div class="rounded-md bg-slate-50 p-3">
-                          <p class="text-xs font-semibold text-slate-500">ค่าที่สังเกตได้</p>
-                          <p class="mt-1 text-lg font-semibold text-slate-900">
-                            {{ isComputable(factor) ? value(factor.observed_value) : 'ประเมินไม่ได้' }}
-                          </p>
-                        </div>
+                      <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                        <p class="m-0 text-[11.5px] font-bold text-muted">ผลกระทบสูงสุด</p>
+                        <p class="m-0 mt-1 text-[19px] font-extrabold text-ink">{{ number(scoreInfo().matrix_impact, 0) }}<span class="text-[12px] font-bold text-muted">/5</span></p>
                       </div>
-
-                      <div class="mt-3 rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">
-                        <p class="font-semibold text-slate-700 mt-1">คำอธิบาย</p>
-                        @if (factor.evidence_text) {
-                        <p class="mt-1">{{ factor.evidence_text }}</p>
+                      <div class="rounded-[3px] border border-line-soft p-[11px]" [style.background]="bandColor(scoreInfo().matrix_level) + '14'">
+                        <p class="m-0 text-[11.5px] font-bold text-muted">คะแนน = ระดับ</p>
+                        <p class="m-0 mt-1 text-[19px] font-extrabold" [style.color]="bandColor(scoreInfo().matrix_level)">{{ number(scoreInfo().matrix_score, 0) }} · {{ scoreInfo().matrix_level || '-' }}</p>
+                      </div>
+                    </div>
+                    <div class="rounded-[3px] border border-line-soft bg-[#fbfcfd] p-3">
+                      <p class="m-0 text-[12px] font-bold text-slate-700">การประกอบคะแนน</p>
+                      <p class="m-0 mt-1 text-[12.5px] leading-relaxed text-muted">
+                        พบสัญญาณเสี่ยง <span class="font-bold text-ink">{{ number(scoreInfo().factors_triggered, 0) }}</span> ปัจจัย
+                        @if (scoreInfo().factors_not_computable) {
+                          · ประเมินไม่ได้ <span class="font-bold text-[#8a2a1f]">{{ number(scoreInfo().factors_not_computable, 0) }}</span> ปัจจัย
                         }
-                      </div>
+                        · คะแนนสัดส่วน {{ number(scoreInfo().risk_score, 0) }}/100
+                      </p>
+                      @if (scoreInfo().summary_text) {
+                        <p class="m-0 mt-1.5 text-[12.5px] leading-relaxed text-slate-700">{{ scoreInfo().summary_text }}</p>
+                      }
+                      @if ((scoreInfo().factors_triggered ?? 0) >= 3) {
+                        <p class="m-0 mt-1.5 text-[11.5px] text-muted">* มีสัญญาณยืนยันกัน ≥3 ตัว → เพิ่มโอกาสรวม +1 (corroboration)</p>
+                      }
+                    </div>
+                  </div>
+                </div>
+              </section>
 
-                      @if (catalogDescription(factor.factor_code)) {
-                        <p class="mt-3 rounded-md bg-slate-50 px-3 py-2 text-sm leading-6 text-slate-600">
-                          {{ catalogDescription(factor.factor_code) }}
+              <section class="panel p-[18px]">
+                <h2 class="m-0 mb-3.5 text-[16px] font-bold text-ink">ปัจจัยที่ทำให้เสี่ยง</h2>
+
+                @if (!triggeredFactors().length) {
+                  <app-empty-state title="ไม่พบ factor ที่ trigger" message="โครงการนี้อาจไม่มีสัญญาณตามเกณฑ์ที่กำหนดไว้" />
+                } @else {
+                  <div class="grid gap-3">
+                    @for (factor of triggeredFactors(); track factor.factor_code) {
+                      <article class="rounded-[4px] border-[1.5px] border-line p-3.5">
+                        <div class="flex flex-wrap items-start justify-between gap-2">
+                          <div>
+                            <p class="m-0 text-sm font-bold text-ink">{{ factor.name_th }}</p>
+                            <p class="m-0 mt-0.5 text-[11.5px] text-muted">{{ factor.factor_code }}</p>
+                          </div>
+                          @if (factor.risk_band) {
+                            <span
+                              class="shrink-0 rounded-[3px] px-2.5 py-1 text-[11.5px] font-extrabold text-white"
+                              [style.background]="bandColor(factor.risk_band)"
+                              [title]="matrixChip(factor)"
+                            >{{ matrixChip(factor) }} · {{ factor.risk_band }}</span>
+                          }
+                        </div>
+
+                        <!-- เทียบค่าที่วัดได้ ↔ เกณฑ์ (audit line) -->
+                        <div class="mt-2.5 grid gap-2 sm:grid-cols-2">
+                          <div class="rounded-[3px] border border-line-soft bg-zebra p-2.5">
+                            <p class="m-0 text-[11.5px] font-bold text-muted">ค่าที่วัดได้</p>
+                            <p class="m-0 mt-1 text-[15px] font-extrabold" [class]="isComputable(factor) ? 'text-ink' : 'text-[#8a2a1f]'">
+                              {{ isComputable(factor) ? value(factor.observed_value) : 'ประเมินไม่ได้' }}
+                            </p>
+                          </div>
+                          <div class="rounded-[3px] border border-line-soft bg-zebra p-2.5">
+                            <p class="m-0 text-[11.5px] font-bold text-muted">เกณฑ์ที่ใช้เทียบ</p>
+                            <p class="m-0 mt-1 text-[12.5px] font-bold text-slate-700 break-words">{{ thresholdText(factor) }}</p>
+                          </div>
+                        </div>
+
+                        @if (factor.evidence_text) {
+                          <p class="m-0 mt-2.5 text-[12.5px] leading-relaxed text-slate-700">{{ factor.evidence_text }}</p>
+                        }
+                        @if (catalogDescription(factor.factor_code)) {
+                          <p class="m-0 mt-1.5 text-[12.5px] leading-relaxed text-muted">{{ catalogDescription(factor.factor_code) }}</p>
+                        }
+                        @if (factor.legal_ref) {
+                          <p class="m-0 mt-2 border-t border-line-soft pt-2 text-[11.5px] leading-relaxed text-muted">
+                            <span class="font-bold text-slate-600">ฐานอ้างอิง:</span> {{ factor.legal_ref }}
+                          </p>
+                        }
+                      </article>
+                    }
+                  </div>
+                }
+
+                @if (notComputableFactors().length) {
+                  <div class="mt-3.5 rounded-[3px] border border-[#e6cfca] bg-[#fdf6f5] p-3">
+                    <p class="m-0 text-[12px] font-bold text-[#8a2a1f]">ปัจจัยที่ประเมินไม่ได้ (ข้อมูลไม่เพียงพอ — ไม่ใช่ "ผ่าน")</p>
+                    <div class="mt-1.5 grid gap-1">
+                      @for (factor of notComputableFactors(); track factor.factor_code) {
+                        <p class="m-0 text-[12px] text-slate-700">
+                          <span class="font-bold">{{ factor.factor_code }} {{ factor.name_th }}</span>
+                          @if (factor.evidence_text) { — {{ factor.evidence_text }} }
                         </p>
                       }
-                    </article>
-                  }
-                </div>
-              }
-            </section>
-
-            <section class="panel p-4">
-              <div class="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <h2 class="text-base font-semibold">Risk Factor Catalog</h2>
-                  <p class="text-sm text-slate-500">catalog ของ factor ที่ trigger ในโครงการที่เลือก</p>
-                </div>
-                <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
-                  {{ selectedProjectCatalog().length }} รายการ
-                </span>
-              </div>
-
-              @if (!selectedProjectCatalog().length) {
-                <div class="mt-3">
-                  <app-empty-state title="ยังไม่มี factor ที่ trigger" message="ลองเลือกโครงการอื่น หรือรอให้ backend ส่ง risk_factors ของโครงการที่เลือก" />
-                </div>
-              } @else {
-                <div class="mt-3 grid gap-2 md:grid-cols-2">
-                  @for (factor of selectedProjectCatalog(); track factor.factor_code) {
-                    <div class="rounded-md border border-slate-200 p-3">
-                      <div class="flex items-start justify-between gap-2">
-                        <p class="text-sm font-semibold text-slate-900">{{ factor.factor_code }} · {{ factor.name_th }}</p>
-                        @if (factor.severity) {
-                          <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{{ factor.severity }}</span>
-                        }
-                      </div>
-                      <p class="mt-1 text-xs leading-5 text-slate-500">
-                        {{ factor.description_th || factor.category || 'ไม่มีคำอธิบายเพิ่มเติม' }}
-                      </p>
                     </div>
-                  }
+                  </div>
+                }
+              </section>
+
+              <section class="panel p-[18px]">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <h2 class="m-0 text-[16px] font-bold text-ink">Risk Factor Catalog</h2>
+                    <p class="m-0 mt-1 text-[13px] text-muted">รายการ factor ทั้งหมดในระบบ เพื่อใช้อ้างอิงประกอบการตรวจสอบ</p>
+                  </div>
+                  <span class="rounded-[20px] border border-line bg-zebra px-3 py-1 text-xs font-bold text-slate-700">
+                    trigger {{ selectedProjectCatalog().length }} รายการ
+                  </span>
                 </div>
-              }
-            </section>
-          }
-        </section>
-      </div>
+
+                @if (!selectedProjectCatalog().length) {
+                  <div class="mt-3">
+                    <app-empty-state title="ยังไม่มีข้อมูล catalog" message="รอให้ backend ส่งรายการ risk factor" />
+                  </div>
+                } @else {
+                  <div class="mt-3.5 grid gap-2.5 md:grid-cols-2">
+                    @for (factor of selectedProjectCatalog(); track factor.factor_code) {
+                      <div class="rounded-[3px] border border-line px-3 py-2.5">
+                        <div class="flex items-start justify-between gap-1.5">
+                          <p class="m-0 text-[13px] font-bold text-ink">{{ factor.factor_code }} · {{ factor.name_th }}</p>
+                          @if (factor.severity) {
+                            <span class="shrink-0 rounded-[20px] bg-row-active px-2 py-0.5 text-[11px] font-bold text-slate-700">
+                              {{ factor.severity }}
+                            </span>
+                          }
+                        </div>
+                        <p class="m-0 mt-1 text-xs leading-relaxed text-muted">
+                          {{ factor.description_th || factor.category || 'ไม่มีคำอธิบายเพิ่มเติม' }}
+                        </p>
+                      </div>
+                    }
+                  </div>
+                }
+              </section>
+            }
+          </section>
+        </div>
+        }
       }
+
     </section>
   `,
 })
@@ -364,21 +508,26 @@ export class RiskFactorsPageComponent implements OnInit {
       return matchesQuery && this.projectMatchesFilters(project, selectedType, minBudget, maxBudget);
     });
   });
+
   readonly triggeredFactors = computed(() => {
     const factors = this.projectDetail()?.risk_factors ?? [];
     return factors.filter((factor) => toBool(factor.triggered));
   });
+
   readonly selectedProjectCatalog = computed(() => {
     const factors = this.triggeredFactors();
     const catalog = this.catalog();
     const seen = new Set<string>();
     return factors
-      .map((factor) => catalog.find((item) => item.factor_code === factor.factor_code) ?? {
-        factor_code: factor.factor_code,
-        name_th: factor.name_th,
-        severity: factor.severity ?? null,
-        description_th: factor.evidence_text ?? null,
-      })
+      .map(
+        (factor) =>
+          catalog.find((item) => item.factor_code === factor.factor_code) ?? {
+            factor_code: factor.factor_code,
+            name_th: factor.name_th,
+            severity: factor.severity ?? null,
+            description_th: factor.evidence_text ?? null,
+          },
+      )
       .filter((factor) => {
         if (seen.has(factor.factor_code)) {
           return false;
@@ -477,11 +626,6 @@ export class RiskFactorsPageComponent implements OnInit {
     return detail?.contract_value ?? detail?.contract_price ?? detail?.contract_amount ?? detail?.winning_price ?? null;
   }
 
-  winnerName(): string {
-    const detail = this.projectDetail();
-    return detail?.vendor_name || detail?.contractor_name || detail?.supplier_name || detail?.bidder_name || this.vendorLabel();
-  }
-
   projectStatus(): string {
     const detail = this.projectDetail();
     return detail?.project_status || detail?.status || 'ไม่ระบุ';
@@ -505,7 +649,13 @@ export class RiskFactorsPageComponent implements OnInit {
     if (!detail) {
       return '-';
     }
-    return detail.vendor_id !== null && detail.vendor_id !== undefined ? `Vendor #${detail.vendor_id}` : '-';
+    return (
+      detail.vendor_name ||
+      detail.contractor_name ||
+      detail.supplier_name ||
+      detail.bidder_name ||
+      (detail.vendor_id !== null && detail.vendor_id !== undefined ? `Vendor #${detail.vendor_id}` : '-')
+    );
   }
 
   purchaseMethodLabel(): string {
@@ -530,11 +680,69 @@ export class RiskFactorsPageComponent implements OnInit {
       return 'คำนวณไม่ได้';
     }
     const sign = diff > 0 ? '+' : '';
-    return `(${sign}${diff.toFixed(2)}%) เทียบจากค่าฐานด้านขวา`;
+    return `(${sign}${diff.toFixed(2)}%) เทียบจากค่าฐาน`;
   }
 
   isComputable(factor: ProjectRiskFactor): boolean {
     return toBool(factor.computable);
+  }
+
+  /** ข้อมูลคะแนนรวม (จาก ProjectDetailResponse.risk_score ที่ api ผสมเข้ามาบน detail) */
+  scoreInfo() {
+    const d = this.projectDetail() as (ProjectDetail & Record<string, unknown>) | null;
+    return {
+      matrix_level: (d?.['matrix_level'] as string) ?? null,
+      matrix_likelihood: toNumber(d?.['matrix_likelihood'] as number) ,
+      matrix_impact: toNumber(d?.['matrix_impact'] as number),
+      matrix_score: toNumber(d?.['matrix_score'] as number),
+      risk_score: toNumber(d?.risk_score),
+      risk_level: (d?.risk_level as string) ?? null,
+      factors_triggered: toNumber(d?.['factors_triggered'] as number),
+      factors_not_computable: toNumber(d?.['factors_not_computable'] as number),
+      summary_text: (d?.['summary_text'] as string) ?? null,
+    };
+  }
+
+  /** สีของ band สำหรับ chip/badge ระดับ 5×5 */
+  bandColor(band: string | null | undefined): string {
+    return bandColor(band);
+  }
+
+  /** จำนวนปัจจัยที่ประเมินไม่ได้ (computable=0) */
+  notComputableFactors(): ProjectRiskFactor[] {
+    const factors = this.projectDetail()?.risk_factors ?? [];
+    return factors.filter((f) => !toBool(f.computable));
+  }
+
+  /** แปลง threshold_used (JSON string หรือ object) → ข้อความสั้นสำหรับผู้ตรวจ */
+  thresholdText(factor: ProjectRiskFactor): string {
+    const raw = factor.threshold_used;
+    if (raw === null || raw === undefined || raw === '') {
+      return '-';
+    }
+    let obj: Record<string, unknown>;
+    try {
+      obj = typeof raw === 'string' ? JSON.parse(raw) : (raw as unknown as Record<string, unknown>);
+    } catch {
+      return String(raw);
+    }
+    // ตัด likelihood_map / account_map ออก แสดงเฉพาะ threshold ที่อ่านง่าย
+    const skip = new Set(['likelihood_map', 'account_map', 'likelihood_by']);
+    const parts = Object.entries(obj)
+      .filter(([k]) => !skip.has(k))
+      .map(([k, v]) => `${k}=${typeof v === 'number' ? v : JSON.stringify(v)}`);
+    return parts.length ? parts.join(', ') : '-';
+  }
+
+  /** ป้ายกำกับ โอกาส×ผลกระทบ ต่อ factor */
+  matrixChip(factor: ProjectRiskFactor): string {
+    const l = toNumber(factor.likelihood);
+    const i = toNumber(factor.impact);
+    const s = toNumber(factor.matrix_score);
+    if (l === null || i === null || s === null) {
+      return '-';
+    }
+    return `โอกาส ${l} × ผลกระทบ ${i} = ${s}`;
   }
 
   catalogDescription(code: string): string {
@@ -545,14 +753,13 @@ export class RiskFactorsPageComponent implements OnInit {
   private loadProjects(): void {
     this.loadingProjects.set(true);
     this.error.set('');
+    this.selectedProjectId.set(null);
     this.projectDetail.set(null);
 
     this.api.projects(this.filters()).subscribe({
       next: (projects) => {
         this.projects.set(projects);
         this.loadingProjects.set(false);
-        this.selectedProjectId.set(null);
-        this.projectDetail.set(null);
       },
       error: () => {
         this.error.set('โหลดรายชื่อโครงการไม่สำเร็จ');
@@ -609,3 +816,4 @@ export class RiskFactorsPageComponent implements OnInit {
     return ((leftValue - rightValue) / rightValue) * 100;
   }
 }
+

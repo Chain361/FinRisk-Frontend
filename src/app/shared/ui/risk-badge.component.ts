@@ -7,7 +7,7 @@ import { riskBadgeClasses, riskLabel } from '../utils/risk-utils';
   selector: 'app-risk-badge',
   standalone: true,
   template: `
-    <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold" [class]="classes()">
+    <span class="inline-flex items-center rounded-[3px] px-2.5 py-1 text-xs font-bold" [class]="classes()">
       {{ label() }}
     </span>
   `,

@@ -10,24 +10,24 @@ import { AuthService } from '../core/auth/auth.service';
   standalone: true,
   imports: [FormsModule, LucideLogIn, LucideShieldAlert],
   template: `
-    <main class="grid min-h-screen place-items-center bg-slate-100 px-4 py-8">
-      <section class="w-full max-w-md rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+    <main class="grid min-h-screen place-items-center bg-page px-4 py-8">
+      <section class="w-full max-w-md rounded-[4px] border-2 border-navy bg-white p-6">
         <div class="flex items-center gap-3">
-          <div class="flex size-10 items-center justify-center rounded-lg bg-slate-950 text-white">
+          <div class="flex size-10 items-center justify-center rounded-[4px] bg-navy text-white">
             <svg lucideShieldAlert class="size-5"></svg>
           </div>
           <div>
-            <h1 class="text-lg font-semibold text-slate-950">FinRisk Dashboard</h1>
-            <p class="text-sm text-slate-500">เข้าสู่ระบบ mock auth ของ backend</p>
+            <h1 class="m-0 text-lg font-extrabold text-ink">ระบบวิเคราะห์ความเสี่ยงงบประมาณตำบล</h1>
+            <p class="m-0 mt-0.5 text-[12.5px] text-muted">Local Budget Financial Risk System</p>
           </div>
         </div>
 
         <form class="mt-6 grid gap-4" (ngSubmit)="submit()">
           <label class="grid gap-1.5">
-            <span class="text-sm font-semibold text-slate-700">Username</span>
+            <span class="text-[12.5px] font-bold text-muted">Username</span>
             <input
               name="username"
-              class="h-11 rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-slate-900"
+              class="gov-input h-11"
               [(ngModel)]="username"
               autocomplete="username"
               required
@@ -35,11 +35,11 @@ import { AuthService } from '../core/auth/auth.service';
           </label>
 
           <label class="grid gap-1.5">
-            <span class="text-sm font-semibold text-slate-700">Password</span>
+            <span class="text-[12.5px] font-bold text-muted">Password</span>
             <input
               name="password"
               type="password"
-              class="h-11 rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-slate-900"
+              class="gov-input h-11"
               [(ngModel)]="password"
               autocomplete="current-password"
               required
@@ -47,12 +47,12 @@ import { AuthService } from '../core/auth/auth.service';
           </label>
 
           @if (error()) {
-            <p class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{{ error() }}</p>
+            <p class="rounded-[3px] border-[1.5px] border-risk-high bg-red-50 px-3 py-2 text-sm text-risk-high">{{ error() }}</p>
           }
 
           <button
             type="submit"
-            class="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-slate-950 px-4 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+            class="gov-btn-primary inline-flex h-11 items-center justify-center gap-2 disabled:cursor-not-allowed disabled:bg-slate-400"
             [disabled]="loading()"
           >
             <svg lucideLogIn class="size-4"></svg>
@@ -60,7 +60,11 @@ import { AuthService } from '../core/auth/auth.service';
           </button>
         </form>
 
-        <p class="mt-4 text-xs leading-5 text-slate-500">
+        <p class="mt-4 text-xs leading-5 text-muted">
+          ระบบรองรับ 6 บทบาท (ผู้ดูแลระบบ · ผู้กำกับดูแล · ผู้บริหารตำบล · ผู้ตรวจสอบโครงการ ·
+          นักวิเคราะห์ · ประชาชนทั่วไป) — ขอบเขตข้อมูลและสิทธิ์แตกต่างตามบทบาทที่ login
+        </p>
+        <p class="mt-1.5 text-xs leading-5 text-muted">
           Backend ใช้ token เป็น username และทุก request หลัง login จะส่ง header X-Username อัตโนมัติ
         </p>
       </section>

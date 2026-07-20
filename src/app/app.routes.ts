@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 
 import { authGuard } from './core/auth/auth.guard';
+import { roleGuard } from './core/auth/role.guard';
 import { AppShellComponent } from './layout/app-shell.component';
 
 export const routes: Routes = [
@@ -17,20 +18,73 @@ export const routes: Routes = [
       {
         path: 'project-risk',
         loadComponent: () =>
-          import('./features/project-risk/project-risk.page').then((m) => m.ProjectRiskPageComponent),
+          import('./features/project-risk/project-risk.page').then(
+            (m) => m.ProjectRiskOverviewPageComponent,
+          ),
+      },
+      {
+        path: 'project-risk/analysis',
+        loadComponent: () =>
+          import('./features/project-risk/project-risk.page.analysis').then(
+            (m) => m.ProjectRiskAnalysisPageComponent,
+          ),
       },
       {
         path: 'financial-health',
-        loadComponent: () =>
-          import('./features/financial-health/financial-health.page').then((m) => m.FinancialHealthPageComponent),
+        children: [
+          {
+            path: 'overview',
+            loadComponent: () =>
+              import('./features/financial-health/overview/overview.page').then(
+                (m) => m.OverviewPageComponent,
+              ),
+          },
+          {
+            path: 'benchmarking',
+            loadComponent: () =>
+              import('./features/financial-health/benchmarking/benchmarking.page').then(
+                (m) => m.BenchmarkingPageComponent,
+              ),
+          },
+          {
+            path: 'investment-trends',
+            loadComponent: () =>
+              import('./features/financial-health/investment-trends/investment-trends.page').then(
+                (m) => m.InvestmentTrendsPageComponent,
+              ),
+          },
+          {
+            path: 'risk-indicators',
+            loadComponent: () =>
+              import('./features/financial-health/risk-indicators/risk-indicators.page').then(
+                (m) => m.RiskIndicatorsPageComponent,
+              ),
+          },
+          {
+            path: '',
+            redirectTo: 'overview',
+            pathMatch: 'full',
+          },
+        ],
       },
       {
         path: 'risk-factors',
-        loadComponent: () => import('./features/risk-factors/risk-factors.page').then((m) => m.RiskFactorsPageComponent),
+        loadComponent: () =>
+          import('./features/risk-factors/risk-factors.page').then(
+            (m) => m.RiskFactorsPageComponent,
+          ),
       },
       {
         path: 'trends',
-        loadComponent: () => import('./features/trends/trends.page').then((m) => m.TrendsPageComponent),
+        loadComponent: () =>
+          import('./features/trends/trends.page').then((m) => m.TrendsPageComponent),
+      },
+      {
+        // บันทึกการเข้าถึงระบบ — เฉพาะ admin (backend บังคับสิทธิ์ซ้ำด้วย require_roles("admin"))
+        path: 'admin/access-log',
+        canActivate: [roleGuard('admin')],
+        loadComponent: () =>
+          import('./features/admin/access-log.page').then((m) => m.AccessLogPageComponent),
       },
     ],
   },

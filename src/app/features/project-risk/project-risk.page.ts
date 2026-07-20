@@ -1,833 +1,127 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
-import { forkJoin } from 'rxjs';
+import { Component, inject, OnInit } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
-import { ApiService } from '../../core/api/api.service';
-import {
-  AnnualRisk,
-  Project,
-  ProjectFilters,
-  RiskSummary,
-  Subdistrict,
-} from '../../core/models/domain.models';
-import {
-  TimeSeries,
-  TimeSeriesChartComponent,
-} from '../../shared/charts/time-series-chart.component';
-import { DonutChartComponent } from '../../shared/charts/donut-chart.component';
+import { BarChartComponent } from '../../shared/charts/bar-chart.component';
 import { FilterBarComponent } from '../../shared/filters/filter-bar.component';
-import { RiskBarChartComponent } from '../../shared/charts/risk-barchart.component';
-import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
+import { AnnouncementPanelComponent } from '../../shared/ui/announcement-panel.component';
 import { KpiCardComponent } from '../../shared/ui/kpi-card.component';
-import {
-  countByRisk,
-  FISCAL_YEARS,
-  formatMoney,
-  formatNumber,
-  normalizeRiskLevel,
-  RISK_LEVELS,
-  sortProjectsByRisk,
-  subdistrictLabel,
-  toBool,
-  toNumber,
-} from '../../shared/utils/risk-utils';
-
-interface RepeatedEntity {
-  label: string;
-  years: number[];
-  count: number;
-  totalBudget: number;
-}
-
-interface VendorRanking {
-  vendorName: string;
-  projectCount: number;
-  winCount: number;
-  totalContractValue: number;
-  sampleProjects: string[];
-  years: number[];
-  isRecurring: boolean;
-  isFrequentWinner: boolean;
-}
+import { ProjectRiskStateService } from './project-risk-state.service';
 
 @Component({
-  selector: 'app-project-risk-page',
+  selector: 'app-project-risk-overview-page',
   standalone: true,
   imports: [
-    DonutChartComponent,
-    EmptyStateComponent,
+    AnnouncementPanelComponent,
+    BarChartComponent,
     FilterBarComponent,
     KpiCardComponent,
-    TimeSeriesChartComponent,
-    RiskBarChartComponent,
+    RouterLink,
   ],
   template: `
     <section class="page-shell">
-      <div class="flex flex-wrap items-end justify-between gap-3">
+      <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p class="text-sm font-semibold text-slate-500">F1</p>
-          <h1 class="text-2xl font-semibold text-slate-950">Project Risk Dashboard</h1>
-          <p class="mt-1 text-sm text-slate-500">
-            สรุปจำนวนโครงการตามระดับความเสี่ยง และดูรายการที่ควรตรวจต่อ
+          <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F1</p>
+          <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">แดชบอร์ดความเสี่ยงโครงการ</h1>
+          <p class="m-0 mt-1.5 text-sm text-muted">
+            ภาพรวมจำนวนโครงการตามระดับความเสี่ยงและแนวโน้มงบประมาณ
           </p>
         </div>
+        <a
+          class="gov-button whitespace-nowrap"
+          [routerLink]="['/project-risk/analysis']"
+          [queryParams]="state.routeQueryParams()"
+        >
+          ดูการวิเคราะห์เชิงลึก
+        </a>
       </div>
 
+      <app-announcement-panel />
+
       <app-filter-bar
-        [subdistricts]="subdistricts()"
-        [selectedSubdistrictId]="selectedSubdistrictId()"
-        [selectedYear]="selectedYear()"
-        [selectedRiskLevel]="selectedRiskLevel()"
-        (selectedSubdistrictIdChange)="setSubdistrict($event)"
-        (selectedYearChange)="setYear($event)"
-        (selectedRiskLevelChange)="setRisk($event)"
-        (reset)="resetFilters()"
+        [subdistricts]="state.subdistricts()"
+        [selectedSubdistrictId]="state.selectedSubdistrictId()"
+        [selectedYear]="state.selectedYear()"
+        [selectedRiskLevel]="state.selectedRiskLevel()"
+        (selectedSubdistrictIdChange)="state.setSubdistrict($event)"
+        (selectedYearChange)="state.setYear($event)"
+        (selectedRiskLevelChange)="state.setRisk($event)"
+        (reset)="state.resetFilters()"
       />
 
-      @if (error()) {
-        <p class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {{ error() }}
+      @if (state.error()) {
+        <p class="rounded-[4px] border-[1.5px] border-risk-high bg-red-50 px-4 py-3 text-sm text-risk-high">
+          {{ state.error() }}
         </p>
       }
 
       <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <app-kpi-card
-          label="โครงการทั้งหมด"
-          [value]="totalProjects()"
-          hint=""
-          accentClass="bg-slate-900"
-        />
-        <app-kpi-card
-          label="เสี่ยงสูง"
-          [value]="byLevel()['high'] ?? 0"
-          hint=""
-          accentClass="bg-red-500"
-        />
-        <app-kpi-card
-          label="เสี่ยงปานกลาง"
-          [value]="byLevel()['medium'] ?? 0"
-          hint=""
-          accentClass="bg-amber-500"
-        />
-        <app-kpi-card
-          label="เสี่ยงต่ำ"
-          [value]="byLevel()['low'] ?? 0"
-          hint=""
-          accentClass="bg-emerald-500"
-        />
+        <app-kpi-card label="โครงการทั้งหมด" [value]="state.totalProjects()" hint="" accentClass="bg-navy" />
+        <app-kpi-card label="เสี่ยงสูง" [value]="state.byLevel()['high'] ?? 0" hint="" accentClass="bg-risk-high" />
+        <app-kpi-card label="เสี่ยงปานกลาง" [value]="state.byLevel()['medium'] ?? 0" hint="" accentClass="bg-risk-medium" />
+        <app-kpi-card label="เสี่ยงต่ำ" [value]="state.byLevel()['low'] ?? 0" hint="" accentClass="bg-risk-low" />
       </div>
 
-      <div class="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
-        <section class="panel p-4">
-          <div class="flex items-center justify-between gap-3 mb-4">
-            <div>
-              <h2 class="text-base font-semibold">สัดส่วนความเสี่ยง</h2>
-              <p class="text-sm text-slate-500">
-                ข้อมูลจาก /risk/summary หรือคำนวณจากรายการเมื่อมีตัวกรอง
-              </p>
-            </div>
-          </div>
-          <app-donut-chart [byLevel]="byLevel()" />
-        </section>
-
-        <section class="panel p-4">
-          <div class="mb-3">
-            <h2 class="text-base font-semibold">Risk Bar Chart ตามปีงบประมาณ</h2>
-            <p class="text-sm text-slate-500">นับจำนวนโครงการในแต่ละระดับความเสี่ยงจาก /projects</p>
-          </div>
-          <app-risk-bar-chart [projects]="barchartProjects()" />
-        </section>
-      </div>
-
-      <section class="panel p-4">
-        <div class="mb-3">
-          <h2 class="text-base font-semibold">งบประมาณรวมแต่ละปี (แบ่งตามประเภทโครงการ)</h2>
-          <p class="text-sm text-slate-500">
-            แยกตามประเภทโครงการที่มีในข้อมูลเพื่อดูว่าแต่ละประเภทใช้จ่ายงบประมาณอย่างไรในแต่ละปี
-          </p>
-        </div>
-
-        <app-time-series-chart [series]="budgetSeries()" yAxisName="งบประมาณ (บาท)" chartType="bar">
-        </app-time-series-chart>
-      </section>
-
-      <section class="panel p-4">
-        <div class="mb-3">
-          <h2 class="text-base font-semibold">Risk Score เฉลี่ยแต่ละปี (แบ่งตามประเภทโครงการ)</h2>
-          <p class="text-sm text-slate-500">
-            แสดงค่า Risk Score เฉลี่ยตามประเภทโครงการที่พบในแต่ละปี
-          </p>
-        </div>
-
-        <app-time-series-chart
-          [series]="averageRiskSeries()"
-          yAxisName="Average Risk Score"
-          chartType="bar"
-        >
-        </app-time-series-chart>
-      </section>
-
-      <div class="grid gap-4 xl:grid-cols-2">
-        <section class="panel p-4">
-          <div class="mb-3">
-            <h2 class="text-base font-semibold">งบเฉลี่ยตามประเภทโครงการ</h2>
-            <p class="text-sm text-slate-500">
-              ถ้าปีใดไม่มีโครงการประเภทนั้น กราฟจะเว้น gap ไม่แทนค่า 0
-            </p>
-          </div>
-          <app-time-series-chart [series]="averageBudgetSeries()" yAxisName="บาท" />
-        </section>
-
-        <section class="panel p-4">
-          <div class="mb-3">
-            <h2 class="text-base font-semibold">ความเสี่ยงข้ามปี/ข้ามตำบล</h2>
-            <p class="text-sm text-slate-500">
-              เมื่อเลือกทุกตำบล เส้นจะแยกตามตำบล; เมื่อเลือกตำบลเดียว เส้นจะแยกตามระดับความเสี่ยง
-            </p>
-          </div>
-          <app-time-series-chart [series]="riskTrendSeries()" yAxisName="จำนวนโครงการ" />
-        </section>
-      </div>
-
-      <section class="panel p-4">
-        <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 class="text-base font-semibold">ผู้รับจ้างที่ได้รับงานบ่อยที่สุด</h2>
-            <p class="text-sm text-slate-500">
-              แสดง Top 10 Vendors ตามจำนวนโครงการที่ได้รับในช่วงตัวกรองที่เลือก
-            </p>
-          </div>
-        </div>
-
-        <div class="mb-4 grid gap-3 md:grid-cols-[1.2fr_0.8fr]">
-          <label class="block">
-            <span class="text-xs font-semibold uppercase tracking-wide text-slate-500"
-              >ค้นหาผู้รับจ้าง</span
-            >
-            <input
-              type="search"
-              class="mt-1 h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-900"
-              placeholder="พิมพ์ชื่อผู้รับจ้าง"
-              [value]="vendorSearchText()"
-              (input)="setVendorSearch($any($event.target).value)"
-            />
-          </label>
-
-          <label class="block">
-            <span class="text-xs font-semibold uppercase tracking-wide text-slate-500"
-              >ประเภทโครงการ</span
-            >
-            <select
-              class="mt-1 h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-900"
-              [value]="selectedProjectType() ?? 'all'"
-              (change)="setProjectType($any($event.target).value)"
-            >
-              <option value="all">ทุกประเภท</option>
-              @for (type of projectTypes(); track type) {
-                <option [value]="type">{{ type }}</option>
-              }
-            </select>
-          </label>
-        </div>
-
-        @if (!vendorRankings().length) {
-          <app-empty-state
-            title="ไม่พบข้อมูลผู้รับจ้างสำหรับตัวกรองที่เลือก"
-            message="ลองเปลี่ยนตัวกรองปี/ตำบลหรือคำค้นหาผู้รับจ้างใหม่อีกครั้ง"
-          />
-        } @else {
-          <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-slate-200 text-sm">
-              <thead class="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500">
+      <section class="panel p-[18px]">
+        <h2 class="m-0 mb-0.5 text-[16px] font-bold text-ink">สัดส่วนความเสี่ยงตามประเภทโครงการ</h2>
+        <p class="m-0 mb-3.5 text-[13px] text-muted">ตารางไขว้ระหว่างประเภทโครงการและระดับความเสี่ยง</p>
+        <div class="overflow-x-auto">
+          <table class="gov-table">
+            <thead>
+              <tr>
+                <th>ประเภทโครงการ</th>
+                <th class="text-right!">เสี่ยงสูง</th>
+                <th class="text-right!">เสี่ยงปานกลาง</th>
+                <th class="text-right!">เสี่ยงต่ำ</th>
+                <th class="text-right!">รวม</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of state.crossTab().rows; track row.type) {
                 <tr>
-                  <th class="px-3 py-3">อันดับ</th>
-                  <th class="px-3 py-3">ผู้รับจ้าง</th>
-                  <th class="px-3 py-3 text-right">จำนวนโครงการ</th>
-                  <th class="px-3 py-3 text-right">จำนวนครั้งที่ชนะ</th>
-                  <th class="px-3 py-3 text-right">มูลค่าสัญญารวม</th>
-                  <th class="px-3 py-3">รายชื่อโครงการ</th>
+                  <td class="font-bold">{{ row.type }}</td>
+                  <td class="text-right">{{ row.high }}</td>
+                  <td class="text-right">{{ row.medium }}</td>
+                  <td class="text-right">{{ row.low }}</td>
+                  <td class="text-right font-bold">{{ row.total }}</td>
                 </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100">
-                @for (vendor of vendorRankings(); track vendor.vendorName) {
-                  <tr>
-                    <td class="px-3 py-3 font-semibold text-slate-900">{{ $index + 1 }}</td>
-                    <td class="px-3 py-3">
-                      <div class="flex flex-wrap items-center gap-2">
-                        <span class="font-semibold text-slate-900">{{ vendor.vendorName }}</span>
-                        @if (vendor.isRecurring) {
-                          <span
-                            class="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700"
-                            >Recurring Vendor</span
-                          >
-                        }
-                        @if (vendor.isFrequentWinner) {
-                          <span
-                            class="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700"
-                            >Frequent Winner</span
-                          >
-                        }
-                      </div>
-                    </td>
-                    <td class="px-3 py-3 text-right">{{ vendor.projectCount }}</td>
-                    <td class="px-3 py-3 text-right">{{ vendor.winCount }}</td>
-                    <td class="px-3 py-3 text-right">{{ money(vendor.totalContractValue) }}</td>
-                    <td class="px-3 py-3 text-slate-600">
-                      <div class="flex flex-wrap gap-1">
-                        @for (projectName of vendor.sampleProjects; track projectName) {
-                          <span class="rounded-full bg-slate-100 px-2 py-1 text-xs">{{
-                            projectName
-                          }}</span>
-                        }
-                      </div>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        }
+              }
+              <tr class="bg-row-active! font-extrabold">
+                <td>รวมทั้งหมด</td>
+                <td class="text-right">{{ state.crossTab().totals.high }}</td>
+                <td class="text-right">{{ state.crossTab().totals.medium }}</td>
+                <td class="text-right">{{ state.crossTab().totals.low }}</td>
+                <td class="text-right">{{ state.crossTab().totals.total }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </section>
 
-      <div class="grid gap-4 xl:grid-cols-[1fr_0.9fr]">
-        <section class="panel overflow-hidden">
-          <div class="border-b border-slate-200 p-4">
-            <h2 class="text-base font-semibold">โครงการ/ผู้รับจ้าง/วิธีจัดซื้อที่ซ้ำข้ามปี</h2>
-            <p class="text-sm text-slate-500">
-              ใช้ vendor field ถ้ามีจาก API; ถ้าไม่มีจะ fallback เป็นวิธีจัดซื้อ/ประเภทโครงการ
-            </p>
-          </div>
-          @if (!repeatedEntities().length) {
-            <div class="p-4">
-              <app-empty-state
-                title="ยังไม่พบรายการซ้ำ ≥ 2 ปี"
-                message="ข้อมูลใน scope ปัจจุบันอาจมีปีเดียวหรือไม่มี vendor field"
-              />
-            </div>
-          } @else {
-            <div class="overflow-x-auto">
-              <table class="min-w-full divide-y divide-slate-200 text-sm">
-                <thead class="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500">
-                  <tr>
-                    <th class="px-4 py-3">รายการ</th>
-                    <th class="px-4 py-3">ปีที่พบ</th>
-                    <th class="px-4 py-3 text-right">จำนวน</th>
-                    <th class="px-4 py-3 text-right">งบรวม</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                  @for (entity of repeatedEntities(); track entity.label) {
-                    <tr>
-                      <td class="px-4 py-3 font-semibold text-slate-900">{{ entity.label }}</td>
-                      <td class="px-4 py-3 text-slate-600">{{ entity.years.join(', ') }}</td>
-                      <td class="px-4 py-3 text-right">{{ entity.count }}</td>
-                      <td class="px-4 py-3 text-right">{{ money(entity.totalBudget) }}</td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          }
-        </section>
+      <app-bar-chart
+        title="แนวโน้มจำนวนโครงการตามระดับความเสี่ยง (ปี 2566–2568)"
+        subtitle="ปีที่ไม่มีโครงการจะแสดงเป็น 0"
+        [categories]="state.fiscalYearLabels"
+        [series]="state.riskLevelTrendBarSeries()"
+        unitSuffix="โครงการ"
+      />
 
-        <section class="panel p-4">
-          <h2 class="text-base font-semibold">Financial Risk Coverage</h2>
-          <p class="mt-1 text-sm text-slate-500">
-            สรุปจาก /risk/annual เพื่อเห็นปีที่ประเมินไม่ได้
-          </p>
-          <div class="mt-4 grid gap-2">
-            @for (year of FISCAL_YEARS; track year) {
-              <div class="rounded-md border border-slate-200 p-3">
-                <div class="flex items-center justify-between gap-3">
-                  <p class="text-sm font-semibold text-slate-900">{{ year }}</p>
-                  <p class="text-xs text-slate-500">{{ annualRowsForYear(year).length }} factors</p>
-                </div>
-                <div class="mt-3 grid grid-cols-2 gap-2 text-center text-xs">
-                  <div class="rounded-md bg-emerald-50 px-2 py-2 text-emerald-700">
-                    <p class="font-semibold">{{ annualComputableCount(year) }}</p>
-                    <p>คำนวณได้</p>
-                  </div>
-                  <div class="rounded-md bg-slate-100 px-2 py-2 text-slate-600">
-                    <p class="font-semibold">{{ annualNotComputableCount(year) }}</p>
-                    <p>ประเมินไม่ได้</p>
-                  </div>
-                </div>
-              </div>
-            }
-          </div>
-        </section>
-      </div>
+      <app-bar-chart
+        title="งบประมาณรวมแต่ละปี แบ่งตามประเภทโครงการ"
+        subtitle="เปรียบเทียบงบประมาณของแต่ละประเภทโครงการในแต่ละปี"
+        [categories]="state.fiscalYearLabels"
+        [series]="state.budgetByTypeBarSeries()"
+        unitSuffix="บาท"
+        rowHeader="ประเภทโครงการ"
+        [compactValueLabels]="true"
+      />
     </section>
   `,
 })
-export class ProjectRiskPageComponent implements OnInit {
-  private readonly api = inject(ApiService);
-
-  readonly FISCAL_YEARS = FISCAL_YEARS;
-  readonly loading = signal(false);
-  readonly error = signal('');
-  readonly subdistricts = signal<Subdistrict[]>([]);
-  readonly projects = signal<Project[]>([]);
-  readonly barchartProjects = signal<Project[]>([]);
-  readonly multiYearProjects = signal<Project[]>([]);
-  readonly summary = signal<RiskSummary | null>(null);
-  readonly riskSeries = signal<TimeSeries[]>([]);
-  readonly budgetSeries = signal<TimeSeries[]>([]);
-  readonly averageRiskSeries = signal<TimeSeries[]>([]);
-  readonly annualRisks = signal<AnnualRisk[]>([]);
-
-  readonly selectedSubdistrictId = signal<number | null>(null);
-  readonly selectedYear = signal<number | null>(2568);
-  readonly selectedRiskLevel = signal<string | null>(null);
-  readonly selectedProjectType = signal<string | null>(null);
-  readonly vendorSearchText = signal('');
-
-  readonly hasActiveFilter = computed(
-    () =>
-      Boolean(this.selectedSubdistrictId()) ||
-      Boolean(this.selectedYear()) ||
-      Boolean(this.selectedRiskLevel()),
-  );
-
-  readonly byLevel = computed<Record<string, number | undefined>>(() => {
-    if (this.hasActiveFilter()) {
-      return countByRisk(this.projects());
-    }
-    return this.summary()?.by_level ?? countByRisk(this.projects());
-  });
-
-  readonly totalProjects = computed(() =>
-    this.hasActiveFilter()
-      ? this.projects().length
-      : (this.summary()?.total ?? this.projects().length),
-  );
-  readonly sortedProjects = computed(() => sortProjectsByRisk(this.projects()));
-
-  readonly projectTypes = computed<string[]>(() => {
-    const types = new Set<string>();
-    this.projects().forEach((project) => {
-      const type = this.projectType(project);
-      if (type && type !== 'ไม่ระบุประเภท') {
-        types.add(type);
-      }
-    });
-    return [...types].sort((a, b) => a.localeCompare(b, 'th'));
-  });
-
-  readonly filteredVendorProjects = computed(() => {
-    const search = this.vendorSearchText().trim().toLowerCase();
-    return this.projects().filter((project) => {
-      const typeMatches =
-        !this.selectedProjectType() || this.projectType(project) === this.selectedProjectType();
-      const vendorName = this.vendorDisplayName(project).toLowerCase();
-      const searchMatches = !search || vendorName.includes(search);
-      return typeMatches && searchMatches;
-    });
-  });
-
-  readonly vendorRankings = computed<VendorRanking[]>(() => {
-    const groups = new Map<
-      string,
-      {
-        years: Set<number>;
-        projectCount: number;
-        totalContractValue: number;
-        sampleProjects: string[];
-      }
-    >();
-
-    this.filteredVendorProjects().forEach((project) => {
-      const vendorName = this.vendorDisplayName(project) || 'ไม่ระบุผู้รับจ้าง';
-      const current = groups.get(vendorName) ?? {
-        years: new Set<number>(),
-        projectCount: 0,
-        totalContractValue: 0,
-        sampleProjects: [],
-      };
-
-      current.years.add(project.budget_year);
-      current.projectCount += 1;
-      current.totalContractValue +=
-        toNumber(
-          project.contract_value ??
-            project.contract_price ??
-            project.contract_amount ??
-            project.winning_price ??
-            project.budget_amount,
-        ) ?? 0;
-      if (project.project_name) {
-        current.sampleProjects.push(project.project_name);
-      }
-      groups.set(vendorName, current);
-    });
-
-    return [...groups.entries()]
-      .map(([vendorName, value]) => ({
-        vendorName,
-        projectCount: value.projectCount,
-        winCount: value.projectCount,
-        totalContractValue: value.totalContractValue,
-        sampleProjects: value.sampleProjects.slice(0, 3),
-        years: [...value.years].sort((a, b) => a - b),
-        isRecurring: value.years.size > 2,
-        isFrequentWinner: value.projectCount > 5,
-      }))
-      .sort(
-        (a, b) =>
-          b.projectCount - a.projectCount ||
-          b.totalContractValue - a.totalContractValue ||
-          a.vendorName.localeCompare(b.vendorName, 'th'),
-      )
-      .slice(0, 10);
-  });
-
-  readonly scopedAnnualRisks = computed(() => {
-    const subdistrictId = this.selectedSubdistrictId();
-    return this.annualRisks().filter(
-      (row) => !subdistrictId || row.subdistrict_id === subdistrictId,
-    );
-  });
-
-  readonly averageBudgetSeries = computed<TimeSeries[]>(() => {
-    const topTypes = this.topProjectTypes();
-    const colors = ['#2563eb', '#7c3aed', '#0891b2', '#ea580c', '#475569'];
-
-    return topTypes.map((type, index) => ({
-      name: type,
-      color: colors[index % colors.length],
-      points: FISCAL_YEARS.map((year) => {
-        const projects = this.multiYearProjects().filter(
-          (project) => project.budget_year === year && this.projectType(project) === type,
-        );
-        const values = projects
-          .map((project) => toNumber(project.budget_amount))
-          .filter((value): value is number => value !== null);
-        const average = values.length
-          ? values.reduce((sum, value) => sum + value, 0) / values.length
-          : null;
-        return {
-          year,
-          value: average,
-          computable: average !== null,
-          tooltip: average === null ? 'ไม่มีโครงการประเภทนี้ในปีนี้' : `${projects.length} โครงการ`,
-        };
-      }),
-    }));
-  });
-
-  readonly riskTrendSeries = computed<TimeSeries[]>(() => {
-    if (this.selectedSubdistrictId()) {
-      const levels = [
-        { level: 'high', name: 'เสี่ยงสูง', color: '#dc2626' },
-        { level: 'medium', name: 'เสี่ยงปานกลาง', color: '#d97706' },
-        { level: 'low', name: 'เสี่ยงต่ำ', color: '#16a34a' },
-      ];
-      return levels.map((item) => ({
-        name: item.name,
-        color: item.color,
-        points: FISCAL_YEARS.map((year) => ({
-          year,
-          value: this.multiYearProjects().filter(
-            (project) =>
-              project.budget_year === year && normalizeRiskLevel(project.risk_level) === item.level,
-          ).length,
-          computable: true,
-          tooltip: 'นับจาก /projects',
-        })),
-      }));
-    }
-
-    const ids = [...new Set(this.multiYearProjects().map((project) => project.subdistrict_id))];
-    const colors = ['#dc2626', '#2563eb', '#0891b2', '#7c3aed', '#ea580c'];
-    return ids.map((id, index) => ({
-      name: this.subdistrictName(id),
-      color: colors[index % colors.length],
-      points: FISCAL_YEARS.map((year) => ({
-        year,
-        value: this.multiYearProjects().filter(
-          (project) =>
-            project.budget_year === year &&
-            project.subdistrict_id === id &&
-            normalizeRiskLevel(project.risk_level) === 'high',
-        ).length,
-        computable: true,
-        tooltip: 'จำนวนโครงการเสี่ยงสูง',
-      })),
-    }));
-  });
-
-  readonly repeatedEntities = computed<RepeatedEntity[]>(() => {
-    const groups = new Map<string, { years: Set<number>; count: number; totalBudget: number }>();
-    this.multiYearProjects().forEach((project) => {
-      const label = this.entityLabel(project);
-      const current = groups.get(label) ?? { years: new Set<number>(), count: 0, totalBudget: 0 };
-      current.years.add(project.budget_year);
-      current.count += 1;
-      current.totalBudget += toNumber(project.budget_amount) ?? 0;
-      groups.set(label, current);
-    });
-
-    return [...groups.entries()]
-      .map(([label, value]) => ({
-        label,
-        years: [...value.years].sort((a, b) => a - b),
-        count: value.count,
-        totalBudget: value.totalBudget,
-      }))
-      .filter((item) => item.years.length >= 2)
-      .sort((a, b) => b.count - a.count || b.totalBudget - a.totalBudget)
-      .slice(0, 12);
-  });
+export class ProjectRiskOverviewPageComponent implements OnInit {
+  readonly state = inject(ProjectRiskStateService);
 
   ngOnInit(): void {
-    this.loadSubdistricts();
-    this.loadDashboard();
-    this.loadTimeSeries();
-    this.loadAnnualRisks();
-  }
-
-  setSubdistrict(value: number | null): void {
-    this.selectedSubdistrictId.set(value);
-    this.loadDashboard();
-    this.loadTimeSeries();
-  }
-
-  setYear(value: number | null): void {
-    this.selectedYear.set(value);
-    this.loadDashboard();
-  }
-
-  setRisk(value: string | null): void {
-    this.selectedRiskLevel.set(value);
-    this.loadDashboard();
-  }
-
-  resetFilters(): void {
-    this.selectedSubdistrictId.set(null);
-    this.selectedYear.set(2568);
-    this.selectedRiskLevel.set(null);
-    this.selectedProjectType.set(null);
-    this.vendorSearchText.set('');
-    this.loadDashboard();
-    this.loadTimeSeries();
-  }
-
-  setProjectType(value: string | null): void {
-    this.selectedProjectType.set(value === 'all' ? null : value);
-  }
-
-  setVendorSearch(value: string): void {
-    this.vendorSearchText.set(value);
-  }
-
-  money(value: number | string | null | undefined): string {
-    return formatMoney(value);
-  }
-
-  number(value: number | string | null | undefined, fractionDigits = 2): string {
-    return formatNumber(value, fractionDigits);
-  }
-
-  annualRowsForYear(year: number): AnnualRisk[] {
-    return this.scopedAnnualRisks().filter((row) => row.fiscal_year === year);
-  }
-
-  annualHighCount(year: number): number {
-    return this.annualRowsForYear(year).filter(
-      (row) => normalizeRiskLevel(row.risk_level) === 'high',
-    ).length;
-  }
-
-  annualComputableCount(year: number): number {
-    return this.annualRowsForYear(year).filter((row) => toBool(row.computable)).length;
-  }
-
-  annualNotComputableCount(year: number): number {
-    return this.annualRowsForYear(year).filter((row) => !toBool(row.computable)).length;
-  }
-
-  private loadSubdistricts(): void {
-    this.api.subdistricts().subscribe({
-      next: (rows) => this.subdistricts.set(rows),
-      error: () => this.error.set('โหลดรายการตำบลไม่สำเร็จ'),
-    });
-  }
-
-  private loadDashboard(): void {
-    this.loading.set(true);
-    this.error.set('');
-
-    forkJoin({
-      summary: this.api.riskSummary(this.filters()),
-      projects: this.api.projects(this.filters()),
-    }).subscribe({
-      next: ({ summary, projects }) => {
-        this.summary.set(summary);
-        this.projects.set(projects);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.error.set('โหลดข้อมูล Project Risk ไม่สำเร็จ ตรวจ backend และ X-Username');
-        this.loading.set(false);
-      },
-    });
-  }
-
-  private loadTimeSeries(): void {
-    const subdistrictId = this.selectedSubdistrictId();
-    const requests = FISCAL_YEARS.map((year) =>
-      this.api.projects({ budget_year: year, subdistrict_id: subdistrictId }),
-    );
-
-    forkJoin(requests).subscribe({
-      next: (rowsByYear) => {
-        const all = rowsByYear.flat();
-        this.multiYearProjects.set(all);
-        this.barchartProjects.set(all);
-
-        this.budgetSeries.set(this.buildBudgetSeries(rowsByYear));
-        this.averageRiskSeries.set(this.buildAverageRiskSeries(rowsByYear));
-
-        this.riskSeries.set(
-          RISK_LEVELS.map((level) => ({
-            name:
-              level === 'high' ? 'เสี่ยงสูง' : level === 'medium' ? 'เสี่ยงปานกลาง' : 'เสี่ยงต่ำ',
-            color: level === 'high' ? '#dc2626' : level === 'medium' ? '#d97706' : '#16a34a',
-            points: FISCAL_YEARS.map((year, index) => ({
-              year,
-              value: rowsByYear[index].filter(
-                (project) => normalizeRiskLevel(project.risk_level) === level,
-              ).length,
-              computable: true,
-              tooltip: 'นับจากรายการโครงการของปีนั้น',
-            })),
-          })),
-        );
-      },
-      error: () => this.error.set('โหลด time series โครงการไม่สำเร็จ'),
-    });
-  }
-
-  private loadAnnualRisks(): void {
-    this.api.annualRisk().subscribe({
-      next: (rows) => this.annualRisks.set(rows),
-      error: () => this.error.set('โหลดข้อมูล Financial Risk Coverage ไม่สำเร็จ'),
-    });
-  }
-
-  private filters(): ProjectFilters {
-    return {
-      budget_year: this.selectedYear(),
-      subdistrict_id: this.selectedSubdistrictId(),
-      risk_level: this.selectedRiskLevel(),
-    };
-  }
-
-  private topProjectTypes(): string[] {
-    const counts = new Map<string, number>();
-    this.multiYearProjects().forEach((project) => {
-      const type = this.projectType(project);
-      counts.set(type, (counts.get(type) ?? 0) + 1);
-    });
-    return [...counts.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([type]) => type);
-  }
-
-  private buildBudgetSeries(rowsByYear: Project[][]): TimeSeries[] {
-    const projectTypes = this.distinctProjectTypes(rowsByYear.flat());
-    const colors = ['#2563eb', '#7c3aed', '#0891b2', '#ea580c', '#475569', '#0f766e', '#dc2626'];
-
-    return projectTypes.map((type, index) => ({
-      name: type,
-      color: colors[index % colors.length],
-      points: FISCAL_YEARS.map((year, yearIndex) => {
-        const projects = rowsByYear[yearIndex] ?? [];
-        const typeProjects = projects.filter((project) => this.projectType(project) === type);
-        const totalBudget = typeProjects.reduce(
-          (sum, project) => sum + (toNumber(project.budget_amount) ?? 0),
-          0,
-        );
-
-        return {
-          year,
-          value: totalBudget,
-          computable: true,
-          tooltip: `${typeProjects.length} โครงการ`,
-        };
-      }),
-    }));
-  }
-
-  private buildAverageRiskSeries(rowsByYear: Project[][]): TimeSeries[] {
-    const projectTypes = this.distinctProjectTypes(rowsByYear.flat());
-    const colors = ['#9333ea', '#16a34a', '#f59e0b', '#0ea5e9', '#ef4444', '#6366f1', '#0f766e'];
-
-    return projectTypes.map((type, index) => ({
-      name: type,
-      color: colors[index % colors.length],
-      points: FISCAL_YEARS.map((year, yearIndex) => {
-        const projects = rowsByYear[yearIndex] ?? [];
-        const typeProjects = projects.filter((project) => this.projectType(project) === type);
-        const values = typeProjects
-          .map((project) => toNumber(project.risk_score))
-          .filter((value): value is number => value !== null);
-        const average = values.length
-          ? values.reduce((sum, value) => sum + value, 0) / values.length
-          : null;
-
-        return {
-          year,
-          value: average === null ? null : Number(average.toFixed(2)),
-          computable: average !== null,
-          tooltip:
-            average === null ? 'ไม่มีโครงการประเภทนี้ในปีนี้' : `${typeProjects.length} โครงการ`,
-        };
-      }),
-    }));
-  }
-
-  private distinctProjectTypes(projects: Project[]): string[] {
-    const types = new Set<string>();
-    projects.forEach((project) => {
-      const type = this.projectType(project);
-      if (type) {
-        types.add(type);
-      }
-    });
-
-    return [...types].sort((a, b) => a.localeCompare(b, 'th'));
-  }
-
-  private projectType(project: Project): string {
-    return project.project_type || project.purchase_method_group || 'ไม่ระบุประเภท';
-  }
-
-  private vendorDisplayName(project: Project): string {
-    return (
-      project.winner_name ||
-      project.vendor_name ||
-      project.contractor_name ||
-      project.supplier_name ||
-      project.bidder_name ||
-      'ไม่ระบุผู้รับจ้าง'
-    );
-  }
-
-  private entityLabel(project: Project): string {
-    return (
-      project.vendor_name ||
-      project.contractor_name ||
-      project.supplier_name ||
-      project.purchase_method_group ||
-      project.project_type ||
-      'ไม่ระบุรายการ'
-    );
-  }
-
-  private subdistrictName(id: number): string {
-    return subdistrictLabel(
-      this.subdistricts().find((subdistrict) => subdistrict.subdistrict_id === id),
-    );
+    this.state.initialize();
   }
 }

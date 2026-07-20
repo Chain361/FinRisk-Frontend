@@ -1,34 +1,58 @@
-import { Component, input, output } from '@angular/core';
-import { LucideRotateCcw } from '@lucide/angular';
+import { Component, inject, input, output } from '@angular/core';
 
+import { AuthService } from '../../core/auth/auth.service';
 import { Subdistrict } from '../../core/models/domain.models';
 import { FISCAL_YEARS, subdistrictLabel } from '../utils/risk-utils';
 
 @Component({
   selector: 'app-filter-bar',
   standalone: true,
-  imports: [LucideRotateCcw],
   template: `
-    <div class="grid gap-3 rounded-lg border border-slate-200 bg-white p-3 shadow-sm sm:grid-cols-2 lg:grid-cols-4">
+    <div class="grid gap-3.5 rounded-[4px] border-[1.5px] border-line bg-white px-[18px] py-4 sm:grid-cols-2 lg:grid-cols-4">
+      @if (showSearch()) {
+        <label class="block sm:col-span-2">
+          <span class="text-[12.5px] font-bold text-muted">ค้นหาโครงการ</span>
+          <input
+            type="search"
+            class="gov-input mt-[5px]"
+            [placeholder]="searchPlaceholder()"
+            [value]="searchValue()"
+            (input)="searchChange.emit($any($event.target).value)"
+          />
+        </label>
+      }
+
       <label class="block">
-        <span class="text-xs font-semibold text-slate-500">ตำบล</span>
-        <select
-          class="mt-1 h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-900"
-          [value]="selectedSubdistrictId() ?? 'all'"
-          (change)="onSubdistrictChange($any($event.target).value)"
-        >
-          <option value="all">ทุกตำบลที่มีสิทธิ์</option>
-          @for (subdistrict of subdistricts(); track subdistrict.subdistrict_id) {
-            <option [value]="subdistrict.subdistrict_id">{{ labelFor(subdistrict) }}</option>
+        <span class="text-[12.5px] font-bold text-muted">
+          ตำบล
+          @if (scopeLocked()) {
+            <span class="ml-1 font-bold text-[#8a2a1f]">(ล็อกตามสิทธิ์ของคุณ)</span>
           }
-        </select>
+        </span>
+        @if (scopeLocked()) {
+          <!-- role ที่จำกัดพื้นที่ (local_executive/project_auditor/risk_analyst) เลือกตำบลอื่นไม่ได้ -->
+          <select class="gov-select mt-[5px] cursor-not-allowed bg-zebra" disabled>
+            <option>{{ lockedSubdistrictLabel() }}</option>
+          </select>
+        } @else {
+          <select
+            class="gov-select mt-[5px]"
+            [value]="selectedSubdistrictId() ?? 'all'"
+            (change)="onSubdistrictChange($any($event.target).value)"
+          >
+            <option value="all">ทุกตำบลที่มีสิทธิ์</option>
+            @for (subdistrict of subdistricts(); track subdistrict.subdistrict_id) {
+              <option [value]="subdistrict.subdistrict_id">{{ labelFor(subdistrict) }}</option>
+            }
+          </select>
+        }
       </label>
 
       @if (showYearFilter()) {
         <label class="block">
-          <span class="text-xs font-semibold text-slate-500">ปีงบประมาณ</span>
+          <span class="text-[12.5px] font-bold text-muted">ปีงบประมาณ</span>
           <select
-            class="mt-1 h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-900"
+            class="gov-select mt-[5px]"
             [value]="selectedYear() ?? 'all'"
             (change)="onYearChange($any($event.target).value)"
           >
@@ -42,9 +66,9 @@ import { FISCAL_YEARS, subdistrictLabel } from '../utils/risk-utils';
 
       @if (showRiskFilter()) {
         <label class="block">
-          <span class="text-xs font-semibold text-slate-500">ระดับความเสี่ยง</span>
+          <span class="text-[12.5px] font-bold text-muted">ระดับความเสี่ยง</span>
           <select
-            class="mt-1 h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-900"
+            class="gov-select mt-[5px]"
             [value]="selectedRiskLevel() ?? 'all'"
             (change)="onRiskChange($any($event.target).value)"
           >
@@ -105,17 +129,18 @@ import { FISCAL_YEARS, subdistrictLabel } from '../utils/risk-utils';
       <div class="flex items-end">
         <button
           type="button"
-          class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          class="inline-flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-[3px] border-[1.5px] border-line bg-white px-3 text-[13.5px] font-bold text-slate-700 hover:bg-zebra"
           (click)="reset.emit()"
         >
-          <svg lucideRotateCcw class="size-4"></svg>
-          รีเซ็ต
+          ↺ รีเซ็ตตัวกรอง
         </button>
       </div>
     </div>
   `,
 })
 export class FilterBarComponent {
+  private readonly auth = inject(AuthService);
+
   readonly subdistricts = input<Subdistrict[]>([]);
   readonly selectedSubdistrictId = input<number | null>(null);
   readonly selectedYear = input<number | null>(null);
@@ -128,6 +153,9 @@ export class FilterBarComponent {
   readonly showProjectTypeFilter = input(false);
   readonly showBudgetScopeFilter = input(false);
   readonly yearOptions = input<readonly number[]>(FISCAL_YEARS);
+  readonly showSearch = input(false);
+  readonly searchValue = input('');
+  readonly searchPlaceholder = input('ค้นหาชื่อโครงการ หรือ Project ID');
   readonly projectTypes = input<readonly string[]>([]);
 
   readonly selectedSubdistrictIdChange = output<number | null>();
@@ -137,9 +165,20 @@ export class FilterBarComponent {
   readonly budgetAmountMinChange = output<string>();
   readonly budgetAmountMaxChange = output<string>();
   readonly reset = output<void>();
+  readonly searchChange = output<string>();
 
   labelFor(subdistrict: Subdistrict): string {
     return subdistrictLabel(subdistrict);
+  }
+
+  /** role ถูกจำกัดพื้นที่ → ล็อกตัวกรองตำบล (backend คืน /subdistricts เฉพาะตำบลของตนอยู่แล้ว) */
+  scopeLocked(): boolean {
+    return this.auth.isScopedRole();
+  }
+
+  lockedSubdistrictLabel(): string {
+    const rows = this.subdistricts();
+    return rows.length ? subdistrictLabel(rows[0]) : 'ตำบลของคุณ';
   }
 
   onSubdistrictChange(value: string): void {

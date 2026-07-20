@@ -4,6 +4,8 @@ import { map, Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import {
+  AccessLogFilters,
+  AccessLogPage,
   AnnualRisk,
   FinancialStatement,
   LoginRequest,
@@ -72,6 +74,26 @@ export class ApiService {
     });
   }
 
+  /** บันทึกการเข้าถึงของผู้ใช้ — admin เท่านั้น (backend บังคับสิทธิ์ซ้ำด้วย require_roles) */
+  accessLog(filters: AccessLogFilters = {}): Observable<AccessLogPage> {
+    let params = new HttpParams();
+    const entries: Array<[string, string | number | null | undefined]> = [
+      ['username', filters.username],
+      ['action', filters.action],
+      ['resource_type', filters.resource_type],
+      ['date_from', filters.date_from],
+      ['date_to', filters.date_to],
+      ['limit', filters.limit],
+      ['offset', filters.offset],
+    ];
+    entries.forEach(([key, value]) => {
+      if (value !== null && value !== undefined && value !== '') {
+        params = params.set(key, String(value));
+      }
+    });
+    return this.http.get<AccessLogPage>(`${this.baseUrl}/audit/access-log`, { params });
+  }
+
   private toParams(filters: ProjectFilters): HttpParams {
     let params = new HttpParams();
     const entries: Array<[string, string | number | null | undefined]> = [
@@ -97,11 +119,18 @@ export class ApiService {
 
   private unwrapProjectDetail(response: ProjectDetailResponse): ProjectDetail {
     const project = response.project ?? {};
+    const score = response.risk_score ?? {};
     return {
       ...project,
-      risk_score: response.risk_score?.risk_score ?? project.risk_score ?? null,
-      risk_level: response.risk_score?.risk_level ?? project.risk_level ?? null,
-      factors_triggered: response.risk_score?.factors_triggered ?? project.factors_triggered ?? null,
+      risk_score: score.risk_score ?? project.risk_score ?? null,
+      risk_level: score.risk_level ?? project.risk_level ?? null,
+      matrix_level: score.matrix_level ?? project.matrix_level ?? null,
+      matrix_likelihood: score.matrix_likelihood ?? null,
+      matrix_impact: score.matrix_impact ?? null,
+      matrix_score: score.matrix_score ?? null,
+      factors_triggered: score.factors_triggered ?? project.factors_triggered ?? null,
+      factors_not_computable: score.factors_not_computable ?? null,
+      summary_text: score.summary_text ?? null,
       risk_factors: response.risk_factors ?? [],
     };
   }
