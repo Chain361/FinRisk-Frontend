@@ -18,7 +18,14 @@ export const routes: Routes = [
         path: 'project-risk',
         loadComponent: () =>
           import('./features/project-risk/project-risk.page').then(
-            (m) => m.ProjectRiskPageComponent,
+            (m) => m.ProjectRiskOverviewPageComponent,
+          ),
+      },
+      {
+        path: 'project-risk/analysis',
+        loadComponent: () =>
+          import('./features/project-risk/project-risk.page.analysis').then(
+            (m) => m.ProjectRiskAnalysisPageComponent,
           ),
       },
       {

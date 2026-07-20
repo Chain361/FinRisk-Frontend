@@ -519,19 +519,32 @@ export class ProjectRiskStateService {
     );
   }
 
+  // เกณฑ์แจ้งเตือนฝั่งหน้าจอ (ค่าตั้งต้น) — แสดง "ตัวเลข vs เส้นเกณฑ์" ให้ผู้ตรวจสอบตรวจทานได้
+  private static readonly SCORE_CUTOFF = 70;
+  private static readonly RATIO_HIGH = 1.15;
+  private static readonly RATIO_LOW = 0.85;
+
   private anomalyReason(project: Project): string {
     const reasons: string[] = [];
     const ratio = toNumber(project.price_ratio);
     const score = toNumber(project.risk_score);
+    const band = project.matrix_level;
 
-    if (normalizeRiskLevel(project.risk_level) === 'high') {
+    if (band === 'สูงมาก' || band === 'สูง') {
+      reasons.push(`ระดับ 5×5 = ${band}`);
+    } else if (normalizeRiskLevel(project.risk_level) === 'high') {
       reasons.push('ระดับความเสี่ยงสูง');
     }
-    if (score !== null && score >= 70) {
-      reasons.push('คะแนนความเสี่ยงตั้งแต่ 70');
+    if (score !== null && score >= ProjectRiskStateService.SCORE_CUTOFF) {
+      reasons.push(`คะแนนความเสี่ยง ${score.toFixed(0)} ≥ ${ProjectRiskStateService.SCORE_CUTOFF}`);
     }
-    if (ratio !== null && (ratio >= 1.15 || ratio <= 0.85)) {
-      reasons.push('อัตราส่วนราคาเบี่ยงจากราคากลางมาก');
+    if (
+      ratio !== null &&
+      (ratio >= ProjectRiskStateService.RATIO_HIGH || ratio <= ProjectRiskStateService.RATIO_LOW)
+    ) {
+      reasons.push(
+        `อัตราส่วนราคา ${ratio.toFixed(3)} (นอกช่วง ${ProjectRiskStateService.RATIO_LOW}–${ProjectRiskStateService.RATIO_HIGH})`,
+      );
     }
 
     return reasons.join(' · ');
