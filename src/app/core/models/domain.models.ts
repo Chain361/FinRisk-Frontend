@@ -1,9 +1,13 @@
 export type RiskLevel = 'low' | 'medium' | 'high' | string;
 
+/** ระดับตามกรอบ 5×5 (โอกาส × ผลกระทบ) — ภาษาไทยตามมาตรฐานราชการ */
+export type RiskBand = 'ต่ำ' | 'ปานกลาง' | 'สูง' | 'สูงมาก' | string;
+
 export interface AppUser {
   username: string;
   role: string;
   subdistrict_id?: number | null;
+  display_name?: string | null;
   full_name?: string | null;
   name?: string | null;
 }
@@ -56,6 +60,7 @@ export interface Project {
   price_ratio?: number | null;
   risk_score?: number | null;
   risk_level?: RiskLevel | null;
+  matrix_level?: RiskBand | null;
   factors_triggered?: number | string[] | string | null;
   vendor_name?: string | null;
   contractor_name?: string | null;
@@ -69,11 +74,18 @@ export interface ProjectRiskFactor {
   factor_code: string;
   name_th: string;
   severity?: string | null;
+  impact_level?: number | null;
+  legal_ref?: string | null;
+  formula?: string | null;
   triggered: boolean | number;
   computable: boolean | number;
   observed_value?: number | string | null;
   threshold_used?: number | string | null;
   evidence_text?: string | null;
+  likelihood?: number | null;
+  impact?: number | null;
+  matrix_score?: number | null;
+  risk_band?: RiskBand | null;
 }
 
 export interface ProjectDetail extends Project {
@@ -88,6 +100,10 @@ export interface ProjectDetailResponse {
     project_id?: string | number;
     risk_score?: number | null;
     risk_level?: RiskLevel | null;
+    matrix_likelihood?: number | null;
+    matrix_impact?: number | null;
+    matrix_score?: number | null;
+    matrix_level?: RiskBand | null;
     factors_triggered?: number | null;
     factors_not_computable?: number | null;
     summary_text?: string | null;
@@ -105,6 +121,8 @@ export interface RiskFactorCatalog {
   severity?: string | null;
   category?: string | null;
   threshold?: number | string | null;
+  impact_level?: number | null;
+  legal_ref?: string | null;
   [key: string]: unknown;
 }
 
@@ -113,12 +131,17 @@ export interface AnnualRisk {
   factor_name: string;
   fiscal_year: number;
   subdistrict_id?: number | null;
+  legal_ref?: string | null;
   triggered: boolean | number;
   computable: boolean | number;
   risk_level?: RiskLevel | null;
   observed_value?: number | string | null;
   threshold_used?: number | string | null;
   evidence_text?: string | null;
+  likelihood?: number | null;
+  impact?: number | null;
+  matrix_score?: number | null;
+  risk_band?: RiskBand | null;
   [key: string]: unknown;
 }
 

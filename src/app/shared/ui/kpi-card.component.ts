@@ -4,16 +4,12 @@ import { Component, input } from '@angular/core';
   selector: 'app-kpi-card',
   standalone: true,
   template: `
-    <section class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-      <div class="flex items-start justify-between gap-3">
-        <div>
-          <p class="text-sm font-medium text-slate-500">{{ label() }}</p>
-          <p class="mt-2 text-2xl font-semibold text-slate-950">{{ value() }}</p>
-        </div>
-        <span class="h-10 w-1.5 rounded-full" [class]="accentClass()"></span>
-      </div>
+    <section class="relative rounded-[4px] border-[1.5px] border-line bg-white py-4 pl-[22px] pr-[18px]">
+      <span class="absolute bottom-0 left-0 top-0 w-1.5 rounded-l-[3px]" [class]="accentClass()"></span>
+      <p class="m-0 text-[13px] font-bold text-muted">{{ label() }}</p>
+      <p class="m-0 mt-2 text-[27px] font-extrabold text-ink">{{ value() }}</p>
       @if (hint()) {
-        <p class="mt-3 text-xs leading-5 text-slate-500">{{ hint() }}</p>
+        <p class="m-0 mt-1.5 text-xs text-muted">{{ hint() }}</p>
       }
     </section>
   `,

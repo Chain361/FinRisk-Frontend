@@ -35,6 +35,25 @@ The backend uses mock auth:
 - every authenticated request sends `X-Username: <token>`
 - default mock password is `password123`
 
+## Demo Accounts (mock — ทุกคนรหัสผ่าน `password123`)
+
+> ⚠️ บัญชีทดสอบสำหรับ prototype เท่านั้น (seed จาก `FinRisk-Backend/seed_database.py`) —
+> ก่อนใช้งานจริงต้องเปลี่ยนเป็นระบบ auth จริง (bcrypt/JWT) และลบบัญชีเหล่านี้
+
+| username | บทบาท | ขอบเขตข้อมูล |
+|---|---|---|
+| `admin` | ผู้ดูแลระบบ | ทุกตำบล + ตั้งค่าระบบ |
+| `supervisor1` | ผู้กำกับดูแลอำเภอ/จังหวัด | ทุกตำบล |
+| `thachang_user` | ผู้บริหารตำบล (นายก/ปลัด) | เฉพาะท่าช้าง (ตัวกรองตำบลถูกล็อก) |
+| `pingkhong_user` | ผู้บริหารตำบล (นายก/ปลัด) | เฉพาะปิงโค้ง |
+| `yonok_user` | ผู้บริหารตำบล (นายก/ปลัด) | เฉพาะโยนก |
+| `auditor1` | ผู้ตรวจสอบโครงการ | เฉพาะท่าช้าง |
+| `analyst1` | นักวิเคราะห์/ตรวจสอบภายใน | เฉพาะท่าช้าง |
+| `public1` | ประชาชนทั่วไป | ทุกตำบล (read-only, ไม่เห็นข้อมูลที่ปิด) |
+
+คู่เดโมที่เห็นความต่างชัด: login `admin` (เลือกตำบลได้ 3 ตำบล) เทียบกับ `pingkhong_user`
+(ตัวกรองล็อก + badge "ขอบเขต: ตำบลของตน")
+
 ## Implemented Features
 
 - F1 Project Risk Dashboard: `/risk/summary`, `/projects`

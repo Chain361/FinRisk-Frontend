@@ -1,6 +1,52 @@
-import { AnnualRisk, Project, RiskLevel, Subdistrict } from '../../core/models/domain.models';
+import { AnnualRisk, Project, RiskBand, RiskLevel, Subdistrict } from '../../core/models/domain.models';
 
 export const FISCAL_YEARS = [2566, 2567, 2568] as const;
+
+/** ระดับ 5×5 (โอกาส × ผลกระทบ) เรียงจากต่ำ → สูงมาก */
+export const RISK_BANDS = ['ต่ำ', 'ปานกลาง', 'สูง', 'สูงมาก'] as const;
+
+/** map matrix_score (1–25) → ระดับ ตามเกณฑ์ default (ค่านโยบายฝั่ง backend = app_config) */
+export function bandFromScore(score: number | null | undefined): RiskBand | null {
+  const s = toNumber(score);
+  if (s === null) {
+    return null;
+  }
+  if (s <= 5) return 'ต่ำ';
+  if (s <= 11) return 'ปานกลาง';
+  if (s <= 19) return 'สูง';
+  return 'สูงมาก';
+}
+
+/** สีของแต่ละระดับ 5×5 — เขียว/เหลือง/ส้ม/แดง ตามมาตรฐาน risk matrix */
+export function bandColor(band: RiskBand | null | undefined): string {
+  switch (band) {
+    case 'สูงมาก':
+      return '#b91c1c';
+    case 'สูง':
+      return '#c2410c';
+    case 'ปานกลาง':
+      return '#b45309';
+    case 'ต่ำ':
+      return '#15803d';
+    default:
+      return '#64748b';
+  }
+}
+
+export function bandBadgeClasses(band: RiskBand | null | undefined): string {
+  switch (band) {
+    case 'สูงมาก':
+      return 'text-white';
+    case 'สูง':
+      return 'text-white';
+    case 'ปานกลาง':
+      return 'text-white';
+    case 'ต่ำ':
+      return 'text-white';
+    default:
+      return 'text-white';
+  }
+}
 
 export const RISK_LEVELS = ['high', 'medium', 'low'] as const;
 
@@ -28,11 +74,11 @@ export function riskLabel(level: RiskLevel | null | undefined): string {
 export function riskColor(level: RiskLevel | null | undefined): string {
   switch (normalizeRiskLevel(level)) {
     case 'high':
-      return '#dc2626';
+      return '#b91c1c';
     case 'medium':
-      return '#d97706';
+      return '#b45309';
     case 'low':
-      return '#16a34a';
+      return '#15803d';
     default:
       return '#64748b';
   }
@@ -41,13 +87,13 @@ export function riskColor(level: RiskLevel | null | undefined): string {
 export function riskBadgeClasses(level: RiskLevel | null | undefined): string {
   switch (normalizeRiskLevel(level)) {
     case 'high':
-      return 'border-red-200 bg-red-50 text-red-700';
+      return 'bg-risk-high text-white';
     case 'medium':
-      return 'border-amber-200 bg-amber-50 text-amber-700';
+      return 'bg-risk-medium text-white';
     case 'low':
-      return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+      return 'bg-risk-low text-white';
     default:
-      return 'border-slate-200 bg-slate-50 text-slate-600';
+      return 'bg-slate-500 text-white';
   }
 }
 

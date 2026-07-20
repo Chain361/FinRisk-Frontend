@@ -1,25 +1,26 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { catchError, forkJoin, of } from 'rxjs';
 
-import { ApiService } from '../../core/api/api.service';
-import { AnnualRisk, FinancialStatement, Subdistrict } from '../../core/models/domain.models';
-import { BarChartComponent, BarChartSeries } from '../../shared/charts/bar-chart.component';
-import { FilterBarComponent } from '../../shared/filters/filter-bar.component';
+import { ApiService } from '../../../core/api/api.service';
+import { AnnualRisk, FinancialStatement, Subdistrict } from '../../../core/models/domain.models';
+import { BarChartComponent, BarChartSeries } from '../../../shared/charts/bar-chart.component';
+import { FilterBarComponent } from '../../../shared/filters/filter-bar.component';
 import {
   CompositionBarComponent,
   CompositionSegment,
-} from '../../shared/ui/composition-bar.component';
-import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
-import { InfoTooltipComponent } from '../../shared/ui/info-tooltip.component';
-import { KpiCardComponent } from '../../shared/ui/kpi-card.component';
-import { PALETTE } from '../../shared/utils/design-tokens';
+} from '../../../shared/ui/composition-bar.component';
+import { EmptyStateComponent } from '../../../shared/ui/empty-state.component';
+import { InfoTooltipComponent } from '../../../shared/ui/info-tooltip.component';
+import { KpiCardComponent } from '../../../shared/ui/kpi-card.component';
+import { PALETTE } from '../../../shared/utils/design-tokens';
 import {
+  bandColor,
   FISCAL_YEARS,
   formatNumber,
   subdistrictLabel,
   toBool,
   toNumber,
-} from '../../shared/utils/risk-utils';
+} from '../../../shared/utils/risk-utils';
 
 interface FactorOption {
   code: string;
@@ -50,24 +51,18 @@ interface IncomeStatementTotals {
 }
 
 @Component({
-  selector: 'app-financial-health-page',
+  selector: 'app-risk-indicators-page',
   standalone: true,
   imports: [
-    BarChartComponent,
-    CompositionBarComponent,
     EmptyStateComponent,
     FilterBarComponent,
     InfoTooltipComponent,
-    KpiCardComponent,
   ],
   template: `
     <section class="page-shell">
       <div>
-        <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F2</p>
-        <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">Annual Financial Health</h1>
-        <p class="m-0 mt-1.5 text-sm text-muted">
-          สถานะทางการเงินรายปี พร้อมค่าที่สังเกตได้และหลักฐานประกอบของแต่ละปัจจัย
-        </p>
+        <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F2.4</p>
+        <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">ตัวชี้วัดความเสี่ยงทางการคลัง</h1>
       </div>
 
       <app-filter-bar
@@ -87,156 +82,6 @@ interface IncomeStatementTotals {
           {{ error() }}
         </p>
       }
-
-      <div class="grid gap-4 md:grid-cols-3">
-        @for (card of balanceSheetKpis(); track card.label) {
-          <app-kpi-card
-            [label]="card.label"
-            [value]="card.value"
-            [hint]="card.hint"
-            [accentClass]="card.accentClass"
-          />
-        }
-      </div>
-
-      <div class="grid gap-4 md:grid-cols-3">
-        @for (card of incomeStatementKpis(); track card.label) {
-          <app-kpi-card
-            [label]="card.label"
-            [value]="card.value"
-            [hint]="card.hint"
-            [accentClass]="card.accentClass"
-          />
-        }
-      </div>
-
-      <section class="panel p-[18px]">
-        <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 class="m-0 text-[16px] font-bold text-ink">เปรียบเทียบตัวชี้วัดข้ามตำบล</h2>
-            <p class="m-0 mt-1 text-[13px] text-muted">
-              เปรียบเทียบตัวชี้วัดสุขภาพการคลังของทุกตำบลในปี {{ selectedYear() ?? 'ทุกปี' }}
-            </p>
-          </div>
-
-          <div class="flex flex-wrap items-end gap-3.5">
-            <label class="block">
-              <span class="text-[12.5px] font-bold text-muted mr-3">ตัวชี้วัด</span>
-              <select
-                class="gov-select mt-[5px] w-auto!"
-                [value]="comparisonMetric()"
-                (change)="setComparisonMetric($any($event.target).value)"
-              >
-                <option value="netAssets">สินทรัพย์สุทธิ</option>
-                <option value="netIncome">ผลสุทธิ</option>
-                <option value="riskFactor">Risk Factor รายปี</option>
-              </select>
-            </label>
-
-            @if (comparisonMetric() === 'riskFactor') {
-              <label class="block">
-                <span class="text-[12.5px] font-bold text-muted ml-3 mr-3">ปัจจัย</span>
-                <select
-                  class="gov-select mt-[5px] w-auto!"
-                  [value]="comparisonFactorCode() ?? ''"
-                  (change)="setComparisonFactorCode($any($event.target).value)"
-                >
-                  @for (option of allFactorOptions(); track option.code) {
-                    <option [value]="option.code">{{ option.code }} - {{ option.name }}</option>
-                  }
-                </select>
-              </label>
-            }
-          </div>
-        </div>
-
-        @if (comparisonCategories().length) {
-          <app-bar-chart
-            [title]="'เปรียบเทียบ' + comparisonMetricLabel() + 'ข้ามตำบล'"
-            [subtitle]="'ตัวชี้วัด: ' + comparisonMetricLabel()"
-            [categories]="comparisonCategories()"
-            [series]="comparisonBarSeries()"
-            [unitSuffix]="comparisonUnit()"
-            [compactValueLabels]="comparisonMetric() !== 'riskFactor'"
-            [fractionDigits]="comparisonMetric() === 'riskFactor' ? 2 : 0"
-          />
-        } @else {
-          <app-empty-state
-            title="ไม่พบข้อมูลสำหรับเปรียบเทียบ"
-            message="ลองเลือกปีหรือตัวชี้วัดอื่น"
-          />
-        }
-      </section>
-
-      <div class="grid gap-4 xl:grid-cols-2">
-        <app-composition-bar
-          title="โครงสร้างสินทรัพย์"
-          subtitle="แบ่งเป็นสินทรัพย์หมุนเวียนและไม่หมุนเวียน"
-          [segments]="assetComposition()"
-        />
-        <app-composition-bar
-          title="โครงสร้างหนี้สิน"
-          subtitle="แบ่งเป็นหนี้สินหมุนเวียนและระยะยาว"
-          [segments]="liabilityComposition()"
-        />
-      </div>
-
-      <app-bar-chart
-        title="โครงสร้างรายได้"
-        subtitle="เปรียบเทียบรายได้จัดเก็บเองและรัฐจัดสรร กับเงินอุดหนุนของตำบลที่เลือก"
-        [categories]="revenueStructureCategories()"
-        [series]="revenueStructureSeries()"
-        unitSuffix="บาท"
-        rowHeader="ประเภทรายได้"
-        [compactValueLabels]="true"
-      />
-
-      <section class="panel p-[18px]">
-        <div class="mb-3">
-          <h2 class="m-0 text-[16px] font-bold text-ink">แนวโน้มการลงทุน (สินทรัพย์ถาวร)</h2>
-          <p class="m-0 mt-1 text-[13px] text-muted">
-            มูลค่าสินทรัพย์ถาวรย้อนหลังของตำบลที่เลือก พร้อมการเปลี่ยนแปลงเทียบปีก่อน (YoY)
-          </p>
-        </div>
-
-        <div class="mb-4 grid gap-3.5 sm:grid-cols-2">
-          <app-kpi-card
-            [label]="'มูลค่าสินทรัพย์ถาวร ปี ' + fixedAssetFocusYear()"
-            [value]="fixedAssetFocusValueText()"
-            hint="อ้างอิงตัวกรองตำบล/ปีงบประมาณด้านบน"
-            accentClass="bg-navy"
-          />
-
-          <div class="rounded-[4px] border-[1.5px] border-line bg-white p-4">
-            <p class="m-0 text-[13px] font-bold text-muted">YoY เทียบปีก่อน</p>
-            @if (fixedAssetYoyView(); as yoyView) {
-              <p class="m-0 mt-2 text-2xl font-extrabold" [class]="yoyView.colorClass">
-                {{ yoyView.arrow }} {{ yoyView.magnitude }}%
-              </p>
-              <p class="m-0 mt-1 text-xs text-muted">
-                เทียบปี {{ fixedAssetPreviousYear() }} → {{ fixedAssetFocusYear() }}
-              </p>
-            } @else {
-              <p class="m-0 mt-2 text-sm text-muted">ไม่มีข้อมูลเพียงพอสำหรับคำนวณ YoY</p>
-            }
-          </div>
-        </div>
-
-        <app-bar-chart
-          [title]="
-            'แนวโน้มมูลค่าสินทรัพย์ถาวร (ปี ' +
-            FISCAL_YEARS[0] +
-            '-' +
-            FISCAL_YEARS[FISCAL_YEARS.length - 1] +
-            ')'
-          "
-          [subtitle]="fixedAssetInsight()"
-          [categories]="fiscalYearLabels"
-          [series]="fixedAssetBarSeries()"
-          unitSuffix="บาท"
-          [compactValueLabels]="true"
-        />
-      </section>
 
       <section class="panel p-[18px]">
         <div class="mb-0.5 flex items-center gap-2">
@@ -264,10 +109,19 @@ interface IncomeStatementTotals {
                 track row.factor_code + '-' + row.fiscal_year + '-' + row.subdistrict_id
               ) {
                 <article class="rounded-[4px] border-[1.5px] border-line p-3.5">
-                  <p class="m-0 text-sm font-bold text-ink">{{ row.factor_name }}</p>
-                  <p class="m-0 mt-0.5 text-[11.5px] text-muted">
-                    {{ row.factor_code }} · ปี {{ row.fiscal_year }}
-                  </p>
+                  <div class="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p class="m-0 text-sm font-bold text-ink">{{ row.factor_name }}</p>
+                      <p class="m-0 mt-0.5 text-[11.5px] text-muted">{{ row.factor_code }} · ปี {{ row.fiscal_year }}</p>
+                    </div>
+                    @if (row.risk_band) {
+                      <span
+                        class="shrink-0 rounded-[3px] px-2.5 py-1 text-[11.5px] font-extrabold text-white"
+                        [style.background]="bandColor(row.risk_band)"
+                        [title]="matrixChip(row)"
+                      >{{ matrixChip(row) }} · {{ row.risk_band }}</span>
+                    }
+                  </div>
                   <div class="mt-2.5 rounded-[3px] border border-line-soft bg-zebra p-2.5">
                     <p class="m-0 text-[11.5px] font-bold text-muted">Observed Value</p>
                     <p
@@ -322,7 +176,7 @@ interface IncomeStatementTotals {
     </section>
   `,
 })
-export class FinancialHealthPageComponent implements OnInit {
+export class RiskIndicatorsPageComponent implements OnInit {
   private readonly api = inject(ApiService);
 
   readonly FISCAL_YEARS = FISCAL_YEARS;
@@ -659,6 +513,20 @@ export class FinancialHealthPageComponent implements OnInit {
 
   isComputable(row: AnnualRisk): boolean {
     return toBool(row.computable);
+  }
+
+  bandColor(band: string | null | undefined): string {
+    return bandColor(band);
+  }
+
+  matrixChip(row: AnnualRisk): string {
+    const l = toNumber(row.likelihood);
+    const i = toNumber(row.impact);
+    const s = toNumber(row.matrix_score);
+    if (l === null || i === null || s === null) {
+      return '-';
+    }
+    return `โอกาส ${l} × ผลกระทบ ${i} = ${s}`;
   }
 
   observedValueText(row: AnnualRisk): string {
