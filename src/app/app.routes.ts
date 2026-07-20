@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 
 import { authGuard } from './core/auth/auth.guard';
+import { roleGuard } from './core/auth/role.guard';
 import { AppShellComponent } from './layout/app-shell.component';
 
 export const routes: Routes = [
@@ -18,7 +19,14 @@ export const routes: Routes = [
         path: 'project-risk',
         loadComponent: () =>
           import('./features/project-risk/project-risk.page').then(
-            (m) => m.ProjectRiskPageComponent,
+            (m) => m.ProjectRiskOverviewPageComponent,
+          ),
+      },
+      {
+        path: 'project-risk/analysis',
+        loadComponent: () =>
+          import('./features/project-risk/project-risk.page.analysis').then(
+            (m) => m.ProjectRiskAnalysisPageComponent,
           ),
       },
       {
@@ -70,6 +78,13 @@ export const routes: Routes = [
         path: 'trends',
         loadComponent: () =>
           import('./features/trends/trends.page').then((m) => m.TrendsPageComponent),
+      },
+      {
+        // บันทึกการเข้าถึงระบบ — เฉพาะ admin (backend บังคับสิทธิ์ซ้ำด้วย require_roles("admin"))
+        path: 'admin/access-log',
+        canActivate: [roleGuard('admin')],
+        loadComponent: () =>
+          import('./features/admin/access-log.page').then((m) => m.AccessLogPageComponent),
       },
     ],
   },

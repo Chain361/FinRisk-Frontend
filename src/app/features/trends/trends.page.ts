@@ -364,19 +364,26 @@ export class TrendsPageComponent implements OnInit {
     );
   }
 
+  private static readonly SCORE_CUTOFF = 70;
+  private static readonly RATIO_HIGH = 1.15;
+  private static readonly RATIO_LOW = 0.85;
+
   private anomalyReason(project: Project): string {
     const reasons: string[] = [];
     const ratio = toNumber(project.price_ratio);
     const score = toNumber(project.risk_score);
+    const band = project.matrix_level;
 
-    if (normalizeRiskLevel(project.risk_level) === 'high') {
+    if (band === 'สูงมาก' || band === 'สูง') {
+      reasons.push(`ระดับ 5×5 = ${band}`);
+    } else if (normalizeRiskLevel(project.risk_level) === 'high') {
       reasons.push('risk_level=high');
     }
-    if (score !== null && score >= 70) {
-      reasons.push('risk_score สูง');
+    if (score !== null && score >= TrendsPageComponent.SCORE_CUTOFF) {
+      reasons.push(`risk_score ${score.toFixed(0)} ≥ ${TrendsPageComponent.SCORE_CUTOFF}`);
     }
-    if (ratio !== null && (ratio >= 1.15 || ratio <= 0.85)) {
-      reasons.push('price_ratio ห่างจากราคากลางมาก');
+    if (ratio !== null && (ratio >= TrendsPageComponent.RATIO_HIGH || ratio <= TrendsPageComponent.RATIO_LOW)) {
+      reasons.push(`price_ratio ${ratio.toFixed(3)} (นอกช่วง ${TrendsPageComponent.RATIO_LOW}–${TrendsPageComponent.RATIO_HIGH})`);
     }
 
     return reasons.join(' · ');

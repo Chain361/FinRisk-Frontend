@@ -14,6 +14,7 @@ import { InfoTooltipComponent } from '../../../shared/ui/info-tooltip.component'
 import { KpiCardComponent } from '../../../shared/ui/kpi-card.component';
 import { PALETTE } from '../../../shared/utils/design-tokens';
 import {
+  bandColor,
   FISCAL_YEARS,
   formatNumber,
   subdistrictLabel,
@@ -108,10 +109,19 @@ interface IncomeStatementTotals {
                 track row.factor_code + '-' + row.fiscal_year + '-' + row.subdistrict_id
               ) {
                 <article class="rounded-[4px] border-[1.5px] border-line p-3.5">
-                  <p class="m-0 text-sm font-bold text-ink">{{ row.factor_name }}</p>
-                  <p class="m-0 mt-0.5 text-[11.5px] text-muted">
-                    {{ row.factor_code }} · ปี {{ row.fiscal_year }}
-                  </p>
+                  <div class="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p class="m-0 text-sm font-bold text-ink">{{ row.factor_name }}</p>
+                      <p class="m-0 mt-0.5 text-[11.5px] text-muted">{{ row.factor_code }} · ปี {{ row.fiscal_year }}</p>
+                    </div>
+                    @if (row.risk_band) {
+                      <span
+                        class="shrink-0 rounded-[3px] px-2.5 py-1 text-[11.5px] font-extrabold text-white"
+                        [style.background]="bandColor(row.risk_band)"
+                        [title]="matrixChip(row)"
+                      >{{ matrixChip(row) }} · {{ row.risk_band }}</span>
+                    }
+                  </div>
                   <div class="mt-2.5 rounded-[3px] border border-line-soft bg-zebra p-2.5">
                     <p class="m-0 text-[11.5px] font-bold text-muted">Observed Value</p>
                     <p
@@ -503,6 +513,20 @@ export class RiskIndicatorsPageComponent implements OnInit {
 
   isComputable(row: AnnualRisk): boolean {
     return toBool(row.computable);
+  }
+
+  bandColor(band: string | null | undefined): string {
+    return bandColor(band);
+  }
+
+  matrixChip(row: AnnualRisk): string {
+    const l = toNumber(row.likelihood);
+    const i = toNumber(row.impact);
+    const s = toNumber(row.matrix_score);
+    if (l === null || i === null || s === null) {
+      return '-';
+    }
+    return `โอกาส ${l} × ผลกระทบ ${i} = ${s}`;
   }
 
   observedValueText(row: AnnualRisk): string {

@@ -1,5 +1,6 @@
-import { Component, input, output } from '@angular/core';
+import { Component, inject, input, output } from '@angular/core';
 
+import { AuthService } from '../../core/auth/auth.service';
 import { Subdistrict } from '../../core/models/domain.models';
 import { FISCAL_YEARS, subdistrictLabel } from '../utils/risk-utils';
 
@@ -22,17 +23,29 @@ import { FISCAL_YEARS, subdistrictLabel } from '../utils/risk-utils';
       }
 
       <label class="block">
-        <span class="text-[12.5px] font-bold text-muted">ตำบล</span>
-        <select
-          class="gov-select mt-[5px]"
-          [value]="selectedSubdistrictId() ?? 'all'"
-          (change)="onSubdistrictChange($any($event.target).value)"
-        >
-          <option value="all">ทุกตำบลที่มีสิทธิ์</option>
-          @for (subdistrict of subdistricts(); track subdistrict.subdistrict_id) {
-            <option [value]="subdistrict.subdistrict_id">{{ labelFor(subdistrict) }}</option>
+        <span class="text-[12.5px] font-bold text-muted">
+          ตำบล
+          @if (scopeLocked()) {
+            <span class="ml-1 font-bold text-[#8a2a1f]">(ล็อกตามสิทธิ์ของคุณ)</span>
           }
-        </select>
+        </span>
+        @if (scopeLocked()) {
+          <!-- role ที่จำกัดพื้นที่ (local_executive/project_auditor/risk_analyst) เลือกตำบลอื่นไม่ได้ -->
+          <select class="gov-select mt-[5px] cursor-not-allowed bg-zebra" disabled>
+            <option>{{ lockedSubdistrictLabel() }}</option>
+          </select>
+        } @else {
+          <select
+            class="gov-select mt-[5px]"
+            [value]="selectedSubdistrictId() ?? 'all'"
+            (change)="onSubdistrictChange($any($event.target).value)"
+          >
+            <option value="all">ทุกตำบลที่มีสิทธิ์</option>
+            @for (subdistrict of subdistricts(); track subdistrict.subdistrict_id) {
+              <option [value]="subdistrict.subdistrict_id">{{ labelFor(subdistrict) }}</option>
+            }
+          </select>
+        }
       </label>
 
       @if (showYearFilter()) {
@@ -126,6 +139,8 @@ import { FISCAL_YEARS, subdistrictLabel } from '../utils/risk-utils';
   `,
 })
 export class FilterBarComponent {
+  private readonly auth = inject(AuthService);
+
   readonly subdistricts = input<Subdistrict[]>([]);
   readonly selectedSubdistrictId = input<number | null>(null);
   readonly selectedYear = input<number | null>(null);
@@ -154,6 +169,16 @@ export class FilterBarComponent {
 
   labelFor(subdistrict: Subdistrict): string {
     return subdistrictLabel(subdistrict);
+  }
+
+  /** role ถูกจำกัดพื้นที่ → ล็อกตัวกรองตำบล (backend คืน /subdistricts เฉพาะตำบลของตนอยู่แล้ว) */
+  scopeLocked(): boolean {
+    return this.auth.isScopedRole();
+  }
+
+  lockedSubdistrictLabel(): string {
+    const rows = this.subdistricts();
+    return rows.length ? subdistrictLabel(rows[0]) : 'ตำบลของคุณ';
   }
 
   onSubdistrictChange(value: string): void {

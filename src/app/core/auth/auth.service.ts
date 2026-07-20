@@ -4,6 +4,7 @@ import { Observable, tap } from 'rxjs';
 
 import { ApiService } from '../api/api.service';
 import { AppUser, LoginResponse } from '../models/domain.models';
+import { ROLE_LABELS, SCOPED_ROLES } from './roles';
 import { TOKEN_KEY } from './x-username.interceptor';
 
 const USER_KEY = 'finrisk_user';
@@ -16,6 +17,30 @@ export class AuthService {
   readonly token = signal<string | null>(localStorage.getItem(TOKEN_KEY));
   readonly user = signal<AppUser | null>(this.restoreUser());
   readonly isAuthenticated = computed(() => Boolean(this.token()));
+
+  /** role code ของผู้ใช้ปัจจุบัน (null = ยังไม่ login) */
+  readonly role = computed(() => this.user()?.role ?? null);
+
+  /** role นี้ถูกจำกัดขอบเขตข้อมูลเฉพาะตำบลของตนเอง (ตาม roles.md) */
+  readonly isScopedRole = computed(() => {
+    const role = this.role();
+    return role !== null && (SCOPED_ROLES as readonly string[]).includes(role);
+  });
+
+  /** ชื่อบทบาทภาษาไทยสำหรับแสดงบน UI */
+  readonly roleLabel = computed(() => {
+    const user = this.user();
+    if (!user) {
+      return 'ไม่ระบุบทบาท';
+    }
+    return ROLE_LABELS[user.role] ?? user.display_name ?? user.role;
+  });
+
+  /** true เมื่อ role ปัจจุบันอยู่ในรายการที่อนุญาต */
+  hasRole(...allowed: string[]): boolean {
+    const role = this.role();
+    return role !== null && allowed.includes(role);
+  }
 
   login(username: string, password: string): Observable<LoginResponse> {
     return this.api.login({ username, password }).pipe(
