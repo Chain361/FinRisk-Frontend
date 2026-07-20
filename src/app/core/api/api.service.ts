@@ -4,6 +4,8 @@ import { map, Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import {
+  AccessLogFilters,
+  AccessLogPage,
   AnnualRisk,
   FinancialStatement,
   LoginRequest,
@@ -76,6 +78,26 @@ export class ApiService {
     return this.http.get<RiskSummary>(`${this.baseUrl}/risk/summary`, {
       params: this.toParams(filters),
     });
+  }
+
+  /** บันทึกการเข้าถึงของผู้ใช้ — admin เท่านั้น (backend บังคับสิทธิ์ซ้ำด้วย require_roles) */
+  accessLog(filters: AccessLogFilters = {}): Observable<AccessLogPage> {
+    let params = new HttpParams();
+    const entries: Array<[string, string | number | null | undefined]> = [
+      ['username', filters.username],
+      ['action', filters.action],
+      ['resource_type', filters.resource_type],
+      ['date_from', filters.date_from],
+      ['date_to', filters.date_to],
+      ['limit', filters.limit],
+      ['offset', filters.offset],
+    ];
+    entries.forEach(([key, value]) => {
+      if (value !== null && value !== undefined && value !== '') {
+        params = params.set(key, String(value));
+      }
+    });
+    return this.http.get<AccessLogPage>(`${this.baseUrl}/audit/access-log`, { params });
   }
 
   private toParams(filters: ProjectFilters): HttpParams {

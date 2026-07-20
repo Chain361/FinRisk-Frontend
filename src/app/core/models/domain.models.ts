@@ -174,3 +174,36 @@ export interface ProjectFilters {
   subdistrict_id?: number | null;
   risk_level?: string | null;
 }
+
+/** 1 แถวใน access log (บันทึกการเข้าถึงของผู้ใช้ — backend: GET /audit/access-log) */
+export interface AccessLogEntry {
+  log_id: number;
+  username: string | null;
+  role: string | null;
+  action: string;
+  method: string;
+  path: string;
+  resource_type?: string | null;
+  resource_id?: string | null;
+  status_code?: number | null;
+  ip?: string | null;
+  user_agent?: string | null;
+  created_at: string;
+}
+
+export interface AccessLogPage {
+  items: AccessLogEntry[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface AccessLogFilters {
+  username?: string | null;
+  action?: string | null;
+  resource_type?: string | null;
+  date_from?: string | null;
+  date_to?: string | null;
+  limit?: number | null;
+  offset?: number | null;
+}

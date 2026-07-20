@@ -64,6 +64,18 @@ const NAV_GROUPS: NavGroup[] = [
       { code: 'F3', label: 'วิเคราะห์ปัจจัยความเสี่ยง', path: '/risk-factors' },
     ],
   },
+  {
+    id: 'admin',
+    label: 'ผู้ดูแลระบบ',
+    items: [
+      {
+        code: 'A1',
+        label: 'บันทึกการเข้าถึงระบบ',
+        path: '/admin/access-log',
+        roles: ['admin'], // เห็นเฉพาะ admin — ตรงกับ roleGuard('admin') ที่ route
+      },
+    ],
+  },
 ];
 
 @Component({
