@@ -10,11 +10,13 @@ import {
   RiskFactorCatalog,
   Subdistrict,
 } from '../../core/models/domain.models';
+import { RiskMatrixComponent } from '../../shared/charts/risk-matrix.component';
 import { FilterBarComponent } from '../../shared/filters/filter-bar.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { InfoTooltipComponent } from '../../shared/ui/info-tooltip.component';
 import { RiskBadgeComponent } from '../../shared/ui/risk-badge.component';
 import {
+  bandColor,
   formatMoney,
   formatNumber,
   sortProjectsByRisk,
@@ -30,6 +32,7 @@ import {
     FilterBarComponent,
     InfoTooltipComponent,
     RiskBadgeComponent,
+    RiskMatrixComponent,
   ],
   template: `
     <section class="page-shell">
@@ -97,7 +100,7 @@ import {
                     <th class="px-4 py-3 text-right">งบประมาณ</th>
                     <th class="px-4 py-3 text-right">ราคา/อ้างอิง</th>
                     <th class="px-4 py-3 text-right">Risk Score</th>
-                    <th class="px-4 py-3">ระดับ</th>
+                    <th class="px-4 py-3">ระดับ 5×5</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 bg-white">
@@ -119,7 +122,13 @@ import {
                         <td class="px-4 py-3 text-right">{{ money(project.budget_amount) }}</td>
                         <td class="px-4 py-3 text-right">{{ number(project.price_ratio, 3) }}</td>
                         <td class="px-4 py-3 text-right font-semibold">{{ number(project.risk_score, 2) }}</td>
-                        <td class="px-4 py-3"><app-risk-badge [level]="project.risk_level" /></td>
+                        <td class="px-4 py-3">
+                          @if (project.matrix_level) {
+                            <span class="inline-flex items-center rounded-[3px] px-2.5 py-1 text-[12px] font-extrabold text-white" [style.background]="bandColor(project.matrix_level)">{{ project.matrix_level }}</span>
+                          } @else {
+                            <app-risk-badge [level]="project.risk_level" />
+                          }
+                        </td>
                       </tr>
                     }
                   }
@@ -192,8 +201,28 @@ import {
                       {{ projectDetail()?.project_type || projectDetail()?.purchase_method_group || '-' }}
                     </p>
                   </div>
-                  <app-risk-badge [level]="projectDetail()?.risk_level" />
+                  <div class="flex flex-col items-end gap-1.5">
+                    @if (scoreInfo().matrix_level) {
+                      <span
+                        class="inline-flex items-center rounded-[3px] px-3 py-1 text-[13px] font-extrabold text-white"
+                        [style.background]="bandColor(scoreInfo().matrix_level)"
+                        title="ระดับความเสี่ยงตามกรอบ โอกาส × ผลกระทบ 5×5"
+                      >ระดับ{{ scoreInfo().matrix_level }}</span>
+                    }
+                    <span class="text-[11px] font-bold text-muted">Risk Score {{ number(scoreInfo().risk_score, 0) }}/100</span>
+                  </div>
                 </div>
+
+                @if (projectDetail()?.source_file || projectDetail()?.data_quality_note) {
+                  <div class="mt-3 rounded-[3px] border border-line-soft bg-[#fbfcfd] px-3 py-2 text-[11.5px] text-muted">
+                    @if (projectDetail()?.source_file) {
+                      <p class="m-0"><span class="font-bold text-slate-600">ที่มาข้อมูล:</span> {{ projectDetail()?.source_file }}</p>
+                    }
+                    @if (projectDetail()?.data_quality_note) {
+                      <p class="m-0 mt-0.5"><span class="font-bold text-[#8a2a1f]">ข้อจำกัดข้อมูล:</span> {{ projectDetail()?.data_quality_note }}</p>
+                    }
+                  </div>
+                }
 
                 <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
@@ -273,6 +302,51 @@ import {
               </article>
 
               <section class="panel p-[18px]">
+                <div class="flex items-center gap-2">
+                  <h2 class="m-0 text-[16px] font-bold text-ink">การประเมินความเสี่ยง (โอกาส × ผลกระทบ 5×5)</h2>
+                  <app-info-tooltip
+                    text="อ้างอิงมาตรฐานการบริหารจัดการความเสี่ยงสำหรับหน่วยงานของรัฐ (กระทรวงการคลัง) และ COSO ERM — ระดับความเสี่ยง = โอกาส × ผลกระทบ (1–25)"
+                    [width]="300"
+                  />
+                </div>
+                <div class="mt-3.5 grid items-start gap-5 lg:grid-cols-[auto_1fr]">
+                  <app-risk-matrix [likelihood]="scoreInfo().matrix_likelihood" [impact]="scoreInfo().matrix_impact" />
+                  <div class="grid gap-2.5">
+                    <div class="grid grid-cols-3 gap-2.5">
+                      <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                        <p class="m-0 text-[11.5px] font-bold text-muted">โอกาสรวม</p>
+                        <p class="m-0 mt-1 text-[19px] font-extrabold text-ink">{{ number(scoreInfo().matrix_likelihood, 0) }}<span class="text-[12px] font-bold text-muted">/5</span></p>
+                      </div>
+                      <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                        <p class="m-0 text-[11.5px] font-bold text-muted">ผลกระทบสูงสุด</p>
+                        <p class="m-0 mt-1 text-[19px] font-extrabold text-ink">{{ number(scoreInfo().matrix_impact, 0) }}<span class="text-[12px] font-bold text-muted">/5</span></p>
+                      </div>
+                      <div class="rounded-[3px] border border-line-soft p-[11px]" [style.background]="bandColor(scoreInfo().matrix_level) + '14'">
+                        <p class="m-0 text-[11.5px] font-bold text-muted">คะแนน = ระดับ</p>
+                        <p class="m-0 mt-1 text-[19px] font-extrabold" [style.color]="bandColor(scoreInfo().matrix_level)">{{ number(scoreInfo().matrix_score, 0) }} · {{ scoreInfo().matrix_level || '-' }}</p>
+                      </div>
+                    </div>
+                    <div class="rounded-[3px] border border-line-soft bg-[#fbfcfd] p-3">
+                      <p class="m-0 text-[12px] font-bold text-slate-700">การประกอบคะแนน</p>
+                      <p class="m-0 mt-1 text-[12.5px] leading-relaxed text-muted">
+                        พบสัญญาณเสี่ยง <span class="font-bold text-ink">{{ number(scoreInfo().factors_triggered, 0) }}</span> ปัจจัย
+                        @if (scoreInfo().factors_not_computable) {
+                          · ประเมินไม่ได้ <span class="font-bold text-[#8a2a1f]">{{ number(scoreInfo().factors_not_computable, 0) }}</span> ปัจจัย
+                        }
+                        · คะแนนสัดส่วน {{ number(scoreInfo().risk_score, 0) }}/100
+                      </p>
+                      @if (scoreInfo().summary_text) {
+                        <p class="m-0 mt-1.5 text-[12.5px] leading-relaxed text-slate-700">{{ scoreInfo().summary_text }}</p>
+                      }
+                      @if ((scoreInfo().factors_triggered ?? 0) >= 3) {
+                        <p class="m-0 mt-1.5 text-[11.5px] text-muted">* มีสัญญาณยืนยันกัน ≥3 ตัว → เพิ่มโอกาสรวม +1 (corroboration)</p>
+                      }
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="panel p-[18px]">
                 <h2 class="m-0 mb-3.5 text-[16px] font-bold text-ink">ปัจจัยที่ทำให้เสี่ยง</h2>
 
                 @if (!triggeredFactors().length) {
@@ -281,24 +355,61 @@ import {
                   <div class="grid gap-3">
                     @for (factor of triggeredFactors(); track factor.factor_code) {
                       <article class="rounded-[4px] border-[1.5px] border-line p-3.5">
-                        <p class="m-0 text-sm font-bold text-ink">{{ factor.name_th }}</p>
-                        <p class="m-0 mt-0.5 text-[11.5px] text-muted">{{ factor.factor_code }} · severity {{ factor.severity || '-' }}</p>
+                        <div class="flex flex-wrap items-start justify-between gap-2">
+                          <div>
+                            <p class="m-0 text-sm font-bold text-ink">{{ factor.name_th }}</p>
+                            <p class="m-0 mt-0.5 text-[11.5px] text-muted">{{ factor.factor_code }}</p>
+                          </div>
+                          @if (factor.risk_band) {
+                            <span
+                              class="shrink-0 rounded-[3px] px-2.5 py-1 text-[11.5px] font-extrabold text-white"
+                              [style.background]="bandColor(factor.risk_band)"
+                              [title]="matrixChip(factor)"
+                            >{{ matrixChip(factor) }} · {{ factor.risk_band }}</span>
+                          }
+                        </div>
 
-                        <div class="mt-2.5 rounded-[3px] border border-line-soft bg-zebra p-2.5">
-                          <p class="m-0 text-[11.5px] font-bold text-muted">ค่าที่สังเกตได้</p>
-                          <p class="m-0 mt-1 text-[15px] font-extrabold" [class]="isComputable(factor) ? 'text-ink' : 'text-[#8a2a1f]'">
-                            {{ isComputable(factor) ? value(factor.observed_value) : 'ประเมินไม่ได้' }}
-                          </p>
+                        <!-- เทียบค่าที่วัดได้ ↔ เกณฑ์ (audit line) -->
+                        <div class="mt-2.5 grid gap-2 sm:grid-cols-2">
+                          <div class="rounded-[3px] border border-line-soft bg-zebra p-2.5">
+                            <p class="m-0 text-[11.5px] font-bold text-muted">ค่าที่วัดได้</p>
+                            <p class="m-0 mt-1 text-[15px] font-extrabold" [class]="isComputable(factor) ? 'text-ink' : 'text-[#8a2a1f]'">
+                              {{ isComputable(factor) ? value(factor.observed_value) : 'ประเมินไม่ได้' }}
+                            </p>
+                          </div>
+                          <div class="rounded-[3px] border border-line-soft bg-zebra p-2.5">
+                            <p class="m-0 text-[11.5px] font-bold text-muted">เกณฑ์ที่ใช้เทียบ</p>
+                            <p class="m-0 mt-1 text-[12.5px] font-bold text-slate-700 break-words">{{ thresholdText(factor) }}</p>
+                          </div>
                         </div>
 
                         @if (factor.evidence_text) {
-                          <p class="m-0 mt-2.5 text-[12.5px] leading-relaxed text-muted">{{ factor.evidence_text }}</p>
+                          <p class="m-0 mt-2.5 text-[12.5px] leading-relaxed text-slate-700">{{ factor.evidence_text }}</p>
                         }
                         @if (catalogDescription(factor.factor_code)) {
                           <p class="m-0 mt-1.5 text-[12.5px] leading-relaxed text-muted">{{ catalogDescription(factor.factor_code) }}</p>
                         }
+                        @if (factor.legal_ref) {
+                          <p class="m-0 mt-2 border-t border-line-soft pt-2 text-[11.5px] leading-relaxed text-muted">
+                            <span class="font-bold text-slate-600">ฐานอ้างอิง:</span> {{ factor.legal_ref }}
+                          </p>
+                        }
                       </article>
                     }
+                  </div>
+                }
+
+                @if (notComputableFactors().length) {
+                  <div class="mt-3.5 rounded-[3px] border border-[#e6cfca] bg-[#fdf6f5] p-3">
+                    <p class="m-0 text-[12px] font-bold text-[#8a2a1f]">ปัจจัยที่ประเมินไม่ได้ (ข้อมูลไม่เพียงพอ — ไม่ใช่ "ผ่าน")</p>
+                    <div class="mt-1.5 grid gap-1">
+                      @for (factor of notComputableFactors(); track factor.factor_code) {
+                        <p class="m-0 text-[12px] text-slate-700">
+                          <span class="font-bold">{{ factor.factor_code }} {{ factor.name_th }}</span>
+                          @if (factor.evidence_text) { — {{ factor.evidence_text }} }
+                        </p>
+                      }
+                    </div>
                   </div>
                 }
               </section>
@@ -574,6 +685,64 @@ export class RiskFactorsPageComponent implements OnInit {
 
   isComputable(factor: ProjectRiskFactor): boolean {
     return toBool(factor.computable);
+  }
+
+  /** ข้อมูลคะแนนรวม (จาก ProjectDetailResponse.risk_score ที่ api ผสมเข้ามาบน detail) */
+  scoreInfo() {
+    const d = this.projectDetail() as (ProjectDetail & Record<string, unknown>) | null;
+    return {
+      matrix_level: (d?.['matrix_level'] as string) ?? null,
+      matrix_likelihood: toNumber(d?.['matrix_likelihood'] as number) ,
+      matrix_impact: toNumber(d?.['matrix_impact'] as number),
+      matrix_score: toNumber(d?.['matrix_score'] as number),
+      risk_score: toNumber(d?.risk_score),
+      risk_level: (d?.risk_level as string) ?? null,
+      factors_triggered: toNumber(d?.['factors_triggered'] as number),
+      factors_not_computable: toNumber(d?.['factors_not_computable'] as number),
+      summary_text: (d?.['summary_text'] as string) ?? null,
+    };
+  }
+
+  /** สีของ band สำหรับ chip/badge ระดับ 5×5 */
+  bandColor(band: string | null | undefined): string {
+    return bandColor(band);
+  }
+
+  /** จำนวนปัจจัยที่ประเมินไม่ได้ (computable=0) */
+  notComputableFactors(): ProjectRiskFactor[] {
+    const factors = this.projectDetail()?.risk_factors ?? [];
+    return factors.filter((f) => !toBool(f.computable));
+  }
+
+  /** แปลง threshold_used (JSON string หรือ object) → ข้อความสั้นสำหรับผู้ตรวจ */
+  thresholdText(factor: ProjectRiskFactor): string {
+    const raw = factor.threshold_used;
+    if (raw === null || raw === undefined || raw === '') {
+      return '-';
+    }
+    let obj: Record<string, unknown>;
+    try {
+      obj = typeof raw === 'string' ? JSON.parse(raw) : (raw as unknown as Record<string, unknown>);
+    } catch {
+      return String(raw);
+    }
+    // ตัด likelihood_map / account_map ออก แสดงเฉพาะ threshold ที่อ่านง่าย
+    const skip = new Set(['likelihood_map', 'account_map', 'likelihood_by']);
+    const parts = Object.entries(obj)
+      .filter(([k]) => !skip.has(k))
+      .map(([k, v]) => `${k}=${typeof v === 'number' ? v : JSON.stringify(v)}`);
+    return parts.length ? parts.join(', ') : '-';
+  }
+
+  /** ป้ายกำกับ โอกาส×ผลกระทบ ต่อ factor */
+  matrixChip(factor: ProjectRiskFactor): string {
+    const l = toNumber(factor.likelihood);
+    const i = toNumber(factor.impact);
+    const s = toNumber(factor.matrix_score);
+    if (l === null || i === null || s === null) {
+      return '-';
+    }
+    return `โอกาส ${l} × ผลกระทบ ${i} = ${s}`;
   }
 
   catalogDescription(code: string): string {
