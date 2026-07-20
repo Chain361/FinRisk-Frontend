@@ -11,6 +11,8 @@ interface NavItem {
   label: string;
   path: string;
   children?: NavItem[];
+  /** จำกัดเมนูเฉพาะบาง role (ตาม roles.md) — ไม่ระบุ = ทุก role เห็น */
+  roles?: string[];
 }
 
 interface NavGroup {
@@ -78,7 +80,7 @@ const NAV_GROUPS: NavGroup[] = [
         </div>
 
         <nav class="flex flex-1 flex-col overflow-y-auto py-2.5">
-          @for (group of navGroups; track group.id) {
+          @for (group of visibleNavGroups(); track group.id) {
             <div>
               <div class="flex flex-col pb-1.5">
                 @for (item of group.items; track item.label) {
@@ -156,10 +158,13 @@ const NAV_GROUPS: NavGroup[] = [
           <div class="flex items-center gap-3.5">
             <div class="rounded-[3px] border-[1.5px] border-line px-3.5 py-[7px] text-right">
               <p class="m-0 text-[13px] font-bold text-ink">
-                {{ auth.user()?.username ?? auth.token() }}
+                {{ auth.user()?.display_name ?? auth.user()?.username ?? auth.token() }}
               </p>
-              <p class="m-0 mt-0.5 text-[11px] uppercase text-muted">
-                {{ auth.user()?.role ?? 'mock-auth' }}
+              <p class="m-0 mt-0.5 text-[11px] text-muted">
+                {{ auth.roleLabel() }} ·
+                <span [class]="auth.isScopedRole() ? 'font-bold text-[#8a2a1f]' : 'font-bold text-navy'">
+                  {{ auth.isScopedRole() ? 'ขอบเขต: ตำบลของตน' : 'ขอบเขต: ทุกตำบล' }}
+                </span>
               </p>
             </div>
             <button
@@ -185,6 +190,17 @@ export class AppShellComponent {
   private readonly router = inject(Router);
 
   readonly navGroups = NAV_GROUPS;
+
+  /** เมนูที่ role ปัจจุบันเห็นได้ — item ที่ระบุ `roles` จะแสดงเฉพาะ role ในรายการ (รวม children) */
+  readonly visibleNavGroups = computed<NavGroup[]>(() => {
+    const canSee = (item: NavItem): boolean => !item.roles || this.auth.hasRole(...item.roles);
+    return NAV_GROUPS.map((group) => ({
+      ...group,
+      items: group.items
+        .filter(canSee)
+        .map((item) => (item.children ? { ...item, children: item.children.filter(canSee) } : item)),
+    })).filter((group) => group.items.length > 0);
+  });
 
   readonly today = new Intl.DateTimeFormat('th-TH', { dateStyle: 'medium' }).format(new Date());
 

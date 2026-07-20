@@ -61,6 +61,10 @@ import { AuthService } from '../core/auth/auth.service';
         </form>
 
         <p class="mt-4 text-xs leading-5 text-muted">
+          ระบบรองรับ 6 บทบาท (ผู้ดูแลระบบ · ผู้กำกับดูแล · ผู้บริหารตำบล · ผู้ตรวจสอบโครงการ ·
+          นักวิเคราะห์ · ประชาชนทั่วไป) — ขอบเขตข้อมูลและสิทธิ์แตกต่างตามบทบาทที่ login
+        </p>
+        <p class="mt-1.5 text-xs leading-5 text-muted">
           Backend ใช้ token เป็น username และทุก request หลัง login จะส่ง header X-Username อัตโนมัติ
         </p>
       </section>
