@@ -3,52 +3,17 @@ import { FormsModule } from '@angular/forms';
 import { catchError, forkJoin, of } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
+import { AuthService } from '../../core/auth/auth.service';
 import { Project, Subdistrict } from '../../core/models/domain.models';
 import { ConfirmModalComponent } from '../../shared/ui/confirm-modal.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { formatMoney, normalizeRiskLevel, subdistrictLabel } from '../../shared/utils/risk-utils';
-
-type AssignmentPriority = 'high' | 'normal' | 'low';
-
-interface Analyst {
-  id: string;
-  name: string;
-  team: string;
-  activeCases: number;
-  specialties: string[];
-}
-
-interface SavedAssignment {
-  projectId: string;
-  analystId: string;
-  assignedAt: string;
-  priority: AssignmentPriority;
-  note: string;
-}
-
-const ANALYSTS: Analyst[] = [
-  {
-    id: 'analyst-01',
-    name: 'risk_analyst_01',
-    team: 'ทีมวิเคราะห์ความเสี่ยงการจัดซื้อจัดจ้าง',
-    activeCases: 4,
-    specialties: ['จัดซื้อจัดจ้าง', 'ราคากลาง'],
-  },
-  {
-    id: 'analyst-02',
-    name: 'risk_analyst_02',
-    team: 'ทีมตรวจสอบงบประมาณ',
-    activeCases: 2,
-    specialties: ['งบประมาณ', 'สัญญา'],
-  },
-  {
-    id: 'analyst-03',
-    name: 'risk_analyst_03',
-    team: 'ทีมวิเคราะห์ความเสี่ยงการเงิน',
-    activeCases: 5,
-    specialties: ['การเงิน', 'ความคุ้มค่า'],
-  },
-];
+import {
+  ANALYSTS,
+  ASSIGNMENT_STORAGE_KEY,
+  AssignmentPriority,
+  SavedAssignment,
+} from './assignment-project-auditor.models';
 
 @Component({
   selector: 'app-assignment-project-auditor-page',
@@ -250,6 +215,7 @@ const ANALYSTS: Analyst[] = [
 })
 export class AssignmentProjectAuditorPageComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly auth = inject(AuthService);
 
   readonly loading = signal(true);
   readonly error = signal('');
@@ -348,9 +314,15 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
       priority: this.priority(),
       note: this.assignmentNote().trim(),
       assignedAt: new Date().toISOString(),
+      assignedBy:
+        this.auth.user()?.display_name ??
+        this.auth.user()?.full_name ??
+        this.auth.user()?.username ??
+        this.auth.token() ??
+        undefined,
     };
     const stored = this.readAssignments();
-    localStorage.setItem('finrisk_assignment_project_auditor', JSON.stringify([entry, ...stored]));
+    localStorage.setItem(ASSIGNMENT_STORAGE_KEY, JSON.stringify([entry, ...stored]));
     this.assignmentNote.set('');
     this.confirmOpen.set(false);
     this.successOpen.set(true);
@@ -391,7 +363,7 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
 
   private readAssignments(): SavedAssignment[] {
     try {
-      const parsed: unknown = JSON.parse(localStorage.getItem('finrisk_assignment_project_auditor') ?? '[]');
+      const parsed: unknown = JSON.parse(localStorage.getItem(ASSIGNMENT_STORAGE_KEY) ?? '[]');
       return Array.isArray(parsed) ? (parsed as SavedAssignment[]) : [];
     } catch {
       return [];
