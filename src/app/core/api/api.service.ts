@@ -15,6 +15,7 @@ import {
   RiskFactorCatalog,
   RiskSummary,
   Subdistrict,
+  SystemMeta,
 } from '../models/domain.models';
 
 @Injectable({ providedIn: 'root' })
@@ -24,6 +25,11 @@ export class ApiService {
 
   login(body: LoginRequest): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.baseUrl}/auth/login`, body);
+  }
+
+  /** เมทาดาทาระดับระบบ — วันที่ข้อมูลจริง (data-as-of) + ช่วงปีงบ (public, ไม่ต้อง auth) */
+  meta(): Observable<SystemMeta> {
+    return this.http.get<SystemMeta>(`${this.baseUrl}/meta`);
   }
 
   me(): Observable<{ user?: LoginResponse['user'] } & LoginResponse['user']> {
