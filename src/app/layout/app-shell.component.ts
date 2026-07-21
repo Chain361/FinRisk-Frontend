@@ -80,6 +80,11 @@ const NAV_GROUPS: NavGroup[] = [
         ],
       },
       { code: 'F3', label: 'โครงการทั้งหมด', path: '/risk-factors' },
+      {
+        code: 'F4',
+        label: 'มอบหมายงาน',
+        path: '/assignment-project-auditor',
+      },
     ],
   },
   {
