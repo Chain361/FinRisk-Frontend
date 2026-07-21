@@ -3,7 +3,9 @@ import { FormsModule } from '@angular/forms';
 import { catchError, forkJoin, of } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
+import { AuthService } from '../../core/auth/auth.service';
 import { Project, Subdistrict } from '../../core/models/domain.models';
+import { ConfirmModalComponent } from '../../shared/ui/confirm-modal.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { formatMoney, normalizeRiskLevel, subdistrictLabel } from '../../shared/utils/risk-utils';
 import {
@@ -15,6 +17,7 @@ import {
 } from './assignment-project-auditor.models';
 
 interface AssignmentHistoryRow {
+  key: string;
   assignment: SavedAssignment;
   project: Project | null;
   analyst: Analyst | null;
@@ -29,7 +32,7 @@ type PriorityFilter = AssignmentPriority | 'all';
 @Component({
   selector: 'app-assignment-project-auditor-history-page',
   standalone: true,
-  imports: [FormsModule, EmptyStateComponent],
+  imports: [FormsModule, ConfirmModalComponent, EmptyStateComponent],
   template: `
     <section class="page-shell">
       <div class="flex flex-wrap items-start justify-between gap-4">
@@ -40,7 +43,19 @@ type PriorityFilter = AssignmentPriority | 'all';
             ตรวจสอบรายการมอบหมายโครงการให้ผู้ตรวจสอบ/นักวิเคราะห์ความเสี่ยงจากข้อมูลที่บันทึกไว้ในเครื่อง
           </p>
         </div>
-        <button type="button" class="gov-btn-outline" (click)="reloadAssignments()">รีเฟรชประวัติ</button>
+        <div class="flex flex-wrap gap-2">
+          <button type="button" class="gov-btn-outline" (click)="reloadAssignments()">รีเฟรชประวัติ</button>
+          @if (isAdmin()) {
+            <button
+              type="button"
+              class="min-h-[42px] cursor-pointer rounded-[3px] border-[1.5px] border-risk-high bg-white px-5 text-sm font-extrabold text-risk-high hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+              [disabled]="!selectedCount()"
+              (click)="requestDeleteSelected()"
+            >
+              ลบรายการที่เลือก
+            </button>
+          }
+        </div>
       </div>
 
       @if (error()) {
@@ -71,7 +86,12 @@ type PriorityFilter = AssignmentPriority | 'all';
               <h2 class="m-0 text-[17px] font-extrabold text-ink">รายการประวัติ</h2>
               <p class="m-0 mt-1 text-[13px] text-muted">ค้นหาโครงการ ผู้รับมอบหมาย หรือคำแนะนำที่เคยบันทึกไว้</p>
             </div>
-            <span class="rounded-full bg-navy px-2.5 py-1 text-xs font-bold text-white">{{ filteredRows().length }} รายการ</span>
+            <div class="flex flex-wrap items-center gap-2">
+              @if (isAdmin() && selectedCount()) {
+                <span class="rounded-full bg-red-100 px-2.5 py-1 text-xs font-bold text-risk-high">เลือกแล้ว {{ selectedCount() }} รายการ</span>
+              }
+              <span class="rounded-full bg-navy px-2.5 py-1 text-xs font-bold text-white">{{ filteredRows().length }} รายการ</span>
+            </div>
           </div>
 
           <div class="mt-3 grid gap-2 md:grid-cols-[1fr_180px_220px]">
@@ -117,9 +137,21 @@ type PriorityFilter = AssignmentPriority | 'all';
           </div>
         } @else {
           <div class="overflow-x-auto">
-            <table class="gov-table min-w-[1080px]">
+            <table class="gov-table min-w-[1140px]">
               <thead>
                 <tr>
+                  @if (isAdmin()) {
+                    <th class="w-[54px] text-center">
+                      <input
+                        type="checkbox"
+                        class="h-4 w-4 cursor-pointer accent-navy"
+                        aria-label="เลือกประวัติที่แสดงทั้งหมด"
+                        [ngModel]="allFilteredRowsSelected()"
+                        [indeterminate]="someFilteredRowsSelected()"
+                        (ngModelChange)="setFilteredRowsSelected($event)"
+                      />
+                    </th>
+                  }
                   <th>วันที่มอบหมาย</th>
                   <th>โครงการ</th>
                   <th>พื้นที่/ปีงบ</th>
@@ -130,8 +162,19 @@ type PriorityFilter = AssignmentPriority | 'all';
                 </tr>
               </thead>
               <tbody>
-                @for (row of filteredRows(); track row.assignment.assignedAt + row.assignment.projectId + row.assignment.analystId) {
+                @for (row of filteredRows(); track row.key) {
                   <tr>
+                    @if (isAdmin()) {
+                      <td class="text-center align-top">
+                        <input
+                          type="checkbox"
+                          class="h-4 w-4 cursor-pointer accent-navy"
+                          aria-label="เลือกประวัติรายการนี้"
+                          [ngModel]="isSelected(row.key)"
+                          (ngModelChange)="setSelection(row.key, $event)"
+                        />
+                      </td>
+                    }
                     <td class="align-top">
                       <p class="m-0 font-bold text-ink">{{ row.assignedAtText }}</p>
                       <p class="m-0 mt-1 text-xs text-muted">โดย {{ row.assignment.assignedBy || '-' }}</p>
@@ -170,14 +213,27 @@ type PriorityFilter = AssignmentPriority | 'all';
         }
       </section>
     </section>
+
+    <app-confirm-modal
+      [open]="deleteConfirmOpen()"
+      title="ยืนยันการลบรายการที่เลือก"
+      [message]="deleteConfirmMessage()"
+      confirmLabel="ลบรายการที่เลือก"
+      cancelLabel="ยกเลิก"
+      (confirmed)="deleteSelectedHistory()"
+      (cancelled)="deleteConfirmOpen.set(false)"
+    />
   `,
 })
 export class AssignmentProjectAuditorHistoryPageComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly auth = inject(AuthService);
 
   readonly analysts = ANALYSTS;
   readonly loading = signal(true);
   readonly error = signal('');
+  readonly deleteConfirmOpen = signal(false);
+  readonly selectedKeys = signal<string[]>([]);
   readonly assignments = signal<SavedAssignment[]>([]);
   readonly projects = signal<Project[]>([]);
   readonly subdistricts = signal<Subdistrict[]>([]);
@@ -208,6 +264,25 @@ export class AssignmentProjectAuditorHistoryPageComponent implements OnInit {
   );
 
   readonly latestAssignmentText = computed(() => this.historyRows()[0]?.assignedAtText ?? '-');
+  readonly isAdmin = computed(() => this.auth.hasRole('admin'));
+  readonly selectedKeySet = computed(() => new Set(this.selectedKeys()));
+  readonly selectedCount = computed(
+    () => this.historyRows().filter((row) => this.selectedKeySet().has(row.key)).length,
+  );
+  readonly allFilteredRowsSelected = computed(() => {
+    const rows = this.filteredRows();
+    const selectedKeys = this.selectedKeySet();
+    return rows.length > 0 && rows.every((row) => selectedKeys.has(row.key));
+  });
+  readonly someFilteredRowsSelected = computed(() => {
+    const rows = this.filteredRows();
+    const selectedKeys = this.selectedKeySet();
+    return rows.some((row) => selectedKeys.has(row.key)) && !this.allFilteredRowsSelected();
+  });
+  readonly deleteConfirmMessage = computed(
+    () =>
+      `ต้องการลบประวัติการมอบหมายงานที่เลือก ${this.selectedCount()} รายการใช่หรือไม่? รายการที่บันทึกไว้ในเครื่องนี้จะถูกลบออก`,
+  );
 
   ngOnInit(): void {
     this.reloadAssignments();
@@ -228,7 +303,58 @@ export class AssignmentProjectAuditorHistoryPageComponent implements OnInit {
   }
 
   reloadAssignments(): void {
-    this.assignments.set(this.readAssignments());
+    const assignments = this.readAssignments();
+    this.assignments.set(assignments);
+    this.syncSelectedKeys(assignments);
+  }
+
+  requestDeleteSelected(): void {
+    if (!this.isAdmin() || !this.selectedCount()) {
+      return;
+    }
+    this.deleteConfirmOpen.set(true);
+  }
+
+  deleteSelectedHistory(): void {
+    if (!this.isAdmin()) {
+      this.deleteConfirmOpen.set(false);
+      return;
+    }
+
+    const selectedKeys = this.selectedKeySet();
+    const remaining = this.assignments().filter(
+      (assignment) => !selectedKeys.has(this.assignmentKey(assignment)),
+    );
+    this.writeAssignments(remaining);
+    this.assignments.set(remaining);
+    this.selectedKeys.set([]);
+    this.deleteConfirmOpen.set(false);
+  }
+
+  isSelected(key: string): boolean {
+    return this.selectedKeySet().has(key);
+  }
+
+  setSelection(key: string, selected: boolean): void {
+    const keys = new Set(this.selectedKeys());
+    if (selected) {
+      keys.add(key);
+    } else {
+      keys.delete(key);
+    }
+    this.selectedKeys.set([...keys]);
+  }
+
+  setFilteredRowsSelected(selected: boolean): void {
+    const keys = new Set(this.selectedKeys());
+    this.filteredRows().forEach((row) => {
+      if (selected) {
+        keys.add(row.key);
+      } else {
+        keys.delete(row.key);
+      }
+    });
+    this.selectedKeys.set([...keys]);
   }
 
   priorityLabel(priority: AssignmentPriority): string {
@@ -280,6 +406,7 @@ export class AssignmentProjectAuditorHistoryPageComponent implements OnInit {
   }
 
   private toHistoryRow(assignment: SavedAssignment): AssignmentHistoryRow {
+    const key = this.assignmentKey(assignment);
     const project = this.projects().find((item) => String(item.project_id) === assignment.projectId) ?? null;
     const analyst = ANALYSTS.find((item) => item.id === assignment.analystId) ?? null;
     const subdistrictName = project
@@ -302,6 +429,7 @@ export class AssignmentProjectAuditorHistoryPageComponent implements OnInit {
       .toLocaleLowerCase('th');
 
     return {
+      key,
       assignment,
       project,
       analyst,
@@ -334,5 +462,28 @@ export class AssignmentProjectAuditorHistoryPageComponent implements OnInit {
     } catch {
       return [];
     }
+  }
+
+  private writeAssignments(assignments: SavedAssignment[]): void {
+    if (!assignments.length) {
+      localStorage.removeItem(ASSIGNMENT_STORAGE_KEY);
+      return;
+    }
+    localStorage.setItem(ASSIGNMENT_STORAGE_KEY, JSON.stringify(assignments));
+  }
+
+  private syncSelectedKeys(assignments: SavedAssignment[]): void {
+    const availableKeys = new Set(assignments.map((assignment) => this.assignmentKey(assignment)));
+    this.selectedKeys.set(this.selectedKeys().filter((key) => availableKeys.has(key)));
+  }
+
+  private assignmentKey(assignment: SavedAssignment): string {
+    return [
+      assignment.assignedAt,
+      assignment.projectId,
+      assignment.analystId,
+      assignment.priority,
+      assignment.note,
+    ].join('|');
   }
 }
