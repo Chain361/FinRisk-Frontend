@@ -162,6 +162,13 @@ export interface RiskSummary {
   by_level: Record<string, number | undefined>;
 }
 
+/** เมทาดาทาระดับระบบจาก GET /meta — วันที่ข้อมูลจริง (data-as-of) + ช่วงปีงบที่ครอบคลุม */
+export interface SystemMeta {
+  data_seeded_at: string | null;
+  fiscal_year_min: number | null;
+  fiscal_year_max: number | null;
+}
+
 export interface ProjectFilters {
   budget_year?: number | null;
   subdistrict_id?: number | null;

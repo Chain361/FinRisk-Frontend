@@ -10,8 +10,6 @@ import {
   CompositionSegment,
 } from '../../../shared/ui/composition-bar.component';
 import { EmptyStateComponent } from '../../../shared/ui/empty-state.component';
-import { InfoTooltipComponent } from '../../../shared/ui/info-tooltip.component';
-import { KpiCardComponent } from '../../../shared/ui/kpi-card.component';
 import { PALETTE } from '../../../shared/utils/design-tokens';
 import {
   FISCAL_YEARS,
@@ -52,16 +50,15 @@ interface IncomeStatementTotals {
 @Component({
   selector: 'app-benchmarking-page',
   standalone: true,
-  imports: [
-    BarChartComponent,
-    EmptyStateComponent,
-    FilterBarComponent,
-  ],
+  imports: [BarChartComponent, EmptyStateComponent, FilterBarComponent],
   template: `
     <section class="page-shell">
       <div>
         <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F2.2</p>
         <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">เปรียบเทียบสถานะการคลัง</h1>
+        <p class="m-0 mt-1.5 text-sm text-muted">
+          เปรียบเทียบฐานะการคลังของแต่ละตำบลผ่านตัวชี้วัดสำคัญ
+        </p>
       </div>
 
       <app-filter-bar

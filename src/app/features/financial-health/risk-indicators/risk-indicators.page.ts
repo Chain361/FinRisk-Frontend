@@ -11,7 +11,6 @@ import {
 } from '../../../shared/ui/composition-bar.component';
 import { EmptyStateComponent } from '../../../shared/ui/empty-state.component';
 import { InfoTooltipComponent } from '../../../shared/ui/info-tooltip.component';
-import { KpiCardComponent } from '../../../shared/ui/kpi-card.component';
 import { PALETTE } from '../../../shared/utils/design-tokens';
 import {
   bandColor,
@@ -53,16 +52,15 @@ interface IncomeStatementTotals {
 @Component({
   selector: 'app-risk-indicators-page',
   standalone: true,
-  imports: [
-    EmptyStateComponent,
-    FilterBarComponent,
-    InfoTooltipComponent,
-  ],
+  imports: [EmptyStateComponent, FilterBarComponent, InfoTooltipComponent],
   template: `
     <section class="page-shell">
       <div>
         <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F2.4</p>
         <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">ตัวชี้วัดความเสี่ยงทางการคลัง</h1>
+        <p class="m-0 mt-1.5 text-sm text-muted">
+          แสดงตัวชี้วัดและระดับความเสี่ยงทางการคลังจากข้อมูลทางการเงิน
+        </p>
       </div>
 
       <app-filter-bar
@@ -112,14 +110,17 @@ interface IncomeStatementTotals {
                   <div class="flex flex-wrap items-start justify-between gap-2">
                     <div>
                       <p class="m-0 text-sm font-bold text-ink">{{ row.factor_name }}</p>
-                      <p class="m-0 mt-0.5 text-[11.5px] text-muted">{{ row.factor_code }} · ปี {{ row.fiscal_year }}</p>
+                      <p class="m-0 mt-0.5 text-[11.5px] text-muted">
+                        {{ row.factor_code }} · ปี {{ row.fiscal_year }}
+                      </p>
                     </div>
                     @if (row.risk_band) {
                       <span
                         class="shrink-0 rounded-[3px] px-2.5 py-1 text-[11.5px] font-extrabold text-white"
                         [style.background]="bandColor(row.risk_band)"
                         [title]="matrixChip(row)"
-                      >{{ matrixChip(row) }} · {{ row.risk_band }}</span>
+                        >{{ matrixChip(row) }} · {{ row.risk_band }}</span
+                      >
                     }
                   </div>
                   <div class="mt-2.5 rounded-[3px] border border-line-soft bg-zebra p-2.5">

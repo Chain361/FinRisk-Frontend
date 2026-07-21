@@ -1,10 +1,13 @@
 import { Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
-import { filter, map } from 'rxjs';
+import { catchError, filter, map, of } from 'rxjs';
 
+import { ApiService } from '../core/api/api.service';
 import { AuthService } from '../core/auth/auth.service';
+import { SystemMeta } from '../core/models/domain.models';
 import { GuardrailBannerComponent } from '../shared/ui/guardrail-banner.component';
+import { PrototypeBannerComponent } from '../shared/ui/prototype-banner.component';
 
 interface NavItem {
   code: string;
@@ -25,7 +28,25 @@ const NAV_GROUPS: NavGroup[] = [
   {
     id: 'overview',
     label: 'ภาพรวมความเสี่ยง',
-    items: [{ code: 'F1', label: 'แดชบอร์ดความเสี่ยงโครงการ', path: '/project-risk' }],
+    items: [
+      {
+        code: 'F1',
+        label: 'แดชบอร์ดความเสี่ยงโครงการ',
+        path: '/project-risk',
+        children: [
+          {
+            code: 'F1.1',
+            label: 'ภาพรวมสุขภาพความเสี่ยงโครงการ',
+            path: '/project-risk/overview',
+          },
+          {
+            code: 'F1.2',
+            label: 'วิเคราะห์ข้อมูลโครงการเชิงลึก',
+            path: '/project-risk/insights',
+          },
+        ],
+      },
+    ],
   },
   {
     id: 'finance',
@@ -78,8 +99,9 @@ const NAV_GROUPS: NavGroup[] = [
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, GuardrailBannerComponent],
+  imports: [RouterOutlet, RouterLink, GuardrailBannerComponent, PrototypeBannerComponent],
   template: `
+    <app-prototype-banner />
     <div class="flex min-h-screen bg-page text-ink">
       <aside class="hidden w-[264px] shrink-0 flex-col bg-navy text-white lg:flex">
         <div class="border-b border-white/20 px-5 py-[22px]">
@@ -150,7 +172,10 @@ const NAV_GROUPS: NavGroup[] = [
 
         <div class="border-t border-white/20 px-5 py-[18px]">
           <p class="m-0 text-xs text-[#9fb0c8]">ข้อมูลจากระบบ FinRisk Backend</p>
-          <p class="m-0 mt-1 text-xs text-[#9fb0c8]">อัปเดตล่าสุด: {{ today }}</p>
+          <p class="m-0 mt-1 text-xs text-[#9fb0c8]">ข้อมูล ณ วันที่: {{ dataAsOf() }}</p>
+          @if (fiscalYearRange()) {
+            <p class="m-0 mt-1 text-xs text-[#9fb0c8]">ครอบคลุมปีงบประมาณ {{ fiscalYearRange() }}</p>
+          }
         </div>
       </aside>
 
@@ -174,7 +199,9 @@ const NAV_GROUPS: NavGroup[] = [
               </p>
               <p class="m-0 mt-0.5 text-[11px] text-muted">
                 {{ auth.roleLabel() }} ·
-                <span [class]="auth.isScopedRole() ? 'font-bold text-[#8a2a1f]' : 'font-bold text-navy'">
+                <span
+                  [class]="auth.isScopedRole() ? 'font-bold text-[#8a2a1f]' : 'font-bold text-navy'"
+                >
                   {{ auth.isScopedRole() ? 'ขอบเขต: ตำบลของตน' : 'ขอบเขต: ทุกตำบล' }}
                 </span>
               </p>
@@ -200,8 +227,35 @@ const NAV_GROUPS: NavGroup[] = [
 export class AppShellComponent {
   readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly api = inject(ApiService);
 
   readonly navGroups = NAV_GROUPS;
+
+  /** เมทาดาทาระบบจาก /meta — data-as-of จริง (ไม่ใช่วันที่เครื่องผู้ใช้) */
+  private readonly meta = toSignal<SystemMeta | null>(
+    this.api.meta().pipe(catchError(() => of(null))),
+    { initialValue: null },
+  );
+
+  /** "ข้อมูล ณ วันที่ …" — แปลงเป็น th-TH; ระหว่างโหลด/โหลดไม่ได้แสดง "—" (ห้าม fallback เป็นวันปัจจุบัน) */
+  readonly dataAsOf = computed(() => {
+    const raw = this.meta()?.data_seeded_at;
+    if (!raw) {
+      return '—';
+    }
+    const parsed = new Date(raw);
+    return Number.isNaN(parsed.getTime())
+      ? '—'
+      : new Intl.DateTimeFormat('th-TH', { dateStyle: 'long' }).format(parsed);
+  });
+
+  /** ช่วงปีงบที่ครอบคลุม เช่น "2566–2568" (ว่างเมื่อไม่มีข้อมูล) */
+  readonly fiscalYearRange = computed(() => {
+    const m = this.meta();
+    return m?.fiscal_year_min && m?.fiscal_year_max
+      ? `${m.fiscal_year_min}–${m.fiscal_year_max}`
+      : '';
+  });
 
   /** เมนูที่ role ปัจจุบันเห็นได้ — item ที่ระบุ `roles` จะแสดงเฉพาะ role ในรายการ (รวม children) */
   readonly visibleNavGroups = computed<NavGroup[]>(() => {
@@ -210,11 +264,11 @@ export class AppShellComponent {
       ...group,
       items: group.items
         .filter(canSee)
-        .map((item) => (item.children ? { ...item, children: item.children.filter(canSee) } : item)),
+        .map((item) =>
+          item.children ? { ...item, children: item.children.filter(canSee) } : item,
+        ),
     })).filter((group) => group.items.length > 0);
   });
-
-  readonly today = new Intl.DateTimeFormat('th-TH', { dateStyle: 'medium' }).format(new Date());
 
   private readonly currentUrl = toSignal(
     this.router.events.pipe(
