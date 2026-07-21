@@ -85,6 +85,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'assignment-project-auditor',
+        loadComponent: () =>
+          import('./features/assignment-project-auditor/assignment-project-auditor.page').then(
+            (m) => m.AssignmentProjectAuditorPageComponent,
+          ),
+      },
+      {
         path: 'trends',
         loadComponent: () =>
           import('./features/trends/trends.page').then((m) => m.TrendsPageComponent),
