@@ -86,10 +86,22 @@ export const routes: Routes = [
       },
       {
         path: 'assignment-project-auditor',
-        loadComponent: () =>
-          import('./features/assignment-project-auditor/assignment-project-auditor.page').then(
-            (m) => m.AssignmentProjectAuditorPageComponent,
-          ),
+        children: [
+          {
+            path: '',
+            loadComponent: () =>
+              import('./features/assignment-project-auditor/assignment-project-auditor.page').then(
+                (m) => m.AssignmentProjectAuditorPageComponent,
+              ),
+          },
+          {
+            path: 'history',
+            loadComponent: () =>
+              import('./features/assignment-project-auditor/assignment-project-auditor-history.page').then(
+                (m) => m.AssignmentProjectAuditorHistoryPageComponent,
+              ),
+          },
+        ],
       },
       {
         path: 'trends',
