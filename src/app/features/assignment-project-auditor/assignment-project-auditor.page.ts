@@ -13,6 +13,7 @@ import {
   ASSIGNMENT_STORAGE_KEY,
   DEFAULT_ASSIGNMENT_WORKFLOW_STATUS,
   SavedAssignment,
+  projectWorkflowStatusLabel,
 } from './assignment-project-auditor.models';
 
 @Component({
@@ -111,6 +112,12 @@ import {
                       }
                     </span>
                   </div>
+                  @if (projectAssignment(project)) {
+                    <div class="mt-2 rounded-[4px] border border-green-100 bg-green-50 px-3 py-2 text-xs leading-5 text-risk-low">
+                      มอบหมายแล้วให้ <span class="font-extrabold">{{ assignmentAnalystName(projectAssignment(project)!) }}</span>
+                      · {{ assignmentProjectStatus(projectAssignment(project)!) }}
+                    </div>
+                  }
                 </button>
               }
             </div>
@@ -126,6 +133,13 @@ import {
             @if (selectedProject()) {
               <p class="m-0 mt-1 text-sm font-extrabold leading-6 text-ink">{{ selectedProject()!.project_name }}</p>
               <p class="m-0 mt-1 text-[13px] text-muted">{{ projectSubdistrict(selectedProject()!) }} · ปีงบประมาณ {{ selectedProject()!.budget_year }}</p>
+              @if (selectedProjectAssignment()) {
+                <div class="mt-2 rounded-[4px] border border-green-100 bg-green-50 px-3 py-2 text-xs leading-5 text-risk-low">
+                  โครงการนี้ถูกมอบหมายแล้วให้
+                  <span class="font-extrabold">{{ assignmentAnalystName(selectedProjectAssignment()!) }}</span>
+                  · {{ assignmentProjectStatus(selectedProjectAssignment()!) }}
+                </div>
+              }
             } @else {
               <p class="m-0 mt-1 text-sm text-muted">ยังไม่ได้เลือกโครงการ</p>
             }
@@ -214,7 +228,14 @@ import {
             <p class="m-0 mt-3 text-sm font-semibold text-risk-high">{{ formError() }}</p>
           }
 
-          <button type="button" class="gov-btn-primary mt-5 w-full" (click)="requestConfirmation()">ยืนยันการมอบหมายโครงการ</button>
+          <button
+            type="button"
+            class="gov-btn-primary mt-5 w-full disabled:cursor-not-allowed disabled:opacity-50"
+            [disabled]="selectedProjectAssignment() !== null"
+            (click)="requestConfirmation()"
+          >
+            {{ selectedProjectAssignment() ? 'โครงการนี้มอบหมายแล้ว' : 'ยืนยันการมอบหมายโครงการ' }}
+          </button>
         </section>
       </div>
     </section>
@@ -259,6 +280,7 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
   readonly error = signal('');
   readonly projects = signal<Project[]>([]);
   readonly subdistricts = signal<Subdistrict[]>([]);
+  readonly assignments = signal<SavedAssignment[]>([]);
   readonly projectSearch = signal('');
   readonly riskFilter = signal('high');
   readonly analystSearch = signal('');
@@ -287,6 +309,24 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
     this.projects().find((project) => this.projectId(project) === this.selectedProjectId()) ?? null,
   );
 
+  readonly assignmentsByProject = computed(() => {
+    const map = new Map<string, SavedAssignment>();
+    this.assignments()
+      .slice()
+      .sort((a, b) => this.dateValue(b.assignedAt) - this.dateValue(a.assignedAt))
+      .forEach((assignment) => {
+        if (!map.has(assignment.projectId)) {
+          map.set(assignment.projectId, assignment);
+        }
+      });
+    return map;
+  });
+
+  readonly selectedProjectAssignment = computed(() => {
+    const project = this.selectedProject();
+    return project ? this.assignmentsByProject().get(this.projectId(project)) ?? null : null;
+  });
+
   readonly filteredAnalysts = computed(() => {
     const search = this.analystSearch().trim().toLocaleLowerCase('th');
     return ANALYSTS.filter((analyst) =>
@@ -307,6 +347,7 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.assignments.set(this.readAssignments());
     forkJoin({
       projects: this.api.projects().pipe(catchError(() => of<Project[]>([]))),
       subdistricts: this.api.subdistricts().pipe(catchError(() => of<Subdistrict[]>([]))),
@@ -344,6 +385,10 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
       this.formError.set('กรุณาเลือกโครงการที่ต้องการมอบหมาย');
       return;
     }
+    if (this.selectedProjectAssignment()) {
+      this.formError.set('โครงการนี้มีผู้รับมอบหมายแล้ว ไม่สามารถมอบหมายซ้ำได้');
+      return;
+    }
     if (!this.selectedAnalystId()) {
       this.formError.set('กรุณาเลือกนักวิเคราะห์ผู้รับผิดชอบ');
       return;
@@ -371,6 +416,13 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
     const project = this.selectedProject();
     const analystId = this.selectedAnalystId();
     if (!project || !analystId) return;
+    const stored = this.readAssignments();
+    if (stored.some((assignment) => assignment.projectId === this.projectId(project))) {
+      this.assignments.set(stored);
+      this.formError.set('โครงการนี้มีผู้รับมอบหมายแล้ว ไม่สามารถมอบหมายซ้ำได้');
+      this.confirmOpen.set(false);
+      return;
+    }
 
     const entry: SavedAssignment = {
       projectId: this.projectId(project),
@@ -388,8 +440,8 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
         this.auth.token() ??
         undefined,
     };
-    const stored = this.readAssignments();
     localStorage.setItem(ASSIGNMENT_STORAGE_KEY, JSON.stringify([entry, ...stored]));
+    this.assignments.set([entry, ...stored]);
     this.dueDate.set('');
     this.budgetHours.set(null);
     this.auditSteps.set('');
@@ -404,6 +456,18 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
 
   projectSubdistrict(project: Project): string {
     return subdistrictLabel(this.subdistricts().find((item) => item.subdistrict_id === project.subdistrict_id));
+  }
+
+  projectAssignment(project: Project): SavedAssignment | null {
+    return this.assignmentsByProject().get(this.projectId(project)) ?? null;
+  }
+
+  assignmentAnalystName(assignment: SavedAssignment): string {
+    return ANALYSTS.find((item) => item.id === assignment.analystId)?.name ?? assignment.analystId;
+  }
+
+  assignmentProjectStatus(assignment: SavedAssignment): string {
+    return projectWorkflowStatusLabel(assignment.workflowStatus ?? null);
   }
 
   money(value: number | string | null | undefined): string {
@@ -429,6 +493,11 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
   private riskRank(project: Project): number {
     const risk = normalizeRiskLevel(project.risk_level);
     return risk === 'high' ? 3 : risk === 'medium' ? 2 : risk === 'low' ? 1 : 0;
+  }
+
+  private dateValue(value: string): number {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? 0 : date.getTime();
   }
 
   private readAssignments(): SavedAssignment[] {
