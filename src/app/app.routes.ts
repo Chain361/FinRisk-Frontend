@@ -78,6 +78,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/trends/trends.page').then((m) => m.TrendsPageComponent),
       },
+      {
+        path: 'risk-analyst-feedback',
+        loadComponent: () =>
+          import('./features/risk-analyst-feedback/risk-analyst-feedback.page').then(
+            (m) => m.RiskAnalystFeedbackPageComponent,
+          ),
+      },
     ],
   },
   { path: '**', redirectTo: 'project-risk' },
