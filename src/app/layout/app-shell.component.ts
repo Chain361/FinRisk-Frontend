@@ -63,7 +63,7 @@ const NAV_GROUPS: NavGroup[] = [
       },
       { code: 'F3', label: 'วิเคราะห์ปัจจัยความเสี่ยง', path: '/risk-factors' },
       {
-        code: 'F4',
+        code: 'F5',
         label: 'แบบฟอร์มบันทึกความคิดเห็นด้านความเสี่ยงของโครงการ',
         path: '/risk-analyst-feedback',
       },

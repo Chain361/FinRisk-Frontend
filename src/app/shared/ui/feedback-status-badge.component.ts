@@ -19,7 +19,7 @@ export class FeedbackStatusBadgeComponent {
 
   readonly label = computed(() => {
     const status = this.status();
-    return status ? FEEDBACK_STATUS_LABELS[status] : 'ยังไม่มี Feedback';
+    return status ? FEEDBACK_STATUS_LABELS[status] : 'ยังไม่มีความคิดเห็น';
   });
 
   readonly classes = computed(() => {
