@@ -97,6 +97,11 @@ const NAV_GROUPS: NavGroup[] = [
             label: 'ประวัติการมอบหมายงาน',
             path: '/assignment-project-auditor/history',
           },
+          {
+            code: 'F4.3',
+            label: 'สถานะโครงการ',
+            path: '/assignment-project-auditor/status',
+          },
         ],
       },
     ],
