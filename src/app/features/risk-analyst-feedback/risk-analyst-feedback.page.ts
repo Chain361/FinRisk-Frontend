@@ -23,12 +23,10 @@ import {
   RiskFactorCatalog,
   Subdistrict,
 } from '../../core/models/domain.models';
-import { RiskMatrixComponent } from '../../shared/charts/risk-matrix.component';
 import { FilterBarComponent } from '../../shared/filters/filter-bar.component';
 import { ConfirmModalComponent } from '../../shared/ui/confirm-modal.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { FeedbackStatusBadgeComponent } from '../../shared/ui/feedback-status-badge.component';
-import { InfoTooltipComponent } from '../../shared/ui/info-tooltip.component';
 import {
   bandColor,
   formatMoney,
@@ -47,13 +45,11 @@ import {
     FeedbackStatusBadgeComponent,
     FilterBarComponent,
     FormsModule,
-    InfoTooltipComponent,
-    RiskMatrixComponent,
   ],
   template: `
     <section class="page-shell">
       <div>
-        <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F4</p>
+        <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F5</p>
         <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">
           แบบฟอร์มบันทึกความคิดเห็นด้านความเสี่ยงของโครงการ
         </h1>
@@ -113,8 +109,8 @@ import {
                   <tr>
                     <th class="px-4 py-3">โครงการ</th>
                     <th class="px-4 py-3">ปี</th>
-                    <th class="px-4 py-3 text-right">Risk Score</th>
-                    <th class="px-4 py-3 text-right">สถานะ Feedback</th>
+                    <th class="px-4 py-3 text-right">คะแนนความเสี่ยง</th>
+                    <th class="px-4 py-3 text-right">สถานะความคิดเห็น</th>
                     <th class="px-4 py-3 text-right">วันที่ตรวจล่าสุด</th>
                   </tr>
                 </thead>
@@ -239,7 +235,7 @@ import {
                       </p>
                     </div>
                     <p class="m-0 mt-1.5 text-xs text-muted">
-                      ปี {{ project.budget_year }} · Score {{ number(project.risk_score, 2) }}
+                      ปี {{ project.budget_year }} · คะแนน {{ number(project.risk_score, 2) }}
                     </p>
                   </button>
                 }
@@ -270,7 +266,7 @@ import {
                     </div>
                     <div class="flex flex-col items-end gap-1.5">
                       <span class="text-[11px] font-bold text-muted"
-                        >Risk Score {{ number(scoreInfo().risk_score, 0) }}/100</span
+                        >คะแนนความเสี่ยง {{ number(scoreInfo().risk_score, 0) }}/100</span
                       >
                     </div>
                   </div>
@@ -357,14 +353,14 @@ import {
                     <p
                       class="mt-3 rounded-[3px] border border-line-soft bg-zebra px-3 py-2 text-[12.5px] text-muted"
                     >
-                      Feedback นี้ถูก Submit แล้ว ไม่สามารถแก้ไขได้ (ยกเว้นมีสิทธิ์)
+                      ความคิดเห็นนี้ถูกส่งแล้ว ไม่สามารถแก้ไขได้ แต่คุณสามารถเขียนความคิดเห็นเพิ่มเติมได้
                     </p>
                   }
 
                   <div class="mt-3.5 grid gap-3.5">
                     <label class="grid gap-1.5">
                       <span class="text-[12.5px] font-bold text-muted"
-                        >Feedback <span class="text-risk-high">*</span></span
+                        >ความคิดเห็น <span class="text-risk-high">*</span></span
                       >
                       <textarea
                         class="gov-input h-auto min-h-[96px] py-2"
@@ -381,7 +377,7 @@ import {
                     <div class="grid gap-3.5 sm:grid-cols-2">
                       <label class="grid gap-1.5">
                         <span class="text-[12.5px] font-bold text-muted"
-                          >Concern Level <span class="text-risk-high">*</span></span
+                          >ระดับความกังวล <span class="text-risk-high">*</span></span
                         >
                         <select
                           class="gov-select"
@@ -400,7 +396,7 @@ import {
 
                       <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
                         <p class="m-0 text-[11.5px] font-bold text-muted">
-                          Risk Score (คำนวณอัตโนมัติ)
+                          คะแนนความเสี่ยง (คำนวณอัตโนมัติ)
                         </p>
                         <p class="m-0 mt-1 text-[19px] font-extrabold text-ink">
                           {{ riskScorePreview() ?? '-' }}
@@ -414,7 +410,7 @@ import {
                     <div class="grid gap-3.5 sm:grid-cols-2">
                       <label class="grid gap-1.5">
                         <span class="text-[12.5px] font-bold text-muted"
-                          >Likelihood Score <span class="text-risk-high">*</span></span
+                          >คะแนนโอกาสเกิดของความเสี่ยง <span class="text-risk-high">*</span></span
                         >
                         <select
                           class="gov-select"
@@ -436,7 +432,7 @@ import {
 
                       <label class="grid gap-1.5">
                         <span class="text-[12.5px] font-bold text-muted"
-                          >Impact Score <span class="text-risk-high">*</span></span
+                          >คะแนนผลกระทบของความเสี่ยง <span class="text-risk-high">*</span></span
                         >
                         <select
                           class="gov-select"
@@ -458,7 +454,7 @@ import {
                     </div>
 
                     <label class="grid gap-1.5">
-                      <span class="text-[12.5px] font-bold text-muted">Suggestions</span>
+                      <span class="text-[12.5px] font-bold text-muted">ข้อเสนอแนะ</span>
                       <textarea
                         class="gov-input h-auto min-h-[72px] py-2"
                         [class.cursor-not-allowed]="isFeedbackLocked()"
@@ -472,43 +468,42 @@ import {
                     </label>
                   </div>
 
-                  <div class="mt-4 flex flex-wrap items-center justify-between gap-2.5">
-                    @if (currentFeedback()?.status === 'submitted' && canResolveFeedback()) {
-                      <button type="button" class="gov-btn-outline" (click)="resolveFeedback()">
-                        ทำเครื่องหมายว่าแก้ไขแล้ว (Resolved)
+                  <div class="mt-4 flex flex-wrap items-center justify-start gap-2.5">
+                    @if (isFeedbackLocked()) {
+                      <button type="button" class="gov-btn-primary" (click)="startNewFeedback()">
+                        เขียนความคิดเห็นเพิ่มเติม
                       </button>
                     } @else {
-                      <span></span>
+                      <div class="flex gap-2.5">
+                        <button
+                          type="button"
+                          class="gov-btn-outline disabled:cursor-not-allowed disabled:opacity-40"
+                          [disabled]="isFeedbackLocked()"
+                          (click)="saveFeedbackDraft()"
+                        >
+                          บันทึกฉบับร่าง
+                        </button>
+                        <button
+                          type="button"
+                          class="gov-btn-primary disabled:cursor-not-allowed disabled:opacity-40"
+                          [disabled]="isFeedbackLocked()"
+                          (click)="requestSubmitFeedback()"
+                        >
+                          ส่ง
+                        </button>
+                      </div>
                     }
-                    <div class="flex gap-2.5">
-                      <button
-                        type="button"
-                        class="gov-btn-outline disabled:cursor-not-allowed disabled:opacity-40"
-                        [disabled]="isFeedbackLocked()"
-                        (click)="saveFeedbackDraft()"
-                      >
-                        Save Draft
-                      </button>
-                      <button
-                        type="button"
-                        class="gov-btn-primary disabled:cursor-not-allowed disabled:opacity-40"
-                        [disabled]="isFeedbackLocked()"
-                        (click)="requestSubmitFeedback()"
-                      >
-                        Submit
-                      </button>
-                    </div>
                   </div>
                 </section>
 
                 <section class="panel p-[18px]">
                   <h2 class="m-0 mb-3.5 text-[16px] font-bold text-ink">
-                    ประวัติ Feedback ของโครงการ
+                    ประวัติความคิดเห็นของโครงการ
                   </h2>
 
                   @if (!feedbackHistory().length) {
                     <app-empty-state
-                      title="ยังไม่มี Feedback"
+                      title="ยังไม่มีความคิดเห็น"
                       message="ยังไม่มีการบันทึกความคิดเห็นสำหรับโครงการนี้"
                     />
                   } @else {
@@ -520,12 +515,12 @@ import {
                           <tr>
                             <th class="px-3 py-2.5 text-left">วันที่ตรวจ</th>
                             <th class="px-3 py-2.5">ผู้ตรวจสอบ</th>
-                            <th class="px-3 py-2.5">Feedback</th>
-                            <th class="px-3 py-2.5">Concern</th>
-                            <th class="px-3 py-2.5">Suggestions</th>
-                            <th class="px-3 py-2.5">Risk Score</th>
+                            <th class="px-3 py-2.5">ความคิดเห็น</th>
+                            <th class="px-3 py-2.5">ระดับความกังวล</th>
+                            <th class="px-3 py-2.5">ข้อเสนอแนะ</th>
+                            <th class="px-3 py-2.5">คะแนนความเสี่ยง</th>
                             <th class="px-3 py-2.5">สถานะ</th>
-                            <th class="px-3 py-2.5">การจัดการ</th>
+                            <th class="px-3 py-2.5"></th>
                           </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 bg-white">
@@ -564,13 +559,24 @@ import {
                               </td>
                               <td class="px-3 py-2.5 text-right">
                                 @if (canDeleteFeedback(entry)) {
-                                  <button
-                                    type="button"
-                                    class="inline-flex h-8 items-center justify-center rounded-[3px] border-[1.5px] border-risk-high px-2.5 text-[12px] font-bold text-risk-high hover:bg-red-50"
-                                    (click)="requestDeleteFeedback(entry.feedback_id)"
-                                  >
-                                    ลบ
-                                  </button>
+                                  <div class="flex justify-end gap-2">
+                                    @if (entry.status === 'draft') {
+                                      <button
+                                        type="button"
+                                        class="inline-flex h-8 items-center justify-center rounded-[3px] border-[1.5px] border-line px-2.5 text-[12px] font-bold text-slate-700 hover:bg-zebra"
+                                        (click)="editFeedback(entry)"
+                                      >
+                                        แก้ไข
+                                      </button>
+                                    }
+                                    <button
+                                      type="button"
+                                      class="inline-flex h-8 items-center justify-center rounded-[3px] border-[1.5px] border-risk-high px-2.5 text-[12px] font-bold text-risk-high hover:bg-red-50"
+                                      (click)="requestDeleteFeedback(entry.feedback_id)"
+                                    >
+                                      ลบ
+                                    </button>
+                                  </div>
                                 }
                               </td>
                             </tr>
@@ -583,17 +589,17 @@ import {
 
                 <app-confirm-modal
                   [open]="showSubmitConfirm()"
-                  title="ยืนยันการ Submit Feedback"
-                  message="เมื่อ Submit แล้วจะไม่สามารถแก้ไขได้ (ยกเว้นมีสิทธิ์) และระบบจะส่ง Feedback นี้ไปยังผู้ตรวจสอบโครงการ ยืนยันหรือไม่?"
-                  confirmLabel="ยืนยัน Submit"
+                  title="ยืนยันการส่งความคิดเห็น"
+                  message="เมื่อส่งแล้วจะไม่สามารถแก้ไขได้ และระบบจะส่งความคิดเห็นนี้ไปยังผู้ตรวจสอบโครงการ ยืนยันหรือไม่?"
+                  confirmLabel="ยืนยันการส่ง"
                   (confirmed)="confirmSubmitFeedback()"
                   (cancelled)="showSubmitConfirm.set(false)"
                 />
 
                 <app-confirm-modal
                   [open]="feedbackPendingDeleteId() !== null"
-                  title="ยืนยันการลบ Feedback"
-                  message="เมื่อลบแล้วจะไม่สามารถกู้คืนได้ ยืนยันการลบ Feedback นี้หรือไม่?"
+                  title="ยืนยันการลบความคิดเห็น"
+                  message="เมื่อลบแล้วจะไม่สามารถกู้คืนได้ ยืนยันการลบความคิดเห็นนี้หรือไม่?"
                   confirmLabel="ยืนยันลบ"
                   (confirmed)="confirmDeleteFeedback()"
                   (cancelled)="feedbackPendingDeleteId.set(null)"
@@ -646,6 +652,8 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
   readonly feedbackValidationError = signal('');
   readonly showSubmitConfirm = signal(false);
   readonly feedbackPendingDeleteId = signal<string | null>(null);
+  readonly isEditingEntry = signal(false);
+  readonly isComposingNewFeedback = signal(false);
 
   readonly riskScorePreview = computed(() => {
     const likelihood = this.likelihoodScore();
@@ -677,11 +685,11 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
   });
 
   readonly isFeedbackLocked = computed(() => {
-    const current = this.currentFeedback();
-    if (!current || current.status === 'draft') {
+    if (this.isEditingEntry() || this.isComposingNewFeedback()) {
       return false;
     }
-    return !this.auth.hasRole('admin', 'project_auditor');
+    const current = this.currentFeedback();
+    return !!current && current.status !== 'draft';
   });
 
   readonly canResolveFeedback = computed(() => this.auth.hasRole('admin', 'project_auditor'));
@@ -908,12 +916,32 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     }
     this.feedbackService.submit(draft);
     this.resetFeedbackFields();
-    this.feedbackSuccessMessage.set('ส่ง Feedback เรียบร้อยแล้ว');
+    this.feedbackSuccessMessage.set('ส่งความคิดเห็นเรียบร้อยแล้ว');
   }
 
   canDeleteFeedback(entry: ProjectFeedback): boolean {
     const username = this.auth.user()?.username;
     return entry.auditor_username === username || this.auth.hasRole('admin', 'project_auditor');
+  }
+
+  editFeedback(entry: ProjectFeedback): void {
+    this.activeFeedbackId.set(entry.feedback_id);
+    this.feedbackText.set(entry.feedback_text);
+    this.concernLevel.set(entry.concern_level);
+    this.likelihoodScore.set(entry.likelihood_score);
+    this.impactScore.set(entry.impact_score);
+    this.suggestions.set(entry.suggestions ?? '');
+    this.isEditingEntry.set(true);
+    this.isComposingNewFeedback.set(false);
+    this.feedbackSuccessMessage.set('');
+    this.feedbackValidationError.set('');
+  }
+
+  startNewFeedback(): void {
+    this.resetFeedbackFields();
+    this.isComposingNewFeedback.set(true);
+    this.feedbackSuccessMessage.set('');
+    this.feedbackValidationError.set('');
   }
 
   requestDeleteFeedback(feedbackId: string): void {
@@ -930,7 +958,7 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     if (this.activeFeedbackId() === feedbackId) {
       this.loadFeedbackForm(String(this.selectedProjectId()));
     }
-    this.feedbackSuccessMessage.set('ลบ Feedback เรียบร้อยแล้ว');
+    this.feedbackSuccessMessage.set('ลบความคิดเห็นเรียบร้อยแล้ว');
   }
 
   resolveFeedback(): void {
@@ -964,6 +992,8 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
   private loadFeedbackForm(projectId: string): void {
     this.feedbackSuccessMessage.set('');
     this.feedbackValidationError.set('');
+    this.isEditingEntry.set(false);
+    this.isComposingNewFeedback.set(false);
     const username = this.auth.user()?.username;
     const existing = username ? this.feedbackService.activeFor(projectId, username) : null;
     this.activeFeedbackId.set(existing?.feedback_id ?? null);
@@ -988,6 +1018,8 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     this.likelihoodScore.set(null);
     this.impactScore.set(null);
     this.suggestions.set('');
+    this.isEditingEntry.set(false);
+    this.isComposingNewFeedback.set(false);
   }
 
   money(value: number | string | null | undefined): string {

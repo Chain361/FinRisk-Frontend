@@ -41,9 +41,9 @@ export const LIKELIHOOD_OPTIONS: ReadonlyArray<{ value: number; label: string; h
 ];
 
 export const IMPACT_OPTIONS: ReadonlyArray<{ value: number; label: string; hint: string }> = [
-  { value: 1, label: '1 - Very Low', hint: 'ผลกระทบน้อยมาก ไม่กระทบการดำเนินโครงการ' },
-  { value: 2, label: '2 - Low', hint: 'ผลกระทบน้อย แก้ไขได้ในระดับปฏิบัติงาน' },
-  { value: 3, label: '3 - Medium', hint: 'ผลกระทบปานกลาง อาจกระทบงบประมาณหรือระยะเวลา' },
-  { value: 4, label: '4 - High', hint: 'ผลกระทบสูง กระทบวัตถุประสงค์ของโครงการ' },
-  { value: 5, label: '5 - Very High', hint: 'ผลกระทบรุนแรง อาจนำไปสู่ความเสียหายร้ายแรง' },
+  { value: 1, label: '1 - ต่ำมาก', hint: 'ผลกระทบน้อยมาก ไม่กระทบการดำเนินโครงการ' },
+  { value: 2, label: '2 - ต่ำ', hint: 'ผลกระทบน้อย แก้ไขได้ในระดับปฏิบัติงาน' },
+  { value: 3, label: '3 - ปานกลาง', hint: 'ผลกระทบปานกลาง อาจกระทบงบประมาณหรือระยะเวลา' },
+  { value: 4, label: '4 - สูง', hint: 'ผลกระทบสูง กระทบวัตถุประสงค์ของโครงการ' },
+  { value: 5, label: '5 - สูงมาก', hint: 'ผลกระทบรุนแรง อาจนำไปสู่ความเสียหายร้ายแรง' },
 ];
