@@ -1,7 +1,13 @@
 ﻿import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
+import {
+  ANALYSTS,
+  ASSIGNMENT_STORAGE_KEY,
+  SavedAssignment,
+} from '../assignment-project-auditor/assignment-project-auditor.models';
 import {
   Project,
   ProjectDetail,
@@ -31,6 +37,7 @@ import {
     EmptyStateComponent,
     FilterBarComponent,
     InfoTooltipComponent,
+    RouterLink,
     RiskBadgeComponent,
     RiskMatrixComponent,
   ],
@@ -223,6 +230,43 @@ import {
                     }
                   </div>
                 }
+
+                <div class="mt-4 rounded-[4px] border-[1.5px] border-line-soft bg-[#fbfcfd] px-4 py-3.5">
+                  <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex min-w-0 flex-wrap items-center gap-4">
+                      <div class="flex items-center gap-2.5">
+                        <span
+                          class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-extrabold"
+                          [class]="assignmentStatusCircleClass()"
+                        >
+                          {{ latestProjectAssignment() ? '✓' : '!' }}
+                        </span>
+                        <div>
+                          <p class="m-0 text-[11.5px] font-bold text-muted">สถานะโครงการ</p>
+                          <p class="m-0 mt-0.5 text-[13.5px] font-extrabold text-ink">{{ latestProjectAssignment() ? 'มอบหมายแล้ว' : 'ยังไม่มอบหมาย' }}</p>
+                        </div>
+                      </div>
+
+                      <div class="min-w-[160px] border-l border-line-soft pl-4">
+                        <p class="m-0 text-[11.5px] font-bold text-muted">ผู้รับมอบหมาย</p>
+                        <p class="m-0 mt-0.5 text-[13.5px] font-extrabold text-ink">{{ assignmentAnalystName() }}</p>
+                      </div>
+
+                      <div class="min-w-[160px] border-l border-line-soft pl-4">
+                        <p class="m-0 text-[11.5px] font-bold text-muted">ผู้มอบหมาย</p>
+                        <p class="m-0 mt-0.5 text-[13.5px] font-extrabold text-ink">{{ latestProjectAssignment()?.assignedBy || '-' }}</p>
+                      </div>
+                    </div>
+
+                    <a
+                      routerLink="/assignment-project-auditor/status"
+                      [queryParams]="{ projectId: projectDetail()?.project_id }"
+                      class="inline-flex min-h-[38px] items-center justify-center rounded-[3px] border-[1.5px] border-line bg-white px-4 text-[13px] font-bold text-slate-700 no-underline hover:bg-zebra"
+                    >
+                      ดูสถานะเพิ่มเติม
+                    </a>
+                  </div>
+                </div>
 
                 <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
@@ -460,6 +504,7 @@ import {
 })
 export class RiskFactorsPageComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly route = inject(ActivatedRoute);
 
   protected readonly String = String;
   readonly error = signal('');
@@ -470,6 +515,7 @@ export class RiskFactorsPageComponent implements OnInit {
   readonly projects = signal<Project[]>([]);
   readonly catalog = signal<RiskFactorCatalog[]>([]);
   readonly projectDetail = signal<ProjectDetail | null>(null);
+  readonly assignments = signal<SavedAssignment[]>([]);
   readonly searchQuery = signal('');
 
   readonly selectedSubdistrictId = signal<number | null>(null);
@@ -479,6 +525,7 @@ export class RiskFactorsPageComponent implements OnInit {
   readonly budgetAmountMin = signal('');
   readonly budgetAmountMax = signal('');
   readonly selectedProjectId = signal<string | null>(null);
+  readonly routeProjectId = signal<string | null>(null);
 
   readonly sortedProjects = computed(() => sortProjectsByRisk(this.projects()));
   readonly projectTypes = computed(() => {
@@ -537,8 +584,28 @@ export class RiskFactorsPageComponent implements OnInit {
       });
   });
 
+  readonly latestProjectAssignment = computed(() => {
+    const detail = this.projectDetail();
+    if (!detail) {
+      return null;
+    }
+    const projectId = String(detail.project_id);
+    return (
+      this.assignments()
+        .filter((assignment) => assignment.projectId === projectId)
+        .sort((a, b) => this.dateValue(b.assignedAt) - this.dateValue(a.assignedAt))[0] ?? null
+    );
+  });
+
+  readonly assignmentAnalyst = computed(() => {
+    const assignment = this.latestProjectAssignment();
+    return assignment ? ANALYSTS.find((analyst) => analyst.id === assignment.analystId) ?? null : null;
+  });
+
   ngOnInit(): void {
     this.loadingProjects.set(true);
+    this.applyRouteProject();
+    this.assignments.set(this.readAssignments());
 
     forkJoin({
       subdistricts: this.api.subdistricts(),
@@ -600,6 +667,7 @@ export class RiskFactorsPageComponent implements OnInit {
 
   selectProject(projectId: string | number): void {
     this.selectedProjectId.set(String(projectId));
+    this.assignments.set(this.readAssignments());
     this.loadProjectDetail(projectId);
   }
 
@@ -642,6 +710,51 @@ export class RiskFactorsPageComponent implements OnInit {
 
   contractStatus(): string {
     return this.projectDetail()?.contract_status || '-';
+  }
+
+  assignmentAnalystName(): string {
+    return this.assignmentAnalyst()?.name || '-';
+  }
+
+  assignmentAnalystTeam(): string {
+    return this.assignmentAnalyst()?.team || 'ยังไม่มีผู้รับผิดชอบ';
+  }
+
+  assignmentAssignedAtText(): string {
+    const assignedAt = this.latestProjectAssignment()?.assignedAt;
+    return assignedAt ? this.formatAssignmentDate(assignedAt) : '-';
+  }
+
+  assignmentPriorityText(): string {
+    switch (this.latestProjectAssignment()?.priority) {
+      case 'high':
+        return 'สูง - เร่งด่วน';
+      case 'normal':
+        return 'ปกติ';
+      case 'low':
+        return 'ต่ำ';
+      default:
+        return '-';
+    }
+  }
+
+  assignmentStatusCircleClass(): string {
+    return this.latestProjectAssignment()
+      ? 'bg-risk-low text-white'
+      : 'bg-risk-medium text-white';
+  }
+
+  assignmentPriorityBadgeClass(): string {
+    switch (this.latestProjectAssignment()?.priority) {
+      case 'high':
+        return 'bg-red-100 text-risk-high';
+      case 'normal':
+        return 'bg-blue-100 text-navy';
+      case 'low':
+        return 'bg-green-100 text-risk-low';
+      default:
+        return 'bg-slate-100 text-slate-600';
+    }
   }
 
   vendorLabel(): string {
@@ -753,13 +866,16 @@ export class RiskFactorsPageComponent implements OnInit {
   private loadProjects(): void {
     this.loadingProjects.set(true);
     this.error.set('');
-    this.selectedProjectId.set(null);
-    this.projectDetail.set(null);
+    if (!this.routeProjectId()) {
+      this.selectedProjectId.set(null);
+      this.projectDetail.set(null);
+    }
 
     this.api.projects(this.filters()).subscribe({
       next: (projects) => {
         this.projects.set(projects);
         this.loadingProjects.set(false);
+        this.openRouteProjectIfNeeded();
       },
       error: () => {
         this.error.set('โหลดรายชื่อโครงการไม่สำเร็จ');
@@ -790,6 +906,22 @@ export class RiskFactorsPageComponent implements OnInit {
     };
   }
 
+  private applyRouteProject(): void {
+    const projectId = this.route.snapshot.queryParamMap.get('projectId');
+    this.routeProjectId.set(projectId);
+    if (projectId) {
+      this.searchQuery.set(projectId);
+    }
+  }
+
+  private openRouteProjectIfNeeded(): void {
+    const projectId = this.routeProjectId();
+    if (!projectId || this.selectedProjectId() === projectId) {
+      return;
+    }
+    this.selectProject(projectId);
+  }
+
   private projectType(project: Project): string {
     return project.project_type || project.purchase_method_group || 'ไม่ระบุประเภท';
   }
@@ -814,6 +946,30 @@ export class RiskFactorsPageComponent implements OnInit {
       return null;
     }
     return ((leftValue - rightValue) / rightValue) * 100;
+  }
+
+  private readAssignments(): SavedAssignment[] {
+    try {
+      const parsed: unknown = JSON.parse(localStorage.getItem(ASSIGNMENT_STORAGE_KEY) ?? '[]');
+      return Array.isArray(parsed) ? (parsed as SavedAssignment[]) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private formatAssignmentDate(value: string): string {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+      ? '-'
+      : new Intl.DateTimeFormat('th-TH', {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        }).format(date);
+  }
+
+  private dateValue(value: string): number {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? 0 : date.getTime();
   }
 }
 
