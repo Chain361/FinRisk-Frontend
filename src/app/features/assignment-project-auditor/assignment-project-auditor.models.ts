@@ -52,6 +52,9 @@ export interface SavedAssignment {
   auditSteps?: string;
   workflowStatus?: AssignmentWorkflowStatus;
   assignedBy?: string;
+  reviewNote?: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
 }
 
 export const ASSIGNMENT_STORAGE_KEY = 'finrisk_assignment_project_auditor';
