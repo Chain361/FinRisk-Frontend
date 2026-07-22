@@ -9,6 +9,7 @@ import {
   RiskSummary,
   Subdistrict,
 } from '../../../core/models/domain.models';
+import { I18nService } from '../../../core/i18n/i18n.service';
 import { BarChartComponent, BarChartSeries } from '../../../shared/charts/bar-chart.component';
 import { FilterBarComponent } from '../../../shared/filters/filter-bar.component';
 import { AnnouncementPanelComponent } from '../../../shared/ui/announcement-panel.component';
@@ -38,12 +39,8 @@ interface CrossTabRow {
       <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F1.1</p>
-          <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">
-            ภาพรวมสุขภาพความเสี่ยงโครงการ
-          </h1>
-          <p class="m-0 mt-1.5 text-sm text-muted">
-            ภาพรวมจำนวนโครงการ ระดับความเสี่ยง และแนวโน้มงบประมาณ
-          </p>
+          <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">{{ t('prOverview.title') }}</h1>
+          <p class="m-0 mt-1.5 text-sm text-muted">{{ t('prOverview.subtitle') }}</p>
         </div>
       </div>
 
@@ -70,25 +67,25 @@ interface CrossTabRow {
 
       <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <app-kpi-card
-          label="โครงการทั้งหมด"
+          [label]="t('common.allProjects')"
           [value]="totalProjects()"
           hint=""
           accentClass="bg-navy"
         />
         <app-kpi-card
-          label="เสี่ยงสูง"
+          [label]="t('risk.level.high')"
           [value]="byLevel()['high'] ?? 0"
           hint=""
           accentClass="bg-risk-high"
         />
         <app-kpi-card
-          label="เสี่ยงปานกลาง"
+          [label]="t('risk.level.medium')"
           [value]="byLevel()['medium'] ?? 0"
           hint=""
           accentClass="bg-risk-medium"
         />
         <app-kpi-card
-          label="เสี่ยงต่ำ"
+          [label]="t('risk.level.low')"
           [value]="byLevel()['low'] ?? 0"
           hint=""
           accentClass="bg-risk-low"
@@ -96,19 +93,17 @@ interface CrossTabRow {
       </div>
 
       <section class="panel p-[18px]">
-        <h2 class="m-0 mb-0.5 text-[16px] font-bold text-ink">สัดส่วนความเสี่ยงตามประเภทโครงการ</h2>
-        <p class="m-0 mb-3.5 text-[13px] text-muted">
-          ตารางไขว้ระหว่างประเภทโครงการและระดับความเสี่ยง
-        </p>
+        <h2 class="m-0 mb-0.5 text-[16px] font-bold text-ink">{{ t('prOverview.crossTab.title') }}</h2>
+        <p class="m-0 mb-3.5 text-[13px] text-muted">{{ t('prOverview.crossTab.subtitle') }}</p>
         <div class="overflow-x-auto">
           <table class="gov-table">
             <thead>
               <tr>
-                <th>ประเภทโครงการ</th>
-                <th class="text-right!">เสี่ยงสูง</th>
-                <th class="text-right!">เสี่ยงปานกลาง</th>
-                <th class="text-right!">เสี่ยงต่ำ</th>
-                <th class="text-right!">รวม</th>
+                <th>{{ t('common.projectType') }}</th>
+                <th class="text-right!">{{ t('risk.level.high') }}</th>
+                <th class="text-right!">{{ t('risk.level.medium') }}</th>
+                <th class="text-right!">{{ t('risk.level.low') }}</th>
+                <th class="text-right!">{{ t('common.total') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -122,7 +117,7 @@ interface CrossTabRow {
                 </tr>
               }
               <tr class="bg-row-active! font-extrabold">
-                <td>รวมทั้งหมด</td>
+                <td>{{ t('common.grandTotal') }}</td>
                 <td class="text-right">{{ crossTab().totals.high }}</td>
                 <td class="text-right">{{ crossTab().totals.medium }}</td>
                 <td class="text-right">{{ crossTab().totals.low }}</td>
@@ -134,19 +129,19 @@ interface CrossTabRow {
       </section>
 
       <app-bar-chart
-        title="แนวโน้มจำนวนโครงการตามระดับความเสี่ยง (ปี 2566–2568)"
-        subtitle="ปีที่ไม่มีโครงการจะแสดงเป็น 0"
+        [title]="t('prOverview.trend.title')"
+        [subtitle]="t('prOverview.trend.subtitle')"
         [categories]="fiscalYearLabels"
         [series]="riskLevelTrendBarSeries()"
-        unitSuffix="โครงการ"
+        [unitSuffix]="t('common.unit.project')"
       />
       <app-bar-chart
-        title="งบประมาณรวมแต่ละปี แบ่งตามประเภทโครงการ"
-        subtitle="เปรียบเทียบงบประมาณของแต่ละประเภทโครงการในแต่ละปี"
+        [title]="t('prOverview.budget.title')"
+        [subtitle]="t('prOverview.budget.subtitle')"
         [categories]="fiscalYearLabels"
         [series]="budgetByTypeBarSeries()"
-        unitSuffix="บาท"
-        rowHeader="ประเภทโครงการ"
+        [unitSuffix]="t('common.unit.baht')"
+        [rowHeader]="t('common.projectType')"
         [compactValueLabels]="true"
       />
     </section>
@@ -154,6 +149,8 @@ interface CrossTabRow {
 })
 export class OverviewPageComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly i18n = inject(I18nService);
+  protected readonly t = this.i18n.t;
   readonly fiscalYearLabels = FISCAL_YEARS.map(String);
   readonly error = signal('');
   readonly subdistricts = signal<Subdistrict[]>([]);
@@ -206,7 +203,7 @@ export class OverviewPageComponent implements OnInit {
   });
   readonly riskLevelTrendBarSeries = computed<BarChartSeries[]>(() =>
     RISK_SERIES.map((risk) => ({
-      name: risk.name,
+      name: this.i18n.riskLabel(risk.level),
       color: risk.color,
       values: FISCAL_YEARS.map(
         (year) =>
@@ -259,7 +256,7 @@ export class OverviewPageComponent implements OnInit {
   private loadSubdistricts(): void {
     this.api.subdistricts().subscribe({
       next: (rows) => this.subdistricts.set(rows),
-      error: () => this.error.set('โหลดรายการตำบลไม่สำเร็จ'),
+      error: () => this.error.set(this.t('prOverview.error.subdistricts')),
     });
   }
   private loadDashboard(): void {
@@ -272,7 +269,7 @@ export class OverviewPageComponent implements OnInit {
         this.summary.set(summary);
         this.projects.set(projects);
       },
-      error: () => this.error.set('โหลดข้อมูล Project Risk ไม่สำเร็จ'),
+      error: () => this.error.set(this.t('prOverview.error.dashboard')),
     });
   }
   private loadTimeSeries(): void {
@@ -283,7 +280,7 @@ export class OverviewPageComponent implements OnInit {
       ),
     ).subscribe({
       next: (rows) => this.multiYearProjects.set(rows.flat()),
-      error: () => this.error.set('โหลดข้อมูลโครงการย้อนหลังไม่สำเร็จ'),
+      error: () => this.error.set(this.t('prOverview.error.timeSeries')),
     });
   }
   private filters(): ProjectFilters {
@@ -294,7 +291,7 @@ export class OverviewPageComponent implements OnInit {
     };
   }
   private projectTypeLabel(project: Project): string {
-    return project.project_type || project.purchase_method_group || 'ไม่ระบุประเภท';
+    return project.project_type || project.purchase_method_group || this.t('common.unspecifiedType');
   }
   private distinctProjectTypes(projects: Project[]): string[] {
     return [...new Set(projects.map((project) => this.projectTypeLabel(project)))].sort((a, b) =>

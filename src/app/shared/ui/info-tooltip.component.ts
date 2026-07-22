@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, HostListener, ElementRef, inject, input, signal } from '@angular/core';
 
+import { I18nService } from '../../core/i18n/i18n.service';
+
 @Component({
   selector: 'app-info-tooltip',
   standalone: true,
@@ -10,7 +12,7 @@ import { ChangeDetectionStrategy, Component, HostListener, ElementRef, inject, i
         type="button"
         class="size-5 cursor-pointer rounded-full border-[1.5px] border-navy bg-white text-xs font-extrabold leading-none text-navy"
         (click)="open.set(!open())"
-        aria-label="ข้อมูลเพิ่มเติม"
+        [attr.aria-label]="t('common.moreInfo')"
       >
         ?
       </button>
@@ -27,6 +29,7 @@ import { ChangeDetectionStrategy, Component, HostListener, ElementRef, inject, i
 })
 export class InfoTooltipComponent {
   private readonly host = inject(ElementRef<HTMLElement>);
+  protected readonly t = inject(I18nService).t;
 
   readonly text = input.required<string>();
   readonly width = input<number>(260);

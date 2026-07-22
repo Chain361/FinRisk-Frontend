@@ -14,12 +14,4 @@ export type RoleCode =
   | 'risk_analyst'
   | 'public_user';
 
-/** ชื่อบทบาทภาษาไทย (ตาม seed ROLES ใน seed_database.py) */
-export const ROLE_LABELS: Record<string, string> = {
-  admin: 'ผู้ดูแลระบบ',
-  regional_supervisor: 'ผู้กำกับดูแลอำเภอ/จังหวัด',
-  local_executive: 'ผู้บริหารตำบล (นายก/ปลัด)',
-  project_auditor: 'ผู้ตรวจสอบโครงการ',
-  risk_analyst: 'นักวิเคราะห์/ตรวจสอบภายใน',
-  public_user: 'ประชาชนทั่วไป',
-};
+// ชื่อบทบาทสำหรับแสดงผลย้ายไป dictionary i18n แล้ว (key `role.*`) — ดู core/i18n

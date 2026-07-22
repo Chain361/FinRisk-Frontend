@@ -2,6 +2,7 @@
 import { forkJoin } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
+import { I18nService } from '../../core/i18n/i18n.service';
 import {
   Project,
   ProjectDetail,
@@ -38,8 +39,8 @@ import {
     <section class="page-shell">
       <div>
         <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F3</p>
-        <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">โครงการทั้งหมด</h1>
-        <p class="m-0 mt-1.5 text-sm text-muted">เปิดดูรายละเอียดโครงการ ปัจจัยเสี่ยงที่ trigger และสูตรการคำนวณ</p>
+        <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">{{ t('common.allProjects') }}</h1>
+        <p class="m-0 mt-1.5 text-sm text-muted">{{ t('rf.subtitle') }}</p>
       </div>
 
       <app-filter-bar
@@ -67,22 +68,22 @@ import {
       }
 
       @if (loadingProjects()) {
-        <div class="panel p-6 text-sm text-muted">กำลังโหลดโครงการ...</div>
+        <div class="panel p-6 text-sm text-muted">{{ t('rf.loadingProjects') }}</div>
       } @else {
         @if (!selectedProjectId()) {
           <section class="panel overflow-hidden">
             <div class="border-b-[1.5px] border-line px-4 py-3.5">
               <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <h2 class="m-0 text-[15px] font-bold text-ink">รายการโครงการเรียงตาม Risk Score</h2>
-                  <p class="m-0 mt-1 text-[12.5px] text-muted">คลิกโครงการเพื่อดูรายละเอียดและปัจจัยที่ทำให้เสี่ยง</p>
+                  <h2 class="m-0 text-[15px] font-bold text-ink">{{ t('rf.list.title') }}</h2>
+                  <p class="m-0 mt-1 text-[12.5px] text-muted">{{ t('rf.list.subtitle') }}</p>
                 </div>
                 <label class="block w-full max-w-md">
-                  <span class="sr-only">ค้นหาโครงการ</span>
+                  <span class="sr-only">{{ t('filter.searchLabel') }}</span>
                   <input
                     type="search"
                     class="gov-input"
-                    placeholder="ค้นหาชื่อโครงการ หรือ Project ID"
+                    [placeholder]="t('filter.searchPlaceholder')"
                     [value]="searchQuery()"
                     (input)="setSearch($any($event.target).value)"
                   />
@@ -94,20 +95,23 @@ import {
               <table class="min-w-full divide-y divide-slate-200 text-sm">
                 <thead class="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500">
                   <tr>
-                    <th class="px-4 py-3">โครงการ</th>
-                    <th class="px-4 py-3">ปี</th>
-                    <th class="px-4 py-3">ประเภท</th>
-                    <th class="px-4 py-3 text-right">งบประมาณ</th>
-                    <th class="px-4 py-3 text-right">ราคา/อ้างอิง</th>
+                    <th class="px-4 py-3">{{ t('common.project') }}</th>
+                    <th class="px-4 py-3">{{ t('common.year') }}</th>
+                    <th class="px-4 py-3">{{ t('common.type') }}</th>
+                    <th class="px-4 py-3 text-right">{{ t('common.budget') }}</th>
+                    <th class="px-4 py-3 text-right">{{ t('rf.list.colPriceRef') }}</th>
                     <th class="px-4 py-3 text-right">Risk Score</th>
-                    <th class="px-4 py-3">ระดับ 5×5</th>
+                    <th class="px-4 py-3">{{ t('rf.list.level5') }}</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 bg-white">
                   @if (!filteredProjects().length) {
                     <tr>
                       <td colspan="7" class="px-4 py-12">
-                        <app-empty-state title="ไม่พบโครงการ" message="ลองเปลี่ยนคำค้น ปี ตำบล หรือระดับความเสี่ยง" />
+                        <app-empty-state
+                          [title]="t('rf.list.emptyTitle')"
+                          [message]="t('rf.list.emptyMsg')"
+                        />
                       </td>
                     </tr>
                   } @else {
@@ -124,7 +128,7 @@ import {
                         <td class="px-4 py-3 text-right font-semibold">{{ number(project.risk_score, 2) }}</td>
                         <td class="px-4 py-3">
                           @if (project.matrix_level) {
-                            <span class="inline-flex items-center rounded-[3px] px-2.5 py-1 text-[12px] font-extrabold text-white" [style.background]="bandColor(project.matrix_level)">{{ project.matrix_level }}</span>
+                            <span class="inline-flex items-center rounded-[3px] px-2.5 py-1 text-[12px] font-extrabold text-white" [style.background]="bandColor(project.matrix_level)">{{ bandText(project.matrix_level) }}</span>
                           } @else {
                             <app-risk-badge [level]="project.risk_level" />
                           }
@@ -142,8 +146,8 @@ import {
             <div class="border-b-[1.5px] border-line px-4 py-3.5">
               <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <h2 class="m-0 text-[15px] font-bold text-ink">รายการโครงการ</h2>
-                  <p class="m-0 mt-1 text-[12.5px] text-muted">เลือกโครงการเพื่อดูรายละเอียด</p>
+                  <h2 class="m-0 text-[15px] font-bold text-ink">{{ t('rf.side.title') }}</h2>
+                  <p class="m-0 mt-1 text-[12.5px] text-muted">{{ t('rf.side.subtitle') }}</p>
                 </div>
                 <div class="flex w-full max-w-[305px] flex-col gap-2">
                   <button
@@ -151,14 +155,14 @@ import {
                     class="inline-flex h-10 items-center justify-center rounded-[3px] border-[1.5px] border-line bg-white px-3 text-[13.5px] font-bold text-slate-700 hover:bg-zebra"
                     (click)="clearSelection()"
                   >
-                    กลับไปรายการ
+                    {{ t('rf.side.back') }}
                   </button>
                   <label class="block">
-                    <span class="sr-only">ค้นหาโครงการ</span>
+                    <span class="sr-only">{{ t('filter.searchLabel') }}</span>
                     <input
                       type="search"
                       class="gov-input"
-                      placeholder="ค้นหาชื่อโครงการ หรือ Project ID"
+                      [placeholder]="t('filter.searchPlaceholder')"
                       [value]="searchQuery()"
                       (input)="setSearch($any($event.target).value)"
                     />
@@ -180,7 +184,9 @@ import {
                     <app-risk-badge [level]="project.risk_level" />
                   </div>
                   <p class="m-0 mt-1.5 text-xs text-muted">
-                    ปี {{ project.budget_year }} · Score {{ number(project.risk_score, 2) }} · {{ money(project.budget_amount) }} บาท
+                    {{ t('common.yearLabel', { year: project.budget_year }) }} · Score
+                    {{ number(project.risk_score, 2) }} · {{ money(project.budget_amount) }}
+                    {{ t('common.unit.baht') }}
                   </p>
                 </button>
               }
@@ -189,7 +195,7 @@ import {
 
           <section class="grid gap-4">
             @if (loadingDetail()) {
-              <div class="panel p-6 text-sm text-muted">กำลังโหลดรายละเอียดโครงการ...</div>
+              <div class="panel p-6 text-sm text-muted">{{ t('rf.loadingDetail') }}</div>
             } @else if (projectDetail()) {
               <article class="panel p-[18px]">
                 <div class="flex flex-wrap items-start justify-between gap-3">
@@ -197,7 +203,7 @@ import {
                     <p class="m-0 text-[12.5px] font-bold text-muted">Project ID {{ projectDetail()?.project_id }}</p>
                     <h2 class="m-0 mt-1 text-[19px] font-extrabold text-ink">{{ projectDetail()?.project_name }}</h2>
                     <p class="m-0 mt-1.5 text-[13px] text-muted">
-                      ปี {{ projectDetail()?.budget_year }} ·
+                      {{ t('common.yearLabel', { year: projectDetail()?.budget_year ?? '' }) }} ·
                       {{ projectDetail()?.project_type || projectDetail()?.purchase_method_group || '-' }}
                     </p>
                   </div>
@@ -206,8 +212,8 @@ import {
                       <span
                         class="inline-flex items-center rounded-[3px] px-3 py-1 text-[13px] font-extrabold text-white"
                         [style.background]="bandColor(scoreInfo().matrix_level)"
-                        title="ระดับความเสี่ยงตามกรอบ โอกาส × ผลกระทบ 5×5"
-                      >ระดับ{{ scoreInfo().matrix_level }}</span>
+                        [title]="t('rf.detail.matrixTitle')"
+                      >{{ t('common.level') }}{{ bandText(scoreInfo().matrix_level) }}</span>
                     }
                     <span class="text-[11px] font-bold text-muted">Risk Score {{ number(scoreInfo().risk_score, 0) }}/100</span>
                   </div>
@@ -216,25 +222,25 @@ import {
                 @if (projectDetail()?.source_file || projectDetail()?.data_quality_note) {
                   <div class="mt-3 rounded-[3px] border border-line-soft bg-[#fbfcfd] px-3 py-2 text-[11.5px] text-muted">
                     @if (projectDetail()?.source_file) {
-                      <p class="m-0"><span class="font-bold text-slate-600">ที่มาข้อมูล:</span> {{ projectDetail()?.source_file }}</p>
+                      <p class="m-0"><span class="font-bold text-slate-600">{{ t('rf.detail.sourceLabel') }}</span> {{ projectDetail()?.source_file }}</p>
                     }
                     @if (projectDetail()?.data_quality_note) {
-                      <p class="m-0 mt-0.5"><span class="font-bold text-[#8a2a1f]">ข้อจำกัดข้อมูล:</span> {{ projectDetail()?.data_quality_note }}</p>
+                      <p class="m-0 mt-0.5"><span class="font-bold text-[#8a2a1f]">{{ t('rf.detail.limitLabel') }}</span> {{ projectDetail()?.data_quality_note }}</p>
                     }
                   </div>
                 }
 
                 <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
-                    <p class="m-0 text-[11.5px] font-bold text-muted">งบประมาณ</p>
+                    <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('common.budget') }}</p>
                     <p class="m-0 mt-1 text-[15px] font-extrabold text-ink">{{ money(projectDetail()?.budget_amount) }}</p>
                   </div>
                   <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
-                    <p class="m-0 text-[11.5px] font-bold text-muted">ราคากลาง</p>
+                    <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('rf.detail.refPrice') }}</p>
                     <p class="m-0 mt-1 text-[15px] font-extrabold text-ink">{{ money(projectDetail()?.reference_price) }}</p>
                   </div>
                   <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
-                    <p class="m-0 text-[11.5px] font-bold text-muted">ราคาสัญญา</p>
+                    <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('rf.detail.contractPrice') }}</p>
                     <p class="m-0 mt-1 text-[15px] font-extrabold text-ink">{{ money(contractValue()) }}</p>
                   </div>
                   <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
@@ -245,41 +251,41 @@ import {
 
                 <div class="mt-2.5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
-                    <p class="m-0 text-[11.5px] font-bold text-muted">หน่วยงาน</p>
+                    <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('rf.detail.dept') }}</p>
                     <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">{{ projectDeptName() }}</p>
                   </div>
                   <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
-                    <p class="m-0 text-[11.5px] font-bold text-muted">สถานะโครงการ</p>
+                    <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('rf.detail.projectStatus') }}</p>
                     <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">{{ projectStatus() }}</p>
                   </div>
                   <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
-                    <p class="m-0 text-[11.5px] font-bold text-muted">เลขที่สัญญา</p>
+                    <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('rf.detail.contractNo') }}</p>
                     <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">{{ contractNo() }}</p>
                   </div>
                   <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
-                    <p class="m-0 text-[11.5px] font-bold text-muted">สถานะสัญญา</p>
+                    <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('rf.detail.contractStatus') }}</p>
                     <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">{{ contractStatus() }}</p>
                   </div>
                 </div>
 
                 <div class="mt-2.5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
-                    <p class="m-0 text-[11.5px] font-bold text-muted">ผู้ขาย/ผู้รับจ้าง</p>
+                    <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('rf.detail.vendor') }}</p>
                     <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">{{ vendorLabel() }}</p>
                   </div>
                   <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
-                    <p class="m-0 text-[11.5px] font-bold text-muted">ประเภทจัดซื้อจัดจ้าง</p>
+                    <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('rf.detail.purchaseMethod') }}</p>
                     <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">{{ purchaseMethodLabel() }}</p>
                   </div>
                   <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
-                    <p class="m-0 text-[11.5px] font-bold text-muted">สัญญาเทียบราคากลาง</p>
+                    <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('rf.detail.contractVsRef') }}</p>
                     <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">
                       {{ comparisonLabel(contractValue(), projectDetail()?.reference_price) }}
                     </p>
                     <p class="m-0 mt-1 text-xs text-muted">{{ percentageLabel(contractValue(), projectDetail()?.reference_price) }}</p>
                   </div>
                   <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
-                    <p class="m-0 text-[11.5px] font-bold text-muted">สัญญาเทียบงบประมาณ</p>
+                    <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('rf.detail.contractVsBudget') }}</p>
                     <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">
                       {{ comparisonLabel(contractValue(), projectDetail()?.budget_amount) }}
                     </p>
@@ -289,57 +295,51 @@ import {
 
                 <div class="mt-3.5 rounded-[3px] border border-line-soft bg-[#fbfcfd] p-3.5">
                   <div class="flex items-center gap-2">
-                    <h3 class="m-0 text-sm font-bold text-ink">สูตรที่ใช้คำนวณ</h3>
-                    <app-info-tooltip
-                      text="อ้างอิงตามหนังสือซักซ้อมแนวทางการคำนวณราคากลางและการเปรียบเทียบราคาสัญญา กรมส่งเสริมการปกครองท้องถิ่น"
-                      [width]="280"
-                    />
+                    <h3 class="m-0 text-sm font-bold text-ink">{{ t('rf.formula.title') }}</h3>
+                    <app-info-tooltip [text]="t('rf.formula.tooltip')" [width]="280" />
                   </div>
-                  <p class="m-0 mt-2 text-[13px] text-slate-700">ราคาสัญญาเทียบราคากลาง = (ราคาสัญญา − ราคากลาง) ÷ ราคากลาง × 100</p>
-                  <p class="m-0 mt-1 text-[13px] text-slate-700">ราคาสัญญาเทียบงบประมาณ = (ราคาสัญญา − งบประมาณ) ÷ งบประมาณ × 100</p>
+                  <p class="m-0 mt-2 text-[13px] text-slate-700">{{ t('rf.formula.line1') }}</p>
+                  <p class="m-0 mt-1 text-[13px] text-slate-700">{{ t('rf.formula.line2') }}</p>
                 </div>
 
               </article>
 
               <section class="panel p-[18px]">
                 <div class="flex items-center gap-2">
-                  <h2 class="m-0 text-[16px] font-bold text-ink">การประเมินความเสี่ยง (โอกาส × ผลกระทบ 5×5)</h2>
-                  <app-info-tooltip
-                    text="อ้างอิงมาตรฐานการบริหารจัดการความเสี่ยงสำหรับหน่วยงานของรัฐ (กระทรวงการคลัง) และ COSO ERM — ระดับความเสี่ยง = โอกาส × ผลกระทบ (1–25)"
-                    [width]="300"
-                  />
+                  <h2 class="m-0 text-[16px] font-bold text-ink">{{ t('rf.matrix.title') }}</h2>
+                  <app-info-tooltip [text]="t('rf.matrix.tooltip')" [width]="300" />
                 </div>
                 <div class="mt-3.5 grid items-start gap-5 lg:grid-cols-[auto_1fr]">
                   <app-risk-matrix [likelihood]="scoreInfo().matrix_likelihood" [impact]="scoreInfo().matrix_impact" />
                   <div class="grid gap-2.5">
                     <div class="grid grid-cols-3 gap-2.5">
                       <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
-                        <p class="m-0 text-[11.5px] font-bold text-muted">โอกาสรวม</p>
+                        <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('rf.matrix.likelihoodSum') }}</p>
                         <p class="m-0 mt-1 text-[19px] font-extrabold text-ink">{{ number(scoreInfo().matrix_likelihood, 0) }}<span class="text-[12px] font-bold text-muted">/5</span></p>
                       </div>
                       <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
-                        <p class="m-0 text-[11.5px] font-bold text-muted">ผลกระทบสูงสุด</p>
+                        <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('rf.matrix.impactMax') }}</p>
                         <p class="m-0 mt-1 text-[19px] font-extrabold text-ink">{{ number(scoreInfo().matrix_impact, 0) }}<span class="text-[12px] font-bold text-muted">/5</span></p>
                       </div>
                       <div class="rounded-[3px] border border-line-soft p-[11px]" [style.background]="bandColor(scoreInfo().matrix_level) + '14'">
-                        <p class="m-0 text-[11.5px] font-bold text-muted">คะแนน = ระดับ</p>
-                        <p class="m-0 mt-1 text-[19px] font-extrabold" [style.color]="bandColor(scoreInfo().matrix_level)">{{ number(scoreInfo().matrix_score, 0) }} · {{ scoreInfo().matrix_level || '-' }}</p>
+                        <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('rf.matrix.scoreLevel') }}</p>
+                        <p class="m-0 mt-1 text-[19px] font-extrabold" [style.color]="bandColor(scoreInfo().matrix_level)">{{ number(scoreInfo().matrix_score, 0) }} · {{ bandText(scoreInfo().matrix_level) || '-' }}</p>
                       </div>
                     </div>
                     <div class="rounded-[3px] border border-line-soft bg-[#fbfcfd] p-3">
-                      <p class="m-0 text-[12px] font-bold text-slate-700">การประกอบคะแนน</p>
+                      <p class="m-0 text-[12px] font-bold text-slate-700">{{ t('rf.matrix.composition') }}</p>
                       <p class="m-0 mt-1 text-[12.5px] leading-relaxed text-muted">
-                        พบสัญญาณเสี่ยง <span class="font-bold text-ink">{{ number(scoreInfo().factors_triggered, 0) }}</span> ปัจจัย
+                        {{ t('rf.matrix.foundSignalsPre') }} <span class="font-bold text-ink">{{ number(scoreInfo().factors_triggered, 0) }}</span> {{ t('common.factorsUnit') }}
                         @if (scoreInfo().factors_not_computable) {
-                          · ประเมินไม่ได้ <span class="font-bold text-[#8a2a1f]">{{ number(scoreInfo().factors_not_computable, 0) }}</span> ปัจจัย
+                          · {{ t('common.cannotEvaluate') }} <span class="font-bold text-[#8a2a1f]">{{ number(scoreInfo().factors_not_computable, 0) }}</span> {{ t('common.factorsUnit') }}
                         }
-                        · คะแนนสัดส่วน {{ number(scoreInfo().risk_score, 0) }}/100
+                        · {{ t('rf.matrix.proportionScore') }} {{ number(scoreInfo().risk_score, 0) }}/100
                       </p>
                       @if (scoreInfo().summary_text) {
                         <p class="m-0 mt-1.5 text-[12.5px] leading-relaxed text-slate-700">{{ scoreInfo().summary_text }}</p>
                       }
                       @if ((scoreInfo().factors_triggered ?? 0) >= 3) {
-                        <p class="m-0 mt-1.5 text-[11.5px] text-muted">* มีสัญญาณยืนยันกัน ≥3 ตัว → เพิ่มโอกาสรวม +1 (corroboration)</p>
+                        <p class="m-0 mt-1.5 text-[11.5px] text-muted">{{ t('rf.matrix.corroboration') }}</p>
                       }
                     </div>
                   </div>
@@ -347,10 +347,13 @@ import {
               </section>
 
               <section class="panel p-[18px]">
-                <h2 class="m-0 mb-3.5 text-[16px] font-bold text-ink">ปัจจัยที่ทำให้เสี่ยง</h2>
+                <h2 class="m-0 mb-3.5 text-[16px] font-bold text-ink">{{ t('rf.factors.title') }}</h2>
 
                 @if (!triggeredFactors().length) {
-                  <app-empty-state title="ไม่พบ factor ที่ trigger" message="โครงการนี้อาจไม่มีสัญญาณตามเกณฑ์ที่กำหนดไว้" />
+                  <app-empty-state
+                    [title]="t('rf.factors.emptyTitle')"
+                    [message]="t('rf.factors.emptyMsg')"
+                  />
                 } @else {
                   <div class="grid gap-3">
                     @for (factor of triggeredFactors(); track factor.factor_code) {
@@ -365,20 +368,20 @@ import {
                               class="shrink-0 rounded-[3px] px-2.5 py-1 text-[11.5px] font-extrabold text-white"
                               [style.background]="bandColor(factor.risk_band)"
                               [title]="matrixChip(factor)"
-                            >{{ matrixChip(factor) }} · {{ factor.risk_band }}</span>
+                            >{{ matrixChip(factor) }} · {{ bandText(factor.risk_band) }}</span>
                           }
                         </div>
 
                         <!-- เทียบค่าที่วัดได้ ↔ เกณฑ์ (audit line) -->
                         <div class="mt-2.5 grid gap-2 sm:grid-cols-2">
                           <div class="rounded-[3px] border border-line-soft bg-zebra p-2.5">
-                            <p class="m-0 text-[11.5px] font-bold text-muted">ค่าที่วัดได้</p>
+                            <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('rf.factors.observedValue') }}</p>
                             <p class="m-0 mt-1 text-[15px] font-extrabold" [class]="isComputable(factor) ? 'text-ink' : 'text-[#8a2a1f]'">
-                              {{ isComputable(factor) ? value(factor.observed_value) : 'ประเมินไม่ได้' }}
+                              {{ isComputable(factor) ? value(factor.observed_value) : t('common.cannotEvaluate') }}
                             </p>
                           </div>
                           <div class="rounded-[3px] border border-line-soft bg-zebra p-2.5">
-                            <p class="m-0 text-[11.5px] font-bold text-muted">เกณฑ์ที่ใช้เทียบ</p>
+                            <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('rf.factors.threshold') }}</p>
                             <p class="m-0 mt-1 text-[12.5px] font-bold text-slate-700 break-words">{{ thresholdText(factor) }}</p>
                           </div>
                         </div>
@@ -391,7 +394,7 @@ import {
                         }
                         @if (factor.legal_ref) {
                           <p class="m-0 mt-2 border-t border-line-soft pt-2 text-[11.5px] leading-relaxed text-muted">
-                            <span class="font-bold text-slate-600">ฐานอ้างอิง:</span> {{ factor.legal_ref }}
+                            <span class="font-bold text-slate-600">{{ t('rf.factors.legalRef') }}</span> {{ factor.legal_ref }}
                           </p>
                         }
                       </article>
@@ -401,7 +404,7 @@ import {
 
                 @if (notComputableFactors().length) {
                   <div class="mt-3.5 rounded-[3px] border border-[#e6cfca] bg-[#fdf6f5] p-3">
-                    <p class="m-0 text-[12px] font-bold text-[#8a2a1f]">ปัจจัยที่ประเมินไม่ได้ (ข้อมูลไม่เพียงพอ — ไม่ใช่ "ผ่าน")</p>
+                    <p class="m-0 text-[12px] font-bold text-[#8a2a1f]">{{ t('rf.factors.notComputableTitle') }}</p>
                     <div class="mt-1.5 grid gap-1">
                       @for (factor of notComputableFactors(); track factor.factor_code) {
                         <p class="m-0 text-[12px] text-slate-700">
@@ -417,17 +420,20 @@ import {
               <section class="panel p-[18px]">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <h2 class="m-0 text-[16px] font-bold text-ink">Risk Factor Catalog</h2>
-                    <p class="m-0 mt-1 text-[13px] text-muted">รายการ factor ทั้งหมดในระบบ เพื่อใช้อ้างอิงประกอบการตรวจสอบ</p>
+                    <h2 class="m-0 text-[16px] font-bold text-ink">{{ t('rf.catalog.title') }}</h2>
+                    <p class="m-0 mt-1 text-[13px] text-muted">{{ t('rf.catalog.subtitle') }}</p>
                   </div>
                   <span class="rounded-[20px] border border-line bg-zebra px-3 py-1 text-xs font-bold text-slate-700">
-                    trigger {{ selectedProjectCatalog().length }} รายการ
+                    {{ t('rf.catalog.triggerCount', { count: selectedProjectCatalog().length }) }}
                   </span>
                 </div>
 
                 @if (!selectedProjectCatalog().length) {
                   <div class="mt-3">
-                    <app-empty-state title="ยังไม่มีข้อมูล catalog" message="รอให้ backend ส่งรายการ risk factor" />
+                    <app-empty-state
+                      [title]="t('rf.catalog.emptyTitle')"
+                      [message]="t('rf.catalog.emptyMsg')"
+                    />
                   </div>
                 } @else {
                   <div class="mt-3.5 grid gap-2.5 md:grid-cols-2">
@@ -442,7 +448,7 @@ import {
                           }
                         </div>
                         <p class="m-0 mt-1 text-xs leading-relaxed text-muted">
-                          {{ factor.description_th || factor.category || 'ไม่มีคำอธิบายเพิ่มเติม' }}
+                          {{ factor.description_th || factor.category || t('rf.catalog.noDescription') }}
                         </p>
                       </div>
                     }
@@ -460,6 +466,13 @@ import {
 })
 export class RiskFactorsPageComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly i18n = inject(I18nService);
+  protected readonly t = this.i18n.t;
+
+  /** แปลงค่า band (ไทย internal) → ป้ายตามภาษาปัจจุบัน */
+  bandText(band: string | null | undefined): string {
+    return band ? this.i18n.bandLabel(band) : '';
+  }
 
   protected readonly String = String;
   readonly error = signal('');
@@ -550,7 +563,7 @@ export class RiskFactorsPageComponent implements OnInit {
         this.catalog.set(catalog);
         this.allProjects.set(allProjects);
       },
-      error: () => this.error.set('โหลด catalog หรือรายชื่อตำบลไม่สำเร็จ'),
+      error: () => this.error.set(this.t('rf.error.catalog')),
     });
 
     this.loadProjects();
@@ -628,12 +641,12 @@ export class RiskFactorsPageComponent implements OnInit {
 
   projectStatus(): string {
     const detail = this.projectDetail();
-    return detail?.project_status || detail?.status || 'ไม่ระบุ';
+    return detail?.project_status || detail?.status || this.t('common.unspecified');
   }
 
   projectDeptName(): string {
     const detail = this.projectDetail();
-    return detail?.dept_name || detail?.dept_sub_name || 'ไม่ระบุ';
+    return detail?.dept_name || detail?.dept_sub_name || this.t('common.unspecified');
   }
 
   contractNo(): string {
@@ -669,18 +682,20 @@ export class RiskFactorsPageComponent implements OnInit {
       return '-';
     }
     if (diff === 0) {
-      return 'เท่ากัน';
+      return this.t('rf.compare.equal');
     }
-    return diff > 0 ? `สูงกว่า ${Math.abs(diff).toFixed(2)}%` : `ต่ำกว่า ${Math.abs(diff).toFixed(2)}%`;
+    return diff > 0
+      ? this.t('rf.compare.higher', { pct: Math.abs(diff).toFixed(2) })
+      : this.t('rf.compare.lower', { pct: Math.abs(diff).toFixed(2) });
   }
 
   percentageLabel(left: number | string | null | undefined, right: number | string | null | undefined): string {
     const diff = this.percentageDifference(left, right);
     if (diff === null) {
-      return 'คำนวณไม่ได้';
+      return this.t('rf.compare.notCalculable');
     }
     const sign = diff > 0 ? '+' : '';
-    return `(${sign}${diff.toFixed(2)}%) เทียบจากค่าฐาน`;
+    return this.t('rf.compare.pctFromBase', { sign, pct: diff.toFixed(2) });
   }
 
   isComputable(factor: ProjectRiskFactor): boolean {
@@ -742,7 +757,7 @@ export class RiskFactorsPageComponent implements OnInit {
     if (l === null || i === null || s === null) {
       return '-';
     }
-    return `โอกาส ${l} × ผลกระทบ ${i} = ${s}`;
+    return this.t('rf.matrixChip', { l, i, s });
   }
 
   catalogDescription(code: string): string {
@@ -762,7 +777,7 @@ export class RiskFactorsPageComponent implements OnInit {
         this.loadingProjects.set(false);
       },
       error: () => {
-        this.error.set('โหลดรายชื่อโครงการไม่สำเร็จ');
+        this.error.set(this.t('rf.error.projects'));
         this.loadingProjects.set(false);
       },
     });
@@ -776,7 +791,7 @@ export class RiskFactorsPageComponent implements OnInit {
         this.loadingDetail.set(false);
       },
       error: () => {
-        this.error.set('โหลดรายละเอียดโครงการไม่สำเร็จ');
+        this.error.set(this.t('rf.error.detail'));
         this.loadingDetail.set(false);
       },
     });
@@ -791,7 +806,7 @@ export class RiskFactorsPageComponent implements OnInit {
   }
 
   private projectType(project: Project): string {
-    return project.project_type || project.purchase_method_group || 'ไม่ระบุประเภท';
+    return project.project_type || project.purchase_method_group || this.t('common.unspecifiedType');
   }
 
   private projectMatchesFilters(

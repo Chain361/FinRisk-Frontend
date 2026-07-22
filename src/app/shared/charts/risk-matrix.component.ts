@@ -1,5 +1,6 @@
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 
+import { I18nService } from '../../core/i18n/i18n.service';
 import { RiskBand } from '../../core/models/domain.models';
 import { bandColor, bandFromScore } from '../../shared/utils/risk-utils';
 
@@ -40,7 +41,7 @@ interface Cell {
               [style.color]="cell.active ? '#fff' : cell.color"
               [style.outline]="cell.active ? '2px solid #132036' : 'none'"
               [style.outlineOffset.px]="1"
-              [title]="'โอกาส ' + cell.likelihood + ' × ผลกระทบ ' + cell.impact + ' = ' + cell.score + ' (' + cell.band + ')'"
+              [title]="cellTitle(cell)"
             >
               {{ cell.active ? cell.score : '' }}
             </div>
@@ -56,14 +57,26 @@ interface Cell {
           <span class="text-center" [style.width.px]="cellSize()">5</span>
         </span>
       </div>
-      <p class="m-0 pl-4 text-[10px] text-muted">← โอกาส · ผลกระทบ ↑</p>
+      <p class="m-0 pl-4 text-[10px] text-muted">{{ t('riskMatrix.axisLabel') }}</p>
     </div>
   `,
 })
 export class RiskMatrixComponent {
+  private readonly i18n = inject(I18nService);
+  protected readonly t = this.i18n.t;
+
   readonly likelihood = input<number | null | undefined>(null);
   readonly impact = input<number | null | undefined>(null);
   readonly cellSize = input<number>(30);
+
+  cellTitle(cell: Cell): string {
+    return this.t('riskMatrix.cellTitle', {
+      likelihood: cell.likelihood,
+      impact: cell.impact,
+      score: cell.score,
+      band: this.i18n.bandLabel(cell.band),
+    });
+  }
 
   readonly cells = computed<Cell[]>(() => {
     const activeL = this.likelihood();

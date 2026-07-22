@@ -5,13 +5,15 @@ import { catchError, filter, map, of } from 'rxjs';
 
 import { ApiService } from '../core/api/api.service';
 import { AuthService } from '../core/auth/auth.service';
+import { I18nService } from '../core/i18n/i18n.service';
 import { SystemMeta } from '../core/models/domain.models';
 import { GuardrailBannerComponent } from '../shared/ui/guardrail-banner.component';
+import { LanguageToggleComponent } from '../shared/ui/language-toggle.component';
 import { PrototypeBannerComponent } from '../shared/ui/prototype-banner.component';
 
 interface NavItem {
   code: string;
-  label: string;
+  labelKey: string;
   path: string;
   children?: NavItem[];
   /** จำกัดเมนูเฉพาะบาง role (ตาม roles.md) — ไม่ระบุ = ทุก role เห็น */
@@ -20,28 +22,28 @@ interface NavItem {
 
 interface NavGroup {
   id: string;
-  label: string;
+  labelKey: string;
   items: NavItem[];
 }
 
 const NAV_GROUPS: NavGroup[] = [
   {
     id: 'overview',
-    label: 'ภาพรวมความเสี่ยง',
+    labelKey: 'nav.group.overview',
     items: [
       {
         code: 'F1',
-        label: 'แดชบอร์ดความเสี่ยงโครงการ',
+        labelKey: 'nav.projectRiskDashboard',
         path: '/project-risk',
         children: [
           {
             code: 'F1.1',
-            label: 'ภาพรวมสุขภาพความเสี่ยงโครงการ',
+            labelKey: 'nav.projectRiskOverview',
             path: '/project-risk/overview',
           },
           {
             code: 'F1.2',
-            label: 'วิเคราะห์ข้อมูลโครงการเชิงลึก',
+            labelKey: 'nav.projectRiskInsights',
             path: '/project-risk/insights',
           },
         ],
@@ -50,45 +52,45 @@ const NAV_GROUPS: NavGroup[] = [
   },
   {
     id: 'finance',
-    label: 'การเงินและปัจจัยเสี่ยง',
+    labelKey: 'nav.group.finance',
     items: [
       {
         code: 'F2',
-        label: 'สถานะและสุขภาพการคลัง',
+        labelKey: 'nav.financialHealth',
         path: '/financial-health',
         children: [
           {
             code: 'F2.1',
-            label: 'ภาพรวมสุขภาพการคลัง',
+            labelKey: 'nav.financialOverview',
             path: '/financial-health/overview',
           },
           {
             code: 'F2.2',
-            label: 'เปรียบเทียบสถานะการคลัง',
+            labelKey: 'nav.financialBenchmarking',
             path: '/financial-health/benchmarking',
           },
           {
             code: 'F2.3',
-            label: 'แนวโน้มการลงทุนและการจัดซื้อจัดจ้าง',
+            labelKey: 'nav.financialInvestment',
             path: '/financial-health/investment-trends',
           },
           {
             code: 'F2.4',
-            label: 'ตัวชี้วัดความเสี่ยงทางการคลัง',
+            labelKey: 'nav.financialRiskIndicators',
             path: '/financial-health/risk-indicators',
           },
         ],
       },
-      { code: 'F3', label: 'โครงการทั้งหมด', path: '/risk-factors' },
+      { code: 'F3', labelKey: 'nav.allProjects', path: '/risk-factors' },
     ],
   },
   {
     id: 'admin',
-    label: 'ผู้ดูแลระบบ',
+    labelKey: 'nav.group.admin',
     items: [
       {
         code: 'A1',
-        label: 'บันทึกการเข้าถึงระบบ',
+        labelKey: 'nav.accessLog',
         path: '/admin/access-log',
         roles: ['admin'], // เห็นเฉพาะ admin — ตรงกับ roleGuard('admin') ที่ route
       },
@@ -99,17 +101,23 @@ const NAV_GROUPS: NavGroup[] = [
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, GuardrailBannerComponent, PrototypeBannerComponent],
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    GuardrailBannerComponent,
+    LanguageToggleComponent,
+    PrototypeBannerComponent,
+  ],
   template: `
     <app-prototype-banner />
     <div class="flex min-h-screen bg-page text-ink">
       <aside class="hidden w-[264px] shrink-0 flex-col bg-navy text-white lg:flex">
         <div class="border-b border-white/20 px-5 py-[22px]">
           <p class="m-0 text-[16px] font-bold leading-normal">
-            ระบบวิเคราะห์ความเสี่ยง<br />งบประมาณตำบล
+            {{ t('shell.brand.line1') }}<br />{{ t('shell.brand.line2') }}
           </p>
           <p class="m-0 mt-2 text-xs tracking-wide text-[#c9d4e3]">
-            Local Budget Financial Risk System
+            {{ t('shell.brand.subtitle') }}
           </p>
         </div>
 
@@ -117,7 +125,7 @@ const NAV_GROUPS: NavGroup[] = [
           @for (group of visibleNavGroups(); track group.id) {
             <div>
               <div class="flex flex-col pb-1.5">
-                @for (item of group.items; track item.label) {
+                @for (item of group.items; track item.labelKey) {
                   @if (item.children?.length) {
                     <div>
                       <a
@@ -130,7 +138,7 @@ const NAV_GROUPS: NavGroup[] = [
                         "
                       >
                         <span class="text-[12.5px] opacity-85">{{ item.code }}</span>
-                        <span>{{ item.label }}</span>
+                        <span>{{ t(item.labelKey) }}</span>
                       </a>
 
                       <div class="ml-6 flex flex-col">
@@ -145,7 +153,7 @@ const NAV_GROUPS: NavGroup[] = [
                             "
                           >
                             <span>•</span>
-                            <span>{{ child.label }}</span>
+                            <span>{{ t(child.labelKey) }}</span>
                           </a>
                         }
                       </div>
@@ -161,7 +169,7 @@ const NAV_GROUPS: NavGroup[] = [
                       "
                     >
                       <span class="text-[12.5px] opacity-85">{{ item.code }}</span>
-                      <span>{{ item.label }}</span>
+                      <span>{{ t(item.labelKey) }}</span>
                     </a>
                   }
                 }
@@ -171,10 +179,14 @@ const NAV_GROUPS: NavGroup[] = [
         </nav>
 
         <div class="border-t border-white/20 px-5 py-[18px]">
-          <p class="m-0 text-xs text-[#9fb0c8]">ข้อมูลจากระบบ FinRisk Backend</p>
-          <p class="m-0 mt-1 text-xs text-[#9fb0c8]">ข้อมูล ณ วันที่: {{ dataAsOf() }}</p>
+          <p class="m-0 text-xs text-[#9fb0c8]">{{ t('shell.footer.source') }}</p>
+          <p class="m-0 mt-1 text-xs text-[#9fb0c8]">
+            {{ t('shell.footer.dataAsOf', { date: dataAsOf() }) }}
+          </p>
           @if (fiscalYearRange()) {
-            <p class="m-0 mt-1 text-xs text-[#9fb0c8]">ครอบคลุมปีงบประมาณ {{ fiscalYearRange() }}</p>
+            <p class="m-0 mt-1 text-xs text-[#9fb0c8]">
+              {{ t('shell.footer.coverage', { range: fiscalYearRange() }) }}
+            </p>
           }
         </div>
       </aside>
@@ -185,14 +197,16 @@ const NAV_GROUPS: NavGroup[] = [
         >
           <div>
             <p class="m-0 text-[12.5px] text-muted">
-              หน้าหลัก / <span class="font-bold text-navy">{{ currentPageLabel() }}</span>
+              {{ t('shell.breadcrumb.home') }} /
+              <span class="font-bold text-navy">{{ currentPageLabel() }}</span>
             </p>
             <p class="m-0 mt-1 text-[13px] font-semibold text-slate-700">
-              แดชบอร์ดวิเคราะห์ความเสี่ยงงบประมาณท้องถิ่น
+              {{ t('shell.header.subtitle') }}
             </p>
           </div>
 
           <div class="flex items-center gap-3.5">
+            <app-language-toggle />
             <div class="rounded-[3px] border-[1.5px] border-line px-3.5 py-[7px] text-right">
               <p class="m-0 text-[13px] font-bold text-ink">
                 {{ auth.user()?.display_name ?? auth.user()?.username ?? auth.token() }}
@@ -202,7 +216,7 @@ const NAV_GROUPS: NavGroup[] = [
                 <span
                   [class]="auth.isScopedRole() ? 'font-bold text-[#8a2a1f]' : 'font-bold text-navy'"
                 >
-                  {{ auth.isScopedRole() ? 'ขอบเขต: ตำบลของตน' : 'ขอบเขต: ทุกตำบล' }}
+                  {{ auth.isScopedRole() ? t('shell.scope.own') : t('shell.scope.all') }}
                 </span>
               </p>
             </div>
@@ -211,7 +225,7 @@ const NAV_GROUPS: NavGroup[] = [
               class="h-[38px] cursor-pointer rounded-[3px] border-[1.5px] border-line bg-white px-4 text-[13px] font-bold text-slate-700 hover:bg-zebra"
               (click)="auth.logout()"
             >
-              ออกจากระบบ
+              {{ t('shell.logout') }}
             </button>
           </div>
         </header>
@@ -228,6 +242,8 @@ export class AppShellComponent {
   readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly api = inject(ApiService);
+  private readonly i18n = inject(I18nService);
+  protected readonly t = this.i18n.t;
 
   readonly navGroups = NAV_GROUPS;
 
@@ -246,7 +262,7 @@ export class AppShellComponent {
     const parsed = new Date(raw);
     return Number.isNaN(parsed.getTime())
       ? '—'
-      : new Intl.DateTimeFormat('th-TH', { dateStyle: 'long' }).format(parsed);
+      : new Intl.DateTimeFormat(this.i18n.locale(), { dateStyle: 'long' }).format(parsed);
   });
 
   /** ช่วงปีงบที่ครอบคลุม เช่น "2566–2568" (ว่างเมื่อไม่มีข้อมูล) */
@@ -283,10 +299,10 @@ export class AppShellComponent {
     for (const group of NAV_GROUPS) {
       const item = group.items.find((navItem) => url.startsWith(navItem.path));
       if (item) {
-        return item.label;
+        return this.i18n.t(item.labelKey);
       }
     }
-    return 'Project Risk Dashboard';
+    return this.i18n.t('shell.defaultPageLabel');
   });
 
   isActive(path: string): boolean {

@@ -2,6 +2,7 @@ import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { catchError, forkJoin, of } from 'rxjs';
 
 import { ApiService } from '../../../core/api/api.service';
+import { I18nService } from '../../../core/i18n/i18n.service';
 import { AnnualRisk, FinancialStatement, Subdistrict } from '../../../core/models/domain.models';
 import { BarChartComponent, BarChartSeries } from '../../../shared/charts/bar-chart.component';
 import { FilterBarComponent } from '../../../shared/filters/filter-bar.component';
@@ -55,10 +56,8 @@ interface IncomeStatementTotals {
     <section class="page-shell">
       <div>
         <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F2.1</p>
-        <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">ภาพรวมสุขภาพการคลัง</h1>
-        <p class="m-0 mt-1.5 text-sm text-muted">
-          แสดงภาพรวมรายได้ รายจ่าย สินทรัพย์ หนี้สิน และฐานะการคลัง
-        </p>
+        <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">{{ t('fhOverview.title') }}</h1>
+        <p class="m-0 mt-1.5 text-sm text-muted">{{ t('fhOverview.subtitle') }}</p>
       </div>
 
       <app-filter-bar
@@ -103,24 +102,24 @@ interface IncomeStatementTotals {
 
       <div class="grid gap-4 xl:grid-cols-2">
         <app-composition-bar
-          title="โครงสร้างสินทรัพย์"
-          subtitle="แบ่งเป็นสินทรัพย์หมุนเวียนและไม่หมุนเวียน"
+          [title]="t('fh.assetStructure.title')"
+          [subtitle]="t('fh.assetStructure.subtitle')"
           [segments]="assetComposition()"
         />
         <app-composition-bar
-          title="โครงสร้างหนี้สิน"
-          subtitle="แบ่งเป็นหนี้สินหมุนเวียนและระยะยาว"
+          [title]="t('fh.liabilityStructure.title')"
+          [subtitle]="t('fh.liabilityStructure.subtitle')"
           [segments]="liabilityComposition()"
         />
       </div>
 
       <app-bar-chart
-        title="โครงสร้างรายได้"
-        subtitle="เปรียบเทียบรายได้จัดเก็บเองและรัฐจัดสรร กับเงินอุดหนุนของตำบลที่เลือก"
+        [title]="t('fh.revenue.title')"
+        [subtitle]="t('fh.revenue.subtitle')"
         [categories]="revenueStructureCategories()"
         [series]="revenueStructureSeries()"
-        unitSuffix="บาท"
-        rowHeader="ประเภทรายได้"
+        [unitSuffix]="t('common.unit.baht')"
+        [rowHeader]="t('fh.revenue.rowHeader')"
         [compactValueLabels]="true"
       />
     </section>
@@ -128,6 +127,8 @@ interface IncomeStatementTotals {
 })
 export class OverviewPageComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly i18n = inject(I18nService);
+  protected readonly t = this.i18n.t;
 
   readonly FISCAL_YEARS = FISCAL_YEARS;
   readonly fiscalYearLabels = FISCAL_YEARS.map(String);
@@ -188,21 +189,21 @@ export class OverviewPageComponent implements OnInit {
 
     return [
       {
-        label: 'สินทรัพย์รวม',
+        label: this.t('fh.kpi.totalAssets'),
         value: assets === null ? '-' : this.number(assets),
-        hint: 'รวมจากงบแสดงฐานะการเงินของตำบลที่เลือก',
+        hint: this.t('fh.hint.fromBalanceSheet'),
         accentClass: 'bg-navy',
       },
       {
-        label: 'หนี้สินรวม',
+        label: this.t('fh.kpi.totalLiabilities'),
         value: liabilities === null ? '-' : this.number(liabilities),
-        hint: 'รวมจากงบแสดงฐานะการเงินของตำบลที่เลือก',
+        hint: this.t('fh.hint.fromBalanceSheet'),
         accentClass: 'bg-risk-medium',
       },
       {
-        label: 'ส่วนทุน/สินทรัพย์สุทธิ',
+        label: this.t('fh.kpi.netAssets'),
         value: netAssets === null ? '-' : this.number(netAssets),
-        hint: 'ยอดสินทรัพย์สุทธิ/ส่วนทุนจากงบการเงิน',
+        hint: this.t('fh.hint.netAssets'),
         accentClass: 'bg-risk-low',
       },
     ];
@@ -211,16 +212,16 @@ export class OverviewPageComponent implements OnInit {
   readonly assetComposition = computed<CompositionSegment[]>(() => {
     const { currentAssets, nonCurrentAssets } = this.balanceSheet();
     return [
-      { label: 'สินทรัพย์หมุนเวียน', value: currentAssets, color: PALETTE.navy },
-      { label: 'สินทรัพย์ไม่หมุนเวียน', value: nonCurrentAssets, color: PALETTE.chartBlue },
+      { label: this.t('fh.comp.currentAssets'), value: currentAssets, color: PALETTE.navy },
+      { label: this.t('fh.comp.nonCurrentAssets'), value: nonCurrentAssets, color: PALETTE.chartBlue },
     ];
   });
 
   readonly liabilityComposition = computed<CompositionSegment[]>(() => {
     const { currentLiabilities, nonCurrentLiabilities } = this.balanceSheet();
     return [
-      { label: 'หนี้สินหมุนเวียน', value: currentLiabilities, color: PALETTE.chartRed },
-      { label: 'หนี้สินระยะยาว', value: nonCurrentLiabilities, color: PALETTE.chartOrange },
+      { label: this.t('fh.comp.currentLiabilities'), value: currentLiabilities, color: PALETTE.chartRed },
+      { label: this.t('fh.comp.longTermLiabilities'), value: nonCurrentLiabilities, color: PALETTE.chartOrange },
     ];
   });
 
@@ -228,33 +229,35 @@ export class OverviewPageComponent implements OnInit {
     const { income, expenses, netIncome } = this.incomeStatement();
     return [
       {
-        label: 'รายได้รวม',
+        label: this.t('fh.kpi.totalIncome'),
         value: income === null ? '-' : this.number(income),
-        hint: 'ยอดรวมจากงบแสดงผลการดำเนินงานของตำบลที่เลือก',
+        hint: this.t('fh.hint.fromIncome'),
         accentClass: 'bg-chart-blue-deep',
       },
       {
-        label: 'ค่าใช้จ่ายรวม',
+        label: this.t('fh.kpi.totalExpenses'),
         value: expenses === null ? '-' : this.number(expenses),
-        hint: 'ยอดรวมจากงบแสดงผลการดำเนินงานของตำบลที่เลือก',
+        hint: this.t('fh.hint.fromIncome'),
         accentClass: 'bg-chart-red',
       },
       {
-        label: 'ผลสุทธิ (รายได้ − ค่าใช้จ่าย)',
+        label: this.t('fh.kpi.netResult'),
         value: netIncome === null ? '-' : this.number(netIncome),
         hint:
           netIncome === null
-            ? 'ไม่พบข้อมูลรายได้หรือค่าใช้จ่ายรวม'
+            ? this.t('fh.hint.netResultNone')
             : netIncome >= 0
-              ? 'รายได้สูงกว่าค่าใช้จ่าย'
-              : 'ค่าใช้จ่ายสูงกว่ารายได้',
+              ? this.t('fh.hint.surplus')
+              : this.t('fh.hint.deficit'),
         accentClass: 'bg-navy',
       },
     ];
   });
 
   readonly revenueStructureCategories = computed(() => [
-    this.selectedYear() ? `ปี ${this.selectedYear()}` : 'ทุกปีที่เลือก',
+    this.selectedYear()
+      ? this.t('common.yearLabel', { year: this.selectedYear()! })
+      : this.t('fh.allSelectedYears'),
   ]);
 
   readonly revenueStructureSeries = computed<BarChartSeries[]>(() => {
@@ -265,11 +268,11 @@ export class OverviewPageComponent implements OnInit {
     );
     return [
       {
-        name: 'รายได้จัดเก็บเอง + รัฐจัดสรร',
+        name: this.t('fh.revenue.ownAllocated'),
         values: [ownAndAllocatedRevenue],
         color: PALETTE.navy,
       },
-      { name: 'เงินอุดหนุน', values: [subsidies], color: PALETTE.chartBlue },
+      { name: this.t('fh.revenue.subsidies'), values: [subsidies], color: PALETTE.chartBlue },
     ];
   });
 
@@ -429,7 +432,7 @@ export class OverviewPageComponent implements OnInit {
         this.loading.set(false);
       },
       error: () => {
-        this.error.set('โหลดข้อมูล Financial Health ไม่สำเร็จ');
+        this.error.set(this.t('fh.error'));
         this.loading.set(false);
       },
     });
