@@ -11,7 +11,6 @@ import {
   ANALYSTS,
   ASSIGNMENT_STORAGE_KEY,
   Analyst,
-  AssignmentPriority,
   SavedAssignment,
 } from './assignment-project-auditor.models';
 
@@ -155,11 +154,22 @@ interface ProjectStatusRow {
                         [queryParams]="{ projectId: row.project.project_id }"
                         class="font-extrabold leading-6 text-ink no-underline hover:text-navy hover:underline"
                       >
-                        {{ row.project.project_name || 'ไม่ระบุชื่อโครงการ' }}
+                        @if (row.project.project_name) {
+                          {{ row.project.project_name }}
+                        } @else {
+                          <span class="font-normal italic text-slate-400">ยังไม่มีชื่อโครงการ</span>
+                        }
                       </a>
                       <div class="mt-2 flex flex-wrap gap-1.5">
                         <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">{{ row.subdistrictName }}</span>
-                        <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">ปีงบ {{ row.project.budget_year || '-' }}</span>
+                        <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
+                          ปีงบ
+                          @if (row.project.budget_year) {
+                            {{ row.project.budget_year }}
+                          } @else {
+                            <span class="font-normal italic text-slate-400">ยังไม่มีข้อมูล</span>
+                          }
+                        </span>
                         <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">รหัส {{ row.project.project_id }}</span>
                         @if (row.project.project_type) {
                           <span class="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-bold text-navy">{{ row.project.project_type }}</span>
@@ -167,22 +177,38 @@ interface ProjectStatusRow {
                       </div>
                     </td>
                     <td class="align-top">
-                      <p class="m-0 font-bold text-ink">{{ row.analyst?.name || '-' }}</p>
-                      <p class="m-0 mt-1 text-xs text-muted">{{ row.analyst?.team || 'ยังไม่มีผู้รับผิดชอบ' }}</p>
+                      @if (row.analyst) {
+                        <p class="m-0 font-bold text-ink">{{ row.analyst.name }}</p>
+                        <p class="m-0 mt-1 text-xs text-muted">{{ row.analyst.team }}</p>
+                      } @else {
+                        <p class="m-0 mt-1 text-xs italic text-slate-400">ยังไม่มีผู้รับผิดชอบ</p>
+                      }
                     </td>
                     <td class="align-top">
-                      <p class="m-0 text-sm font-bold text-ink">{{ projectStatusLabel(row.project) }}</p>
+                      <p class="m-0 mt-1 text-xs italic text-slate-400" [class]="hasProjectStatus(row.project) ? 'text-ink' : 'italic text-slate-400'">
+                        {{ projectStatusLabel(row.project) }}
+                      </p>
                     </td>
                     <td class="align-top">
                       <span class="rounded-full px-2.5 py-1 text-xs font-bold" [class]="riskBadgeClass(row.project)">
                         {{ riskLabel(row.project) }}
                       </span>
-                      <p class="m-0 mt-2 text-xs text-muted">คะแนน {{ row.project.risk_score ?? '-' }}</p>
+                      <p class="m-0 mt-2 text-xs text-muted">
+                        คะแนน
+                        @if (row.project.risk_score !== null && row.project.risk_score !== undefined) {
+                          {{ row.project.risk_score }}
+                        } @else {
+                          <span class="italic text-slate-400">ยังไม่มีข้อมูล</span>
+                        }
+                      </p>
                     </td>
                     <td class="align-top">
-                      <p class="m-0 text-sm text-ink">{{ row.assignedAtText }}</p>
-                      @if (row.latestAssignment?.priority) {
-                        <p class="m-0 mt-1 text-xs font-bold text-muted">{{ priorityLabel(row.latestAssignment!.priority) }}</p>
+                      <p class="m-0 mt-1 text-xs italic text-slate-400" [class]="row.latestAssignment ? 'text-ink' : 'italic text-slate-400'">{{ row.assignedAtText }}</p>
+                      @if (row.latestAssignment?.dueDate) {
+                        <p class="m-0 mt-1 text-xs text-muted">Due {{ row.latestAssignment!.dueDate }}</p>
+                      }
+                      @if (row.latestAssignment?.budgetHours) {
+                        <p class="m-0 mt-1 text-xs text-muted">Budget {{ row.latestAssignment!.budgetHours }} ชม.</p>
                       }
                     </td>
                   </tr>
@@ -295,18 +321,11 @@ export class AssignmentProjectAuditorStatusPageComponent implements OnInit {
 
   projectStatusLabel(project: Project): string {
     const status = project.project_status ?? project.status;
-    return status ? String(status) : '-';
+    return status ? String(status) : 'รอดำเนินการ';
   }
 
-  priorityLabel(priority: AssignmentPriority): string {
-    switch (priority) {
-      case 'high':
-        return 'สูง - เร่งด่วน';
-      case 'normal':
-        return 'ปกติ';
-      case 'low':
-        return 'ต่ำ';
-    }
+  hasProjectStatus(project: Project): boolean {
+    return Boolean(project.project_status ?? project.status);
   }
 
   riskLabel(project: Project): string {
@@ -340,7 +359,7 @@ export class AssignmentProjectAuditorStatusPageComponent implements OnInit {
     const subdistrictName = subdistrictLabel(
       this.subdistricts().find((item) => item.subdistrict_id === project.subdistrict_id),
     );
-    const assignedAtText = latestAssignment ? this.formatAssignedAt(latestAssignment.assignedAt) : '-';
+    const assignedAtText = latestAssignment ? this.formatAssignedAt(latestAssignment.assignedAt) : 'รอดำเนินการ';
     const searchText = [
       project.project_name,
       project.project_id,
@@ -370,7 +389,7 @@ export class AssignmentProjectAuditorStatusPageComponent implements OnInit {
   private formatAssignedAt(value: string): string {
     const date = new Date(value);
     return Number.isNaN(date.getTime())
-      ? '-'
+      ? 'ยังไม่มีข้อมูล'
       : new Intl.DateTimeFormat('th-TH', {
           dateStyle: 'medium',
           timeStyle: 'short',

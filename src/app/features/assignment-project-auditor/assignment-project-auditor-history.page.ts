@@ -1,5 +1,6 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { catchError, forkJoin, of } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
@@ -12,7 +13,6 @@ import {
   ANALYSTS,
   ASSIGNMENT_STORAGE_KEY,
   Analyst,
-  AssignmentPriority,
   SavedAssignment,
 } from './assignment-project-auditor.models';
 
@@ -27,12 +27,10 @@ interface AssignmentHistoryRow {
   searchText: string;
 }
 
-type PriorityFilter = AssignmentPriority | 'all';
-
 @Component({
   selector: 'app-assignment-project-auditor-history-page',
   standalone: true,
-  imports: [FormsModule, ConfirmModalComponent, EmptyStateComponent],
+  imports: [FormsModule, RouterLink, ConfirmModalComponent, EmptyStateComponent],
   template: `
     <section class="page-shell">
       <div class="flex flex-wrap items-start justify-between gap-4">
@@ -64,14 +62,10 @@ type PriorityFilter = AssignmentPriority | 'all';
         </div>
       }
 
-      <div class="grid gap-4 md:grid-cols-3">
+      <div class="grid gap-4 md:grid-cols-2">
         <div class="panel p-4">
           <p class="m-0 text-xs font-bold text-muted">รายการมอบหมายทั้งหมด</p>
           <p class="m-0 mt-1 text-[26px] font-extrabold text-navy">{{ assignments().length }}</p>
-        </div>
-        <div class="panel p-4">
-          <p class="m-0 text-xs font-bold text-muted">รายการเร่งด่วน</p>
-          <p class="m-0 mt-1 text-[26px] font-extrabold text-risk-high">{{ highPriorityCount() }}</p>
         </div>
         <div class="panel p-4">
           <p class="m-0 text-xs font-bold text-muted">มอบหมายล่าสุด</p>
@@ -94,7 +88,7 @@ type PriorityFilter = AssignmentPriority | 'all';
             </div>
           </div>
 
-          <div class="mt-3 grid gap-2 md:grid-cols-[1fr_180px_220px]">
+          <div class="mt-3 grid gap-2 md:grid-cols-[1fr_220px]">
             <label>
               <span class="sr-only">ค้นหาประวัติการมอบหมายงาน</span>
               <input
@@ -104,15 +98,6 @@ type PriorityFilter = AssignmentPriority | 'all';
                 [ngModel]="search()"
                 (ngModelChange)="search.set($event)"
               />
-            </label>
-            <label>
-              <span class="sr-only">กรองระดับความสำคัญ</span>
-              <select class="gov-select" [ngModel]="priorityFilter()" (ngModelChange)="priorityFilter.set($event)">
-                <option value="all">ทุกความสำคัญ</option>
-                <option value="high">สูง - เร่งด่วน</option>
-                <option value="normal">ปกติ</option>
-                <option value="low">ต่ำ</option>
-              </select>
             </label>
             <label>
               <span class="sr-only">กรองผู้รับมอบหมาย</span>
@@ -137,7 +122,7 @@ type PriorityFilter = AssignmentPriority | 'all';
           </div>
         } @else {
           <div class="overflow-x-auto">
-            <table class="gov-table min-w-[1140px]">
+            <table class="gov-table min-w-[1040px]">
               <thead>
                 <tr>
                   @if (isAdmin()) {
@@ -154,9 +139,7 @@ type PriorityFilter = AssignmentPriority | 'all';
                   }
                   <th>วันที่มอบหมาย</th>
                   <th>โครงการ</th>
-                  <th>พื้นที่/ปีงบ</th>
                   <th>ผู้รับมอบหมาย</th>
-                  <th>ความสำคัญ</th>
                   <th>ความเสี่ยง</th>
                   <th>คำแนะนำ</th>
                 </tr>
@@ -177,33 +160,68 @@ type PriorityFilter = AssignmentPriority | 'all';
                     }
                     <td class="align-top">
                       <p class="m-0 font-bold text-ink">{{ row.assignedAtText }}</p>
-                      <p class="m-0 mt-1 text-xs text-muted">โดย {{ row.assignment.assignedBy || '-' }}</p>
+                      <p class="m-0 mt-1 text-xs text-muted">
+                        โดย
+                        @if (row.assignment.assignedBy) {
+                          {{ row.assignment.assignedBy }}
+                        } @else {
+                          <span class="italic text-slate-400">ยังไม่มีข้อมูล</span>
+                        }
+                      </p>
                     </td>
                     <td class="align-top">
-                      <p class="m-0 font-extrabold leading-6 text-ink">{{ row.projectName }}</p>
-                      <p class="m-0 mt-1 text-xs text-muted">รหัสโครงการ {{ row.assignment.projectId }}</p>
-                    </td>
-                    <td class="align-top">
-                      <p class="m-0 text-sm text-ink">{{ row.subdistrictName }}</p>
-                      <p class="m-0 mt-1 text-xs text-muted">ปีงบประมาณ {{ row.project?.budget_year || '-' }}</p>
+                      <a
+                        routerLink="/risk-factors"
+                        [queryParams]="{ projectId: row.assignment.projectId }"
+                        class="font-extrabold leading-6 text-ink no-underline hover:text-navy hover:underline"
+                      >
+                        {{ row.projectName }}
+                      </a>
+                      <div class="mt-2 flex flex-wrap gap-1.5">
+                        <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">{{ row.subdistrictName }}</span>
+                        <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
+                          ปีงบ
+                          @if (row.project?.budget_year) {
+                            {{ row.project?.budget_year }}
+                          } @else {
+                            <span class="font-normal italic text-slate-400">ยังไม่มีข้อมูล</span>
+                          }
+                        </span>
+                        <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">รหัส {{ row.assignment.projectId }}</span>
+                      </div>
                     </td>
                     <td class="align-top">
                       <p class="m-0 font-bold text-ink">{{ row.analyst?.name || row.assignment.analystId }}</p>
-                      <p class="m-0 mt-1 text-xs text-muted">{{ row.analyst?.team || '-' }}</p>
-                    </td>
-                    <td class="align-top">
-                      <span class="rounded-full px-2.5 py-1 text-xs font-bold" [class]="priorityBadgeClass(row.assignment.priority)">
-                        {{ priorityLabel(row.assignment.priority) }}
-                      </span>
+                      @if (row.analyst?.team) {
+                        <p class="m-0 mt-1 text-xs text-muted">{{ row.analyst?.team }}</p>
+                      } @else {
+                        <p class="m-0 mt-1 text-xs italic text-slate-400">ยังไม่มีข้อมูล</p>
+                      }
                     </td>
                     <td class="align-top">
                       <span class="rounded-full px-2.5 py-1 text-xs font-bold" [class]="riskBadgeClass(row.project)">
                         {{ riskLabel(row.project) }}
                       </span>
-                      <p class="m-0 mt-2 text-xs text-muted">งบประมาณ {{ money(row.project?.budget_amount) }}</p>
                     </td>
                     <td class="align-top">
-                      <p class="m-0 max-w-[280px] text-sm leading-6 text-ink">{{ row.assignment.note || '-' }}</p>
+                      @if (row.assignment.note) {
+                        <p class="m-0 max-w-[280px] text-sm leading-6 text-ink">{{ row.assignment.note }}</p>
+                      } @else {
+                        <p class="m-0 text-sm italic text-slate-400">ยังไม่มีข้อมูล</p>
+                      }
+                      @if (row.assignment.dueDate || row.assignment.budgetHours || row.assignment.auditSteps) {
+                        <div class="mt-2 max-w-[320px] rounded-[4px] bg-slate-50 p-2 text-xs leading-5 text-muted">
+                          @if (row.assignment.dueDate) {
+                            <p class="m-0"><span class="font-bold text-ink">Due date:</span> {{ row.assignment.dueDate }}</p>
+                          }
+                          @if (row.assignment.budgetHours) {
+                            <p class="m-0"><span class="font-bold text-ink">Budget:</span> {{ row.assignment.budgetHours }} ชม.</p>
+                          }
+                          @if (row.assignment.auditSteps) {
+                            <p class="m-0"><span class="font-bold text-ink">Audit steps:</span> {{ row.assignment.auditSteps }}</p>
+                          }
+                        </div>
+                      }
                     </td>
                   </tr>
                 }
@@ -238,7 +256,6 @@ export class AssignmentProjectAuditorHistoryPageComponent implements OnInit {
   readonly projects = signal<Project[]>([]);
   readonly subdistricts = signal<Subdistrict[]>([]);
   readonly search = signal('');
-  readonly priorityFilter = signal<PriorityFilter>('all');
   readonly analystFilter = signal('all');
 
   readonly historyRows = computed<AssignmentHistoryRow[]>(() =>
@@ -249,21 +266,15 @@ export class AssignmentProjectAuditorHistoryPageComponent implements OnInit {
 
   readonly filteredRows = computed(() => {
     const search = this.search().trim().toLocaleLowerCase('th');
-    const priority = this.priorityFilter();
     const analystId = this.analystFilter();
     return this.historyRows().filter(
       (row) =>
         (!search || row.searchText.includes(search)) &&
-        (priority === 'all' || row.assignment.priority === priority) &&
         (analystId === 'all' || row.assignment.analystId === analystId),
     );
   });
 
-  readonly highPriorityCount = computed(
-    () => this.assignments().filter((assignment) => assignment.priority === 'high').length,
-  );
-
-  readonly latestAssignmentText = computed(() => this.historyRows()[0]?.assignedAtText ?? '-');
+  readonly latestAssignmentText = computed(() => this.historyRows()[0]?.assignedAtText ?? 'ยังไม่มีข้อมูล');
   readonly isAdmin = computed(() => this.auth.hasRole('admin'));
   readonly selectedKeySet = computed(() => new Set(this.selectedKeys()));
   readonly selectedCount = computed(
@@ -357,28 +368,6 @@ export class AssignmentProjectAuditorHistoryPageComponent implements OnInit {
     this.selectedKeys.set([...keys]);
   }
 
-  priorityLabel(priority: AssignmentPriority): string {
-    switch (priority) {
-      case 'high':
-        return 'สูง - เร่งด่วน';
-      case 'normal':
-        return 'ปกติ';
-      case 'low':
-        return 'ต่ำ';
-    }
-  }
-
-  priorityBadgeClass(priority: AssignmentPriority): string {
-    switch (priority) {
-      case 'high':
-        return 'bg-red-100 text-risk-high';
-      case 'normal':
-        return 'bg-blue-100 text-navy';
-      case 'low':
-        return 'bg-green-100 text-risk-low';
-    }
-  }
-
   riskLabel(project: Project | null): string {
     const risk = normalizeRiskLevel(project?.risk_level);
     return risk === 'high'
@@ -411,7 +400,7 @@ export class AssignmentProjectAuditorHistoryPageComponent implements OnInit {
     const analyst = ANALYSTS.find((item) => item.id === assignment.analystId) ?? null;
     const subdistrictName = project
       ? subdistrictLabel(this.subdistricts().find((item) => item.subdistrict_id === project.subdistrict_id))
-      : '-';
+      : 'ยังไม่มีข้อมูล';
     const projectName = project?.project_name || 'ไม่พบข้อมูลโครงการ';
     const assignedAtText = this.formatAssignedAt(assignment.assignedAt);
     const searchText = [
@@ -482,7 +471,6 @@ export class AssignmentProjectAuditorHistoryPageComponent implements OnInit {
       assignment.assignedAt,
       assignment.projectId,
       assignment.analystId,
-      assignment.priority,
       assignment.note,
     ].join('|');
   }
