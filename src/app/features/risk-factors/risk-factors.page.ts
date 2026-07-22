@@ -259,7 +259,7 @@ import {
                     </div>
 
                     <a
-                      routerLink="/assignment-project-auditor/status"
+                      routerLink="/risk-factors/status"
                       [queryParams]="{ projectId: projectDetail()?.project_id }"
                       class="inline-flex min-h-[38px] items-center justify-center rounded-[3px] border-[1.5px] border-line bg-white px-4 text-[13px] font-bold text-slate-700 no-underline hover:bg-zebra"
                     >

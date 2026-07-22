@@ -80,7 +80,24 @@ const NAV_GROUPS: NavGroup[] = [
           },
         ],
       },
-      { code: 'F3', label: 'โครงการทั้งหมด', path: '/risk-factors' },
+      {
+        code: 'F3',
+        label: 'โครงการทั้งหมด',
+        path: '/risk-factors',
+        children: [
+          {
+            code: 'F3.1',
+            label: 'รายละเอียดโครงการ',
+            path: '/risk-factors',
+            exact: true,
+          },
+          {
+            code: 'F3.2',
+            label: 'สถานะโครงการ',
+            path: '/risk-factors/status',
+          },
+        ],
+      },
       {
         code: 'F4',
         label: 'มอบหมายงาน',
@@ -96,11 +113,6 @@ const NAV_GROUPS: NavGroup[] = [
             code: 'F4.2',
             label: 'ประวัติการมอบหมายงาน',
             path: '/assignment-project-auditor/history',
-          },
-          {
-            code: 'F4.3',
-            label: 'สถานะโครงการ',
-            path: '/assignment-project-auditor/status',
           },
         ],
       },
