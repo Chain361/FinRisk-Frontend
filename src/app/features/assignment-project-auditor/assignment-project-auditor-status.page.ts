@@ -35,7 +35,7 @@ interface ProjectStatusRow {
     <section class="page-shell">
       <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F4.3</p>
+          <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F3.2</p>
           <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">สถานะโครงการ</h1>
           <p class="m-0 mt-1.5 text-sm text-muted">
             ติดตามสถานะการมอบหมายงานของแต่ละโครงการ พร้อมผู้รับมอบหมายล่าสุดและระดับความเสี่ยง

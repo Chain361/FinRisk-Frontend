@@ -78,6 +78,13 @@ export const routes: Routes = [
         ],
       },
       {
+        path: 'risk-factors/status',
+        loadComponent: () =>
+          import('./features/assignment-project-auditor/assignment-project-auditor-status.page').then(
+            (m) => m.AssignmentProjectAuditorStatusPageComponent,
+          ),
+      },
+      {
         path: 'risk-factors',
         loadComponent: () =>
           import('./features/risk-factors/risk-factors.page').then(
@@ -99,13 +106,6 @@ export const routes: Routes = [
             loadComponent: () =>
               import('./features/assignment-project-auditor/assignment-project-auditor-history.page').then(
                 (m) => m.AssignmentProjectAuditorHistoryPageComponent,
-              ),
-          },
-          {
-            path: 'status',
-            loadComponent: () =>
-              import('./features/assignment-project-auditor/assignment-project-auditor-status.page').then(
-                (m) => m.AssignmentProjectAuditorStatusPageComponent,
               ),
           },
         ],
