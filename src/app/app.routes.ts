@@ -101,6 +101,13 @@ export const routes: Routes = [
                 (m) => m.AssignmentProjectAuditorHistoryPageComponent,
               ),
           },
+          {
+            path: 'status',
+            loadComponent: () =>
+              import('./features/assignment-project-auditor/assignment-project-auditor-status.page').then(
+                (m) => m.AssignmentProjectAuditorStatusPageComponent,
+              ),
+          },
         ],
       },
       {
