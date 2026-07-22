@@ -8,6 +8,7 @@ import { AuthService } from '../core/auth/auth.service';
 import { I18nService } from '../core/i18n/i18n.service';
 import { SystemMeta } from '../core/models/domain.models';
 import { GuardrailBannerComponent } from '../shared/ui/guardrail-banner.component';
+import { LanguageToggleComponent } from '../shared/ui/language-toggle.component';
 import { PrototypeBannerComponent } from '../shared/ui/prototype-banner.component';
 
 interface NavItem {
@@ -100,7 +101,13 @@ const NAV_GROUPS: NavGroup[] = [
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, GuardrailBannerComponent, PrototypeBannerComponent],
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    GuardrailBannerComponent,
+    LanguageToggleComponent,
+    PrototypeBannerComponent,
+  ],
   template: `
     <app-prototype-banner />
     <div class="flex min-h-screen bg-page text-ink">
@@ -199,6 +206,7 @@ const NAV_GROUPS: NavGroup[] = [
           </div>
 
           <div class="flex items-center gap-3.5">
+            <app-language-toggle />
             <div class="rounded-[3px] border-[1.5px] border-line px-3.5 py-[7px] text-right">
               <p class="m-0 text-[13px] font-bold text-ink">
                 {{ auth.user()?.display_name ?? auth.user()?.username ?? auth.token() }}

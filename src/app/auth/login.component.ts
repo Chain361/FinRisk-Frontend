@@ -5,14 +5,18 @@ import { LucideLogIn, LucideShieldAlert } from '@lucide/angular';
 
 import { AuthService } from '../core/auth/auth.service';
 import { I18nService } from '../core/i18n/i18n.service';
+import { LanguageToggleComponent } from '../shared/ui/language-toggle.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [FormsModule, LucideLogIn, LucideShieldAlert],
+  imports: [FormsModule, LucideLogIn, LucideShieldAlert, LanguageToggleComponent],
   template: `
     <main class="grid min-h-screen place-items-center bg-page px-4 py-8">
       <section class="w-full max-w-md rounded-[4px] border-2 border-navy bg-white p-6">
+        <div class="mb-4 flex justify-end">
+          <app-language-toggle />
+        </div>
         <div class="flex items-center gap-3">
           <div class="flex size-10 items-center justify-center rounded-[4px] bg-navy text-white">
             <svg lucideShieldAlert class="size-5"></svg>
