@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { LucideLogIn, LucideShieldAlert } from '@lucide/angular';
 
 import { AuthService } from '../core/auth/auth.service';
+import { I18nService } from '../core/i18n/i18n.service';
 
 @Component({
   selector: 'app-login',
@@ -17,14 +18,14 @@ import { AuthService } from '../core/auth/auth.service';
             <svg lucideShieldAlert class="size-5"></svg>
           </div>
           <div>
-            <h1 class="m-0 text-lg font-extrabold text-ink">ระบบวิเคราะห์ความเสี่ยงงบประมาณตำบล</h1>
-            <p class="m-0 mt-0.5 text-[12.5px] text-muted">Local Budget Financial Risk System</p>
+            <h1 class="m-0 text-lg font-extrabold text-ink">{{ t('login.title') }}</h1>
+            <p class="m-0 mt-0.5 text-[12.5px] text-muted">{{ t('login.subtitle') }}</p>
           </div>
         </div>
 
         <form class="mt-6 grid gap-4" (ngSubmit)="submit()">
           <label class="grid gap-1.5">
-            <span class="text-[12.5px] font-bold text-muted">Username</span>
+            <span class="text-[12.5px] font-bold text-muted">{{ t('login.username') }}</span>
             <input
               name="username"
               class="gov-input h-11"
@@ -35,7 +36,7 @@ import { AuthService } from '../core/auth/auth.service';
           </label>
 
           <label class="grid gap-1.5">
-            <span class="text-[12.5px] font-bold text-muted">Password</span>
+            <span class="text-[12.5px] font-bold text-muted">{{ t('login.password') }}</span>
             <input
               name="password"
               type="password"
@@ -56,17 +57,12 @@ import { AuthService } from '../core/auth/auth.service';
             [disabled]="loading()"
           >
             <svg lucideLogIn class="size-4"></svg>
-            {{ loading() ? 'กำลังเข้าสู่ระบบ' : 'เข้าสู่ระบบ' }}
+            {{ loading() ? t('login.submitting') : t('login.submit') }}
           </button>
         </form>
 
-        <p class="mt-4 text-xs leading-5 text-muted">
-          ระบบรองรับ 6 บทบาท (ผู้ดูแลระบบ · ผู้กำกับดูแล · ผู้บริหารตำบล · ผู้ตรวจสอบโครงการ ·
-          นักวิเคราะห์ · ประชาชนทั่วไป) — ขอบเขตข้อมูลและสิทธิ์แตกต่างตามบทบาทที่ login
-        </p>
-        <p class="mt-1.5 text-xs leading-5 text-muted">
-          Backend ใช้ token เป็น username และทุก request หลัง login จะส่ง header X-Username อัตโนมัติ
-        </p>
+        <p class="mt-4 text-xs leading-5 text-muted">{{ t('login.rolesHint') }}</p>
+        <p class="mt-1.5 text-xs leading-5 text-muted">{{ t('login.tokenHint') }}</p>
       </section>
     </main>
   `,
@@ -74,6 +70,8 @@ import { AuthService } from '../core/auth/auth.service';
 export class LoginComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly i18n = inject(I18nService);
+  protected readonly t = this.i18n.t;
 
   username = '';
   password = 'password123';
@@ -91,7 +89,7 @@ export class LoginComponent {
     this.auth.login(this.username, this.password).subscribe({
       next: () => void this.router.navigate(['/project-risk']),
       error: () => {
-        this.error.set('เข้าสู่ระบบไม่สำเร็จ ตรวจ username และลองอีกครั้ง');
+        this.error.set(this.t('login.error'));
         this.loading.set(false);
       },
     });

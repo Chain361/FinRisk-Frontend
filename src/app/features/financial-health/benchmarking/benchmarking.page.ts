@@ -2,6 +2,7 @@ import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { catchError, forkJoin, of } from 'rxjs';
 
 import { ApiService } from '../../../core/api/api.service';
+import { I18nService } from '../../../core/i18n/i18n.service';
 import { AnnualRisk, FinancialStatement, Subdistrict } from '../../../core/models/domain.models';
 import { BarChartComponent, BarChartSeries } from '../../../shared/charts/bar-chart.component';
 import { FilterBarComponent } from '../../../shared/filters/filter-bar.component';
@@ -55,10 +56,8 @@ interface IncomeStatementTotals {
     <section class="page-shell">
       <div>
         <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F2.2</p>
-        <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">เปรียบเทียบสถานะการคลัง</h1>
-        <p class="m-0 mt-1.5 text-sm text-muted">
-          เปรียบเทียบฐานะการคลังของแต่ละตำบลผ่านตัวชี้วัดสำคัญ
-        </p>
+        <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">{{ t('fhBench.title') }}</h1>
+        <p class="m-0 mt-1.5 text-sm text-muted">{{ t('fhBench.subtitle') }}</p>
       </div>
 
       <app-filter-bar
@@ -82,29 +81,29 @@ interface IncomeStatementTotals {
       <section class="panel p-[18px]">
         <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 class="m-0 text-[16px] font-bold text-ink">เปรียบเทียบตัวชี้วัดข้ามตำบล</h2>
+            <h2 class="m-0 text-[16px] font-bold text-ink">{{ t('fhBench.crossTitle') }}</h2>
             <p class="m-0 mt-1 text-[13px] text-muted">
-              เปรียบเทียบตัวชี้วัดสุขภาพการคลังของทุกตำบลในปี {{ selectedYear() ?? 'ทุกปี' }}
+              {{ t('fhBench.crossSubtitle', { year: selectedYear() ?? t('filter.allYears') }) }}
             </p>
           </div>
 
           <div class="flex flex-wrap items-end gap-3.5">
             <label class="block">
-              <span class="text-[12.5px] font-bold text-muted mr-3">ตัวชี้วัด</span>
+              <span class="text-[12.5px] font-bold text-muted mr-3">{{ t('fh.metric') }}</span>
               <select
                 class="gov-select mt-[5px] w-auto!"
                 [value]="comparisonMetric()"
                 (change)="setComparisonMetric($any($event.target).value)"
               >
-                <option value="netAssets">สินทรัพย์สุทธิ</option>
-                <option value="netIncome">ผลสุทธิ</option>
-                <option value="riskFactor">Risk Factor รายปี</option>
+                <option value="netAssets">{{ t('fh.metricNetAssets') }}</option>
+                <option value="netIncome">{{ t('fh.metricNetIncome') }}</option>
+                <option value="riskFactor">{{ t('fh.metricRiskFactorOption') }}</option>
               </select>
             </label>
 
             @if (comparisonMetric() === 'riskFactor') {
               <label class="block">
-                <span class="text-[12.5px] font-bold text-muted ml-3 mr-3">ปัจจัย</span>
+                <span class="text-[12.5px] font-bold text-muted ml-3 mr-3">{{ t('fh.factorLabel') }}</span>
                 <select
                   class="gov-select mt-[5px] w-auto!"
                   [value]="comparisonFactorCode() ?? ''"
@@ -121,8 +120,8 @@ interface IncomeStatementTotals {
 
         @if (comparisonCategories().length) {
           <app-bar-chart
-            [title]="'เปรียบเทียบ' + comparisonMetricLabel() + 'ข้ามตำบล'"
-            [subtitle]="'ตัวชี้วัด: ' + comparisonMetricLabel()"
+            [title]="t('fh.compare.title', { metric: comparisonMetricLabel() })"
+            [subtitle]="t('fh.compare.subtitle', { metric: comparisonMetricLabel() })"
             [categories]="comparisonCategories()"
             [series]="comparisonBarSeries()"
             [unitSuffix]="comparisonUnit()"
@@ -131,8 +130,8 @@ interface IncomeStatementTotals {
           />
         } @else {
           <app-empty-state
-            title="ไม่พบข้อมูลสำหรับเปรียบเทียบ"
-            message="ลองเลือกปีหรือตัวชี้วัดอื่น"
+            [title]="t('fhBench.emptyTitle')"
+            [message]="t('fhBench.emptyMsg')"
           />
         }
       </section>
@@ -141,6 +140,8 @@ interface IncomeStatementTotals {
 })
 export class BenchmarkingPageComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly i18n = inject(I18nService);
+  protected readonly t = this.i18n.t;
 
   readonly FISCAL_YEARS = FISCAL_YEARS;
   readonly fiscalYearLabels = FISCAL_YEARS.map(String);
@@ -413,7 +414,7 @@ export class BenchmarkingPageComponent implements OnInit {
 
   readonly comparisonUnit = computed(() => {
     if (this.comparisonMetric() !== 'riskFactor') {
-      return 'บาท';
+      return this.t('common.unit.baht');
     }
     const option = this.allFactorOptions().find(
       (item) => item.code === this.comparisonFactorCode(),
@@ -442,7 +443,7 @@ export class BenchmarkingPageComponent implements OnInit {
         this.loading.set(false);
       },
       error: () => {
-        this.error.set('โหลดข้อมูล Financial Health ไม่สำเร็จ');
+        this.error.set(this.t('fh.error'));
         this.loading.set(false);
       },
     });
@@ -487,9 +488,9 @@ export class BenchmarkingPageComponent implements OnInit {
   comparisonMetricLabel(): string {
     switch (this.comparisonMetric()) {
       case 'netAssets':
-        return 'สินทรัพย์สุทธิ';
+        return this.t('fh.metricNetAssets');
       case 'netIncome':
-        return 'ผลสุทธิ';
+        return this.t('fh.metricNetIncome');
       case 'riskFactor': {
         const option = this.allFactorOptions().find(
           (item) => item.code === this.comparisonFactorCode(),
@@ -663,7 +664,7 @@ export class BenchmarkingPageComponent implements OnInit {
       (code.includes('cash') && code.includes('coverage')) ||
       code.includes('ccr')
     ) {
-      return 'เท่า';
+      return this.t('fh.unit.times');
     }
 
     return '';
