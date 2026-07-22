@@ -1,11 +1,13 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
 import { AuthService } from '../../core/auth/auth.service';
 import {
+  activeOf,
   FeedbackDraftInput,
+  latestOf,
   ProjectFeedbackService,
 } from '../../core/feedback/project-feedback.service';
 import {
@@ -478,7 +480,7 @@ import {
                         <button
                           type="button"
                           class="gov-btn-outline disabled:cursor-not-allowed disabled:opacity-40"
-                          [disabled]="isFeedbackLocked()"
+                          [disabled]="isFeedbackLocked() || feedbackSaving()"
                           (click)="saveFeedbackDraft()"
                         >
                           บันทึกฉบับร่าง
@@ -486,7 +488,7 @@ import {
                         <button
                           type="button"
                           class="gov-btn-primary disabled:cursor-not-allowed disabled:opacity-40"
-                          [disabled]="isFeedbackLocked()"
+                          [disabled]="isFeedbackLocked() || feedbackSaving()"
                           (click)="requestSubmitFeedback()"
                         >
                           ส่ง
@@ -628,6 +630,10 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
   readonly allProjects = signal<Project[]>([]);
   readonly projects = signal<Project[]>([]);
   readonly catalog = signal<RiskFactorCatalog[]>([]);
+  readonly allFeedback = signal<ProjectFeedback[]>([]);
+  readonly selectedFeedbackHistory = signal<ProjectFeedback[]>([]);
+  readonly feedbackLoading = signal(false);
+  readonly feedbackSaving = signal(false);
   readonly projectDetail = signal<ProjectDetail | null>(null);
   readonly searchQuery = signal('');
 
@@ -676,13 +682,10 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     if (!projectId || !username) {
       return null;
     }
-    return this.feedbackService.activeFor(projectId, username);
+    return activeOf(this.selectedFeedbackHistory(), projectId, username);
   });
 
-  readonly feedbackHistory = computed<ProjectFeedback[]>(() => {
-    const projectId = this.selectedProjectId();
-    return projectId ? this.feedbackService.historyFor(projectId) : [];
-  });
+  readonly feedbackHistory = computed<ProjectFeedback[]>(() => this.selectedFeedbackHistory());
 
   readonly isFeedbackLocked = computed(() => {
     if (this.isEditingEntry() || this.isComposingNewFeedback()) {
@@ -778,11 +781,13 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
       subdistricts: this.api.subdistricts(),
       catalog: this.api.riskFactors(),
       allProjects: this.api.projects(),
+      feedback: this.feedbackService.all(),
     }).subscribe({
-      next: ({ subdistricts, catalog, allProjects }) => {
+      next: ({ subdistricts, catalog, allProjects, feedback }) => {
         this.subdistricts.set(subdistricts);
         this.catalog.set(catalog);
         this.allProjects.set(allProjects);
+        this.allFeedback.set(feedback);
       },
       error: () => this.error.set('โหลด catalog หรือรายชื่อตำบลไม่สำเร็จ'),
     });
@@ -854,15 +859,16 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     this.selectedProjectId.set(null);
     this.projectDetail.set(null);
     this.loadingDetail.set(false);
+    this.selectedFeedbackHistory.set([]);
     this.resetFeedbackForm();
   }
 
   feedbackStatusFor(projectId: string | number): ProjectFeedback['status'] | null {
-    return this.feedbackService.latestFor(projectId)?.status ?? null;
+    return latestOf(this.allFeedback(), projectId)?.status ?? null;
   }
 
   feedbackUpdatedFor(projectId: string | number): string {
-    const record = this.feedbackService.latestFor(projectId);
+    const record = latestOf(this.allFeedback(), projectId);
     return record ? this.dateLabel(record.updated_at) : '-';
   }
 
@@ -886,9 +892,20 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
       return;
     }
     this.feedbackValidationError.set('');
-    const record = this.feedbackService.saveDraft(draft);
-    this.activeFeedbackId.set(record.feedback_id);
-    this.feedbackSuccessMessage.set('บันทึกฉบับร่างเรียบร้อยแล้ว');
+    this.feedbackSaving.set(true);
+    this.feedbackService.saveDraft(draft).subscribe({
+      next: (record) => {
+        this.activeFeedbackId.set(record.feedback_id);
+        this.refreshFeedbackLists(() => {
+          this.feedbackSaving.set(false);
+          this.feedbackSuccessMessage.set('บันทึกฉบับร่างเรียบร้อยแล้ว');
+        });
+      },
+      error: () => {
+        this.feedbackSaving.set(false);
+        this.feedbackValidationError.set('บันทึกฉบับร่างไม่สำเร็จ');
+      },
+    });
   }
 
   requestSubmitFeedback(): void {
@@ -914,9 +931,20 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     if (!draft) {
       return;
     }
-    this.feedbackService.submit(draft);
-    this.resetFeedbackFields();
-    this.feedbackSuccessMessage.set('ส่งความคิดเห็นเรียบร้อยแล้ว');
+    this.feedbackSaving.set(true);
+    this.feedbackService.submit(draft).subscribe({
+      next: () => {
+        this.resetFeedbackFields();
+        this.refreshFeedbackLists(() => {
+          this.feedbackSaving.set(false);
+          this.feedbackSuccessMessage.set('ส่งความคิดเห็นเรียบร้อยแล้ว');
+        });
+      },
+      error: () => {
+        this.feedbackSaving.set(false);
+        this.feedbackValidationError.set('ส่งความคิดเห็นไม่สำเร็จ');
+      },
+    });
   }
 
   canDeleteFeedback(entry: ProjectFeedback): boolean {
@@ -954,11 +982,17 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     if (!feedbackId) {
       return;
     }
-    this.feedbackService.delete(feedbackId);
-    if (this.activeFeedbackId() === feedbackId) {
-      this.loadFeedbackForm(String(this.selectedProjectId()));
-    }
-    this.feedbackSuccessMessage.set('ลบความคิดเห็นเรียบร้อยแล้ว');
+    this.feedbackService.delete(feedbackId).subscribe({
+      next: () => {
+        if (this.activeFeedbackId() === feedbackId) {
+          this.resetFeedbackFields();
+        }
+        this.refreshFeedbackLists(() => {
+          this.feedbackSuccessMessage.set('ลบความคิดเห็นเรียบร้อยแล้ว');
+        });
+      },
+      error: () => this.feedbackValidationError.set('ลบความคิดเห็นไม่สำเร็จ'),
+    });
   }
 
   resolveFeedback(): void {
@@ -966,8 +1000,14 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     if (!current) {
       return;
     }
-    this.feedbackService.resolve(current.feedback_id);
-    this.feedbackSuccessMessage.set('เปลี่ยนสถานะเป็น Resolved เรียบร้อยแล้ว');
+    this.feedbackService.resolve(current.feedback_id).subscribe({
+      next: () => {
+        this.refreshFeedbackLists(() => {
+          this.feedbackSuccessMessage.set('เปลี่ยนสถานะเป็น Resolved เรียบร้อยแล้ว');
+        });
+      },
+      error: () => this.feedbackValidationError.set('เปลี่ยนสถานะไม่สำเร็จ'),
+    });
   }
 
   private buildDraftInput(): FeedbackDraftInput | null {
@@ -979,8 +1019,6 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     return {
       feedback_id: this.activeFeedbackId(),
       project_id: projectId,
-      auditor_username: user.username,
-      auditor_name: user.display_name || user.full_name || user.name || user.username,
       feedback_text: this.feedbackText(),
       concern_level: this.concernLevel(),
       likelihood_score: this.likelihoodScore(),
@@ -994,14 +1032,44 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     this.feedbackValidationError.set('');
     this.isEditingEntry.set(false);
     this.isComposingNewFeedback.set(false);
-    const username = this.auth.user()?.username;
-    const existing = username ? this.feedbackService.activeFor(projectId, username) : null;
-    this.activeFeedbackId.set(existing?.feedback_id ?? null);
-    this.feedbackText.set(existing?.feedback_text ?? '');
-    this.concernLevel.set(existing?.concern_level ?? null);
-    this.likelihoodScore.set(existing?.likelihood_score ?? null);
-    this.impactScore.set(existing?.impact_score ?? null);
-    this.suggestions.set(existing?.suggestions ?? '');
+    this.feedbackLoading.set(true);
+    this.feedbackService.historyFor(projectId).subscribe({
+      next: (records) => {
+        this.selectedFeedbackHistory.set(records);
+        this.feedbackLoading.set(false);
+        const username = this.auth.user()?.username;
+        const existing = username ? activeOf(records, projectId, username) : null;
+        this.activeFeedbackId.set(existing?.feedback_id ?? null);
+        this.feedbackText.set(existing?.feedback_text ?? '');
+        this.concernLevel.set(existing?.concern_level ?? null);
+        this.likelihoodScore.set(existing?.likelihood_score ?? null);
+        this.impactScore.set(existing?.impact_score ?? null);
+        this.suggestions.set(existing?.suggestions ?? '');
+      },
+      error: () => {
+        this.error.set('โหลดความคิดเห็นไม่สำเร็จ');
+        this.feedbackLoading.set(false);
+      },
+    });
+  }
+
+  /** โหลด allFeedback + ประวัติของโครงการที่เลือกใหม่หลังบันทึก/ลบ/ส่ง/resolve สำเร็จ */
+  private refreshFeedbackLists(onDone?: () => void): void {
+    const projectId = this.selectedProjectId();
+    forkJoin({
+      all: this.feedbackService.all(),
+      history: projectId ? this.feedbackService.historyFor(projectId) : of<ProjectFeedback[]>([]),
+    }).subscribe({
+      next: ({ all, history }) => {
+        this.allFeedback.set(all);
+        this.selectedFeedbackHistory.set(history);
+        onDone?.();
+      },
+      error: () => {
+        this.error.set('โหลดข้อมูลความคิดเห็นไม่สำเร็จ');
+        onDone?.();
+      },
+    });
   }
 
   private resetFeedbackForm(): void {
