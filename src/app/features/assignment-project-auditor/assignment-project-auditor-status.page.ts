@@ -11,10 +11,13 @@ import {
   ANALYSTS,
   ASSIGNMENT_STORAGE_KEY,
   Analyst,
+  AssignmentWorkflowStatus,
   SavedAssignment,
+  projectWorkflowStatusBadgeClass,
+  projectWorkflowStatusLabel,
 } from './assignment-project-auditor.models';
 
-type AssignmentStatusFilter = 'all' | 'assigned' | 'unassigned';
+type ProjectWorkflowFilter = 'all' | 'unassigned' | AssignmentWorkflowStatus;
 type RiskFilter = 'all' | 'high' | 'medium' | 'low';
 
 interface ProjectStatusRow {
@@ -90,11 +93,18 @@ interface ProjectStatusRow {
               />
             </label>
             <label>
-              <span class="sr-only">กรองสถานะการมอบหมาย</span>
-              <select class="gov-select" [ngModel]="assignmentStatusFilter()" (ngModelChange)="assignmentStatusFilter.set($event)">
-                <option value="all">ทุกสถานะงาน</option>
-                <option value="assigned">มอบหมายแล้ว</option>
+              <span class="sr-only">กรองสถานะโครงการโดยรวม</span>
+              <select class="gov-select" [ngModel]="projectWorkflowFilter()" (ngModelChange)="projectWorkflowFilter.set($event)">
+                <option value="all">ทุกสถานะโครงการ</option>
                 <option value="unassigned">ยังไม่มอบหมาย</option>
+                <option value="waiting_acceptance">รอผู้รับงานตอบรับ</option>
+                <option value="accepted">รับงานแล้ว</option>
+                <option value="in_progress">กำลังดำเนินการ</option>
+                <option value="clarification_needed">ขอคำชี้แจง</option>
+                <option value="ready_for_review">ส่งงานให้ตรวจทาน</option>
+                <option value="under_review">อยู่ระหว่างสอบทาน</option>
+                <option value="revision_requested">ส่งกลับแก้ไข</option>
+                <option value="completed">เสร็จสิ้น</option>
               </select>
             </label>
             <label>
@@ -132,10 +142,9 @@ interface ProjectStatusRow {
             <table class="gov-table min-w-[980px]">
               <thead>
                 <tr>
-                  <th>สถานะงาน</th>
+                  <th>สถานะโครงการโดยรวม</th>
                   <th>โครงการ</th>
                   <th>ผู้รับมอบหมายล่าสุด</th>
-                  <th>สถานะโครงการ</th>
                   <th>ความเสี่ยง</th>
                   <th>มอบหมายล่าสุด</th>
                 </tr>
@@ -144,9 +153,12 @@ interface ProjectStatusRow {
                 @for (row of filteredRows(); track row.project.project_id) {
                   <tr>
                     <td class="align-top">
-                      <span class="rounded-full px-2.5 py-1 text-xs font-bold" [class]="row.latestAssignment ? 'bg-green-100 text-risk-low' : 'bg-orange-100 text-risk-medium'">
-                        {{ row.latestAssignment ? 'มอบหมายแล้ว' : 'ยังไม่มอบหมาย' }}
+                      <span class="rounded-full px-2.5 py-1 text-xs font-bold" [class]="projectWorkflowBadgeClass(row.latestAssignment)">
+                        {{ projectWorkflowLabel(row.latestAssignment) }}
                       </span>
+                      @if (hasBackendProjectStatus(row.project)) {
+                        <p class="m-0 mt-2 text-xs text-muted">ข้อมูลโครงการ: {{ backendProjectStatusLabel(row.project) }}</p>
+                      }
                     </td>
                     <td class="align-top">
                       <a
@@ -183,11 +195,6 @@ interface ProjectStatusRow {
                       } @else {
                         <p class="m-0 mt-1 text-xs italic text-slate-400">ยังไม่มีผู้รับผิดชอบ</p>
                       }
-                    </td>
-                    <td class="align-top">
-                      <p class="m-0 mt-1 text-xs italic text-slate-400" [class]="hasProjectStatus(row.project) ? 'text-ink' : 'italic text-slate-400'">
-                        {{ projectStatusLabel(row.project) }}
-                      </p>
                     </td>
                     <td class="align-top">
                       <span class="rounded-full px-2.5 py-1 text-xs font-bold" [class]="riskBadgeClass(row.project)">
@@ -232,7 +239,7 @@ export class AssignmentProjectAuditorStatusPageComponent implements OnInit {
   readonly subdistricts = signal<Subdistrict[]>([]);
   readonly assignments = signal<SavedAssignment[]>([]);
   readonly search = signal('');
-  readonly assignmentStatusFilter = signal<AssignmentStatusFilter>('all');
+  readonly projectWorkflowFilter = signal<ProjectWorkflowFilter>('all');
   readonly riskFilter = signal<RiskFilter>('all');
   readonly analystFilter = signal('all');
 
@@ -261,15 +268,16 @@ export class AssignmentProjectAuditorStatusPageComponent implements OnInit {
 
   readonly filteredRows = computed(() => {
     const search = this.search().trim().toLocaleLowerCase('th');
-    const assignmentStatus = this.assignmentStatusFilter();
+    const workflowStatus = this.projectWorkflowFilter();
     const risk = this.riskFilter();
     const analystId = this.analystFilter();
     return this.projectRows().filter(
       (row) =>
         (!search || row.searchText.includes(search)) &&
-        (assignmentStatus === 'all' ||
-          (assignmentStatus === 'assigned' && row.latestAssignment) ||
-          (assignmentStatus === 'unassigned' && !row.latestAssignment)) &&
+        (workflowStatus === 'all' ||
+          (workflowStatus === 'unassigned' && !row.latestAssignment) ||
+          row.latestAssignment?.workflowStatus === workflowStatus ||
+          (!row.latestAssignment?.workflowStatus && workflowStatus === 'waiting_acceptance' && Boolean(row.latestAssignment))) &&
         (risk === 'all' || normalizeRiskLevel(row.project.risk_level) === risk) &&
         (analystId === 'all' || row.latestAssignment?.analystId === analystId),
     );
@@ -319,13 +327,21 @@ export class AssignmentProjectAuditorStatusPageComponent implements OnInit {
     }
   }
 
-  projectStatusLabel(project: Project): string {
+  backendProjectStatusLabel(project: Project): string {
     const status = project.project_status ?? project.status;
     return status ? String(status) : 'รอดำเนินการ';
   }
 
-  hasProjectStatus(project: Project): boolean {
+  hasBackendProjectStatus(project: Project): boolean {
     return Boolean(project.project_status ?? project.status);
+  }
+
+  projectWorkflowLabel(assignment: SavedAssignment | null): string {
+    return projectWorkflowStatusLabel(assignment?.workflowStatus ?? null);
+  }
+
+  projectWorkflowBadgeClass(assignment: SavedAssignment | null): string {
+    return projectWorkflowStatusBadgeClass(assignment?.workflowStatus ?? null);
   }
 
   riskLabel(project: Project): string {
@@ -365,7 +381,8 @@ export class AssignmentProjectAuditorStatusPageComponent implements OnInit {
       project.project_id,
       project.dept_name,
       project.project_type,
-      this.projectStatusLabel(project),
+      this.backendProjectStatusLabel(project),
+      this.projectWorkflowLabel(latestAssignment),
       subdistrictName,
       analyst?.name,
       analyst?.team,
