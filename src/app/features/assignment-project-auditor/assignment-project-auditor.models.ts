@@ -12,8 +12,11 @@ export interface SavedAssignment {
   projectId: string;
   analystId: string;
   assignedAt: string;
-  priority: AssignmentPriority;
+  priority?: AssignmentPriority;
   note: string;
+  dueDate?: string;
+  budgetHours?: number;
+  auditSteps?: string;
   assignedBy?: string;
 }
 

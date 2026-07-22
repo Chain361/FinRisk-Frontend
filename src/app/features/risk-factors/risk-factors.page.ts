@@ -125,7 +125,13 @@ import {
                           <p class="text-xs text-slate-500">ID {{ project.project_id }}</p>
                         </td>
                         <td class="px-4 py-3">{{ project.budget_year }}</td>
-                        <td class="px-4 py-3">{{ project.project_type || project.purchase_method_group || '-' }}</td>
+                        <td class="px-4 py-3">
+                          @if (project.project_type || project.purchase_method_group) {
+                            {{ project.project_type || project.purchase_method_group }}
+                          } @else {
+                            <span class="italic text-slate-400">ยังไม่มีข้อมูล</span>
+                          }
+                        </td>
                         <td class="px-4 py-3 text-right">{{ money(project.budget_amount) }}</td>
                         <td class="px-4 py-3 text-right">{{ number(project.price_ratio, 3) }}</td>
                         <td class="px-4 py-3 text-right font-semibold">{{ number(project.risk_score, 2) }}</td>
@@ -205,7 +211,11 @@ import {
                     <h2 class="m-0 mt-1 text-[19px] font-extrabold text-ink">{{ projectDetail()?.project_name }}</h2>
                     <p class="m-0 mt-1.5 text-[13px] text-muted">
                       ปี {{ projectDetail()?.budget_year }} ·
-                      {{ projectDetail()?.project_type || projectDetail()?.purchase_method_group || '-' }}
+                      @if (projectDetail()?.project_type || projectDetail()?.purchase_method_group) {
+                        {{ projectDetail()?.project_type || projectDetail()?.purchase_method_group }}
+                      } @else {
+                        <span class="italic text-slate-400">ยังไม่มีข้อมูล</span>
+                      }
                     </p>
                   </div>
                   <div class="flex flex-col items-end gap-1.5">
@@ -249,12 +259,20 @@ import {
 
                       <div class="min-w-[160px] border-l border-line-soft pl-4">
                         <p class="m-0 text-[11.5px] font-bold text-muted">ผู้รับมอบหมาย</p>
-                        <p class="m-0 mt-0.5 text-[13.5px] font-extrabold text-ink">{{ assignmentAnalystName() }}</p>
+                        @if (assignmentAnalyst()) {
+                          <p class="m-0 mt-0.5 text-[13.5px] font-extrabold text-ink">{{ assignmentAnalystName() }}</p>
+                        } @else {
+                          <p class="m-0 mt-0.5 text-[13.5px] italic text-slate-400">รอมอบหมาย</p>
+                        }
                       </div>
 
                       <div class="min-w-[160px] border-l border-line-soft pl-4">
                         <p class="m-0 text-[11.5px] font-bold text-muted">ผู้มอบหมาย</p>
-                        <p class="m-0 mt-0.5 text-[13.5px] font-extrabold text-ink">{{ latestProjectAssignment()?.assignedBy || '-' }}</p>
+                        @if (latestProjectAssignment()?.assignedBy) {
+                          <p class="m-0 mt-0.5 text-[13.5px] font-extrabold text-ink">{{ latestProjectAssignment()?.assignedBy }}</p>
+                        } @else {
+                          <p class="m-0 mt-0.5 text-[13.5px] italic text-slate-400">ยังไม่มีผู้รับผิดชอบ</p>
+                        }
                       </div>
                     </div>
 
@@ -367,7 +385,14 @@ import {
                       </div>
                       <div class="rounded-[3px] border border-line-soft p-[11px]" [style.background]="bandColor(scoreInfo().matrix_level) + '14'">
                         <p class="m-0 text-[11.5px] font-bold text-muted">คะแนน = ระดับ</p>
-                        <p class="m-0 mt-1 text-[19px] font-extrabold" [style.color]="bandColor(scoreInfo().matrix_level)">{{ number(scoreInfo().matrix_score, 0) }} · {{ scoreInfo().matrix_level || '-' }}</p>
+                        <p class="m-0 mt-1 text-[19px] font-extrabold" [style.color]="bandColor(scoreInfo().matrix_level)">
+                          {{ number(scoreInfo().matrix_score, 0) }} ·
+                          @if (scoreInfo().matrix_level) {
+                            {{ scoreInfo().matrix_level }}
+                          } @else {
+                            <span class="text-sm italic text-slate-400">ยังไม่มีข้อมูล</span>
+                          }
+                        </p>
                       </div>
                     </div>
                     <div class="rounded-[3px] border border-line-soft bg-[#fbfcfd] p-3">
@@ -713,7 +738,7 @@ export class RiskFactorsPageComponent implements OnInit {
   }
 
   assignmentAnalystName(): string {
-    return this.assignmentAnalyst()?.name || '-';
+    return this.assignmentAnalyst()?.name || 'รอมอบหมาย';
   }
 
   assignmentAnalystTeam(): string {
@@ -722,39 +747,13 @@ export class RiskFactorsPageComponent implements OnInit {
 
   assignmentAssignedAtText(): string {
     const assignedAt = this.latestProjectAssignment()?.assignedAt;
-    return assignedAt ? this.formatAssignmentDate(assignedAt) : '-';
-  }
-
-  assignmentPriorityText(): string {
-    switch (this.latestProjectAssignment()?.priority) {
-      case 'high':
-        return 'สูง - เร่งด่วน';
-      case 'normal':
-        return 'ปกติ';
-      case 'low':
-        return 'ต่ำ';
-      default:
-        return '-';
-    }
+    return assignedAt ? this.formatAssignmentDate(assignedAt) : 'รอดำเนินการ';
   }
 
   assignmentStatusCircleClass(): string {
     return this.latestProjectAssignment()
       ? 'bg-risk-low text-white'
       : 'bg-risk-medium text-white';
-  }
-
-  assignmentPriorityBadgeClass(): string {
-    switch (this.latestProjectAssignment()?.priority) {
-      case 'high':
-        return 'bg-red-100 text-risk-high';
-      case 'normal':
-        return 'bg-blue-100 text-navy';
-      case 'low':
-        return 'bg-green-100 text-risk-low';
-      default:
-        return 'bg-slate-100 text-slate-600';
-    }
   }
 
   vendorLabel(): string {
