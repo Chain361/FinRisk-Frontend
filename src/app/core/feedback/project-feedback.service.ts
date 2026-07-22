@@ -58,6 +58,11 @@ export class ProjectFeedbackService {
     return this.upsert(input, 'submitted');
   }
 
+  delete(feedbackId: string): void {
+    this.records.update((list) => list.filter((record) => record.feedback_id !== feedbackId));
+    this.persist();
+  }
+
   resolve(feedbackId: string): void {
     const now = new Date().toISOString();
     this.records.update((list) =>

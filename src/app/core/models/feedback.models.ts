@@ -27,17 +27,17 @@ export const FEEDBACK_STATUS_LABELS: Record<FeedbackStatus, string> = {
 };
 
 export const CONCERN_LEVEL_OPTIONS: ReadonlyArray<{ value: ConcernLevel; label: string }> = [
-  { value: 'low', label: 'Low - ต่ำ' },
-  { value: 'medium', label: 'Medium - ปานกลาง' },
-  { value: 'high', label: 'High - สูง' },
+  { value: 'low', label: 'ต่ำ' },
+  { value: 'medium', label: 'ปานกลาง' },
+  { value: 'high', label: 'สูง' },
 ];
 
 export const LIKELIHOOD_OPTIONS: ReadonlyArray<{ value: number; label: string; hint: string }> = [
-  { value: 1, label: '1 - Very Low', hint: 'แทบไม่มีโอกาสเกิดขึ้น' },
-  { value: 2, label: '2 - Low', hint: 'มีโอกาสเกิดขึ้นน้อย' },
-  { value: 3, label: '3 - Medium', hint: 'มีโอกาสเกิดขึ้นปานกลาง' },
-  { value: 4, label: '4 - High', hint: 'มีโอกาสเกิดขึ้นค่อนข้างสูง' },
-  { value: 5, label: '5 - Very High', hint: 'มีโอกาสเกิดขึ้นสูงมากหรือเกิดขึ้นแล้ว' },
+  { value: 1, label: '1 - ต่ำมาก', hint: 'แทบไม่มีโอกาสเกิดขึ้น' },
+  { value: 2, label: '2 - ต่ำ', hint: 'มีโอกาสเกิดขึ้นน้อย' },
+  { value: 3, label: '3 - ปานกลาง', hint: 'มีโอกาสเกิดขึ้นปานกลาง' },
+  { value: 4, label: '4 - สูง', hint: 'มีโอกาสเกิดขึ้นค่อนข้างสูง' },
+  { value: 5, label: '5 - สูงมาก', hint: 'มีโอกาสเกิดขึ้นสูงมากหรือเกิดขึ้นแล้ว' },
 ];
 
 export const IMPACT_OPTIONS: ReadonlyArray<{ value: number; label: string; hint: string }> = [

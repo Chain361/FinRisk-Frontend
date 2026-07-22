@@ -515,16 +515,17 @@ import {
                     <div class="overflow-x-auto">
                       <table class="min-w-full divide-y divide-slate-200 text-sm">
                         <thead
-                          class="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500"
+                          class="bg-slate-50 text-right text-xs font-semibold uppercase text-slate-500"
                         >
                           <tr>
-                            <th class="px-3 py-2.5">วันที่ตรวจ</th>
+                            <th class="px-3 py-2.5 text-left">วันที่ตรวจ</th>
                             <th class="px-3 py-2.5">ผู้ตรวจสอบ</th>
                             <th class="px-3 py-2.5">Feedback</th>
                             <th class="px-3 py-2.5">Concern</th>
                             <th class="px-3 py-2.5">Suggestions</th>
-                            <th class="px-3 py-2.5 text-right">Risk Score</th>
+                            <th class="px-3 py-2.5">Risk Score</th>
                             <th class="px-3 py-2.5">สถานะ</th>
+                            <th class="px-3 py-2.5">การจัดการ</th>
                           </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 bg-white">
@@ -535,23 +536,42 @@ import {
                               >
                                 {{ dateLabel(entry.updated_at) }}
                               </td>
-                              <td class="px-3 py-2.5 text-[12.5px] font-semibold text-ink">
+                              <td
+                                class="px-3 py-2.5 text-[12.5px] font-semibold text-ink text-right"
+                              >
                                 {{ entry.auditor_name }}
                               </td>
-                              <td class="max-w-xs px-3 py-2.5 text-[12.5px] text-slate-700">
+                              <td
+                                class="max-w-xs px-3 py-2.5 text-[12.5px] text-slate-700 text-right"
+                              >
                                 <p class="m-0 line-clamp-2">{{ entry.feedback_text }}</p>
                               </td>
-                              <td class="px-3 py-2.5 text-[12.5px] text-slate-700">
+                              <td class="px-3 py-2.5 text-[12.5px] text-slate-700 text-right">
                                 {{ concernLabel(entry.concern_level) }}
                               </td>
-                              <td class="max-w-xs px-3 py-2.5 text-[12.5px] text-slate-700">
+                              <td
+                                class="max-w-xs px-3 py-2.5 text-[12.5px] text-slate-700 text-right"
+                              >
                                 <p class="m-0 line-clamp-2">{{ entry.suggestions || '-' }}</p>
                               </td>
-                              <td class="px-3 py-2.5 text-right text-[12.5px] font-bold text-ink">
+                              <td
+                                class="px-3 py-2.5 text-right text-[12.5px] font-bold text-ink text-right"
+                              >
                                 {{ entry.risk_score ?? '-' }}
                               </td>
-                              <td class="px-3 py-2.5">
+                              <td class="px-3 py-2.5 text-right">
                                 <app-feedback-status-badge [status]="entry.status" />
+                              </td>
+                              <td class="px-3 py-2.5 text-right">
+                                @if (canDeleteFeedback(entry)) {
+                                  <button
+                                    type="button"
+                                    class="inline-flex h-8 items-center justify-center rounded-[3px] border-[1.5px] border-risk-high px-2.5 text-[12px] font-bold text-risk-high hover:bg-red-50"
+                                    (click)="requestDeleteFeedback(entry.feedback_id)"
+                                  >
+                                    ลบ
+                                  </button>
+                                }
                               </td>
                             </tr>
                           }
@@ -568,6 +588,15 @@ import {
                   confirmLabel="ยืนยัน Submit"
                   (confirmed)="confirmSubmitFeedback()"
                   (cancelled)="showSubmitConfirm.set(false)"
+                />
+
+                <app-confirm-modal
+                  [open]="feedbackPendingDeleteId() !== null"
+                  title="ยืนยันการลบ Feedback"
+                  message="เมื่อลบแล้วจะไม่สามารถกู้คืนได้ ยืนยันการลบ Feedback นี้หรือไม่?"
+                  confirmLabel="ยืนยันลบ"
+                  (confirmed)="confirmDeleteFeedback()"
+                  (cancelled)="feedbackPendingDeleteId.set(null)"
                 />
               }
             </section>
@@ -616,6 +645,7 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
   readonly feedbackSuccessMessage = signal('');
   readonly feedbackValidationError = signal('');
   readonly showSubmitConfirm = signal(false);
+  readonly feedbackPendingDeleteId = signal<string | null>(null);
 
   readonly riskScorePreview = computed(() => {
     const likelihood = this.likelihoodScore();
@@ -876,9 +906,31 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     if (!draft) {
       return;
     }
-    const record = this.feedbackService.submit(draft);
-    this.activeFeedbackId.set(record.feedback_id);
+    this.feedbackService.submit(draft);
+    this.resetFeedbackFields();
     this.feedbackSuccessMessage.set('ส่ง Feedback เรียบร้อยแล้ว');
+  }
+
+  canDeleteFeedback(entry: ProjectFeedback): boolean {
+    const username = this.auth.user()?.username;
+    return entry.auditor_username === username || this.auth.hasRole('admin', 'project_auditor');
+  }
+
+  requestDeleteFeedback(feedbackId: string): void {
+    this.feedbackPendingDeleteId.set(feedbackId);
+  }
+
+  confirmDeleteFeedback(): void {
+    const feedbackId = this.feedbackPendingDeleteId();
+    this.feedbackPendingDeleteId.set(null);
+    if (!feedbackId) {
+      return;
+    }
+    this.feedbackService.delete(feedbackId);
+    if (this.activeFeedbackId() === feedbackId) {
+      this.loadFeedbackForm(String(this.selectedProjectId()));
+    }
+    this.feedbackSuccessMessage.set('ลบ Feedback เรียบร้อยแล้ว');
   }
 
   resolveFeedback(): void {
@@ -923,15 +975,19 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
   }
 
   private resetFeedbackForm(): void {
+    this.resetFeedbackFields();
+    this.feedbackSuccessMessage.set('');
+    this.feedbackValidationError.set('');
+    this.showSubmitConfirm.set(false);
+  }
+
+  private resetFeedbackFields(): void {
     this.activeFeedbackId.set(null);
     this.feedbackText.set('');
     this.concernLevel.set(null);
     this.likelihoodScore.set(null);
     this.impactScore.set(null);
     this.suggestions.set('');
-    this.feedbackSuccessMessage.set('');
-    this.feedbackValidationError.set('');
-    this.showSubmitConfirm.set(false);
   }
 
   money(value: number | string | null | undefined): string {
