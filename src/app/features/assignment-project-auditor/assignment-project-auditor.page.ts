@@ -11,6 +11,7 @@ import { formatMoney, normalizeRiskLevel, subdistrictLabel } from '../../shared/
 import {
   ANALYSTS,
   ASSIGNMENT_STORAGE_KEY,
+  DEFAULT_ASSIGNMENT_WORKFLOW_STATUS,
   SavedAssignment,
 } from './assignment-project-auditor.models';
 
@@ -378,6 +379,7 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
       dueDate: this.dueDate(),
       budgetHours: Number(this.budgetHours()),
       auditSteps: this.auditSteps().trim(),
+      workflowStatus: DEFAULT_ASSIGNMENT_WORKFLOW_STATUS,
       assignedAt: new Date().toISOString(),
       assignedBy:
         this.auth.user()?.display_name ??

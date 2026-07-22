@@ -471,6 +471,7 @@ export class AssignmentProjectAuditorHistoryPageComponent implements OnInit {
       assignment.assignedAt,
       assignment.projectId,
       assignment.analystId,
+      assignment.workflowStatus,
       assignment.note,
     ].join('|');
   }

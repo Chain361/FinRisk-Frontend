@@ -7,6 +7,7 @@ import {
   ANALYSTS,
   ASSIGNMENT_STORAGE_KEY,
   SavedAssignment,
+  projectWorkflowStatusLabel,
 } from '../assignment-project-auditor/assignment-project-auditor.models';
 import {
   Project,
@@ -249,11 +250,11 @@ import {
                           class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-extrabold"
                           [class]="assignmentStatusCircleClass()"
                         >
-                          {{ latestProjectAssignment() ? '✓' : '!' }}
+                          {{ projectWorkflowIcon() }}
                         </span>
                         <div>
-                          <p class="m-0 text-[11.5px] font-bold text-muted">สถานะโครงการ</p>
-                          <p class="m-0 mt-0.5 text-[13.5px] font-extrabold text-ink">{{ latestProjectAssignment() ? 'มอบหมายแล้ว' : 'ยังไม่มอบหมาย' }}</p>
+                          <p class="m-0 text-[11.5px] font-bold text-muted">สถานะโครงการโดยรวม</p>
+                          <p class="m-0 mt-0.5 text-[13.5px] font-extrabold text-ink">{{ projectWorkflowStatusText() }}</p>
                         </div>
                       </div>
 
@@ -750,10 +751,19 @@ export class RiskFactorsPageComponent implements OnInit {
     return assignedAt ? this.formatAssignmentDate(assignedAt) : 'รอดำเนินการ';
   }
 
+  projectWorkflowStatusText(): string {
+    return projectWorkflowStatusLabel(this.latestProjectAssignment()?.workflowStatus ?? null);
+  }
+
+  projectWorkflowIcon(): string {
+    const status = this.latestProjectAssignment()?.workflowStatus;
+    return status === 'completed' ? '✓' : this.latestProjectAssignment() ? '…' : '!';
+  }
+
   assignmentStatusCircleClass(): string {
-    return this.latestProjectAssignment()
-      ? 'bg-risk-low text-white'
-      : 'bg-risk-medium text-white';
+    const status = this.latestProjectAssignment()?.workflowStatus;
+    if (!status) return 'bg-risk-medium text-white';
+    return status === 'completed' ? 'bg-risk-low text-white' : 'bg-navy text-white';
   }
 
   vendorLabel(): string {
