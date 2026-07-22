@@ -1,5 +1,6 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { catchError, forkJoin, of } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
@@ -29,7 +30,7 @@ interface ProjectStatusRow {
 @Component({
   selector: 'app-assignment-project-auditor-status-page',
   standalone: true,
-  imports: [FormsModule, EmptyStateComponent],
+  imports: [FormsModule, RouterLink, EmptyStateComponent],
   template: `
     <section class="page-shell">
       <div class="flex flex-wrap items-start justify-between gap-4">
@@ -149,7 +150,13 @@ interface ProjectStatusRow {
                       </span>
                     </td>
                     <td class="align-top">
-                      <p class="m-0 font-extrabold leading-6 text-ink">{{ row.project.project_name || 'ไม่ระบุชื่อโครงการ' }}</p>
+                      <a
+                        routerLink="/risk-factors"
+                        [queryParams]="{ projectId: row.project.project_id }"
+                        class="font-extrabold leading-6 text-ink no-underline hover:text-navy hover:underline"
+                      >
+                        {{ row.project.project_name || 'ไม่ระบุชื่อโครงการ' }}
+                      </a>
                       <div class="mt-2 flex flex-wrap gap-1.5">
                         <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">{{ row.subdistrictName }}</span>
                         <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">ปีงบ {{ row.project.budget_year || '-' }}</span>
@@ -190,6 +197,7 @@ interface ProjectStatusRow {
 })
 export class AssignmentProjectAuditorStatusPageComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly route = inject(ActivatedRoute);
 
   readonly analysts = ANALYSTS;
   readonly loading = signal(true);
@@ -253,6 +261,7 @@ export class AssignmentProjectAuditorStatusPageComponent implements OnInit {
   );
 
   ngOnInit(): void {
+    this.applyRouteSearch();
     this.reloadAssignments();
     forkJoin({
       projects: this.api.projects().pipe(catchError(() => of<Project[]>([]))),
@@ -275,6 +284,13 @@ export class AssignmentProjectAuditorStatusPageComponent implements OnInit {
 
   reloadAssignments(): void {
     this.assignments.set(this.readAssignments());
+  }
+
+  private applyRouteSearch(): void {
+    const projectId = this.route.snapshot.queryParamMap.get('projectId');
+    if (projectId) {
+      this.search.set(projectId);
+    }
   }
 
   projectStatusLabel(project: Project): string {
