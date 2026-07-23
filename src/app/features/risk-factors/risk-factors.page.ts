@@ -106,7 +106,7 @@ import { ProjectFeedbackPanelComponent } from './project-feedback-panel.componen
                     <th class="px-4 py-3 text-right">งบประมาณ</th>
                     <th class="px-4 py-3 text-right">ราคา/อ้างอิง</th>
                     <th class="px-4 py-3 text-right">Risk Score</th>
-                    <th class="px-4 py-3">ระดับ 5×5</th>
+                    <th class="px-4 py-3">ระดับความเสี่ยง</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 bg-white">
@@ -128,13 +128,7 @@ import { ProjectFeedbackPanelComponent } from './project-feedback-panel.componen
                         <td class="px-4 py-3 text-right">{{ money(project.budget_amount) }}</td>
                         <td class="px-4 py-3 text-right">{{ number(project.price_ratio, 3) }}</td>
                         <td class="px-4 py-3 text-right font-semibold">{{ number(project.risk_score, 2) }}</td>
-                        <td class="px-4 py-3">
-                          @if (project.matrix_level) {
-                            <span class="inline-flex items-center rounded-[3px] px-2.5 py-1 text-[12px] font-extrabold text-white" [style.background]="bandColor(project.matrix_level)">{{ project.matrix_level }}</span>
-                          } @else {
-                            <app-risk-badge [level]="project.risk_level" />
-                          }
-                        </td>
+                        <td class="px-4 py-3"><app-risk-badge [level]="project.risk_level" /></td>
                       </tr>
                     }
                   }
@@ -208,13 +202,7 @@ import { ProjectFeedbackPanelComponent } from './project-feedback-panel.componen
                     </p>
                   </div>
                   <div class="flex flex-col items-end gap-1.5">
-                    @if (scoreInfo().matrix_level) {
-                      <span
-                        class="inline-flex items-center rounded-[3px] px-3 py-1 text-[13px] font-extrabold text-white"
-                        [style.background]="bandColor(scoreInfo().matrix_level)"
-                        title="ระดับความเสี่ยงตามกรอบ โอกาส × ผลกระทบ 5×5"
-                      >ระดับ{{ scoreInfo().matrix_level }}</span>
-                    }
+                    <app-risk-badge [level]="scoreInfo().risk_level" />
                     <span class="text-[11px] font-bold text-muted">Risk Score {{ number(scoreInfo().risk_score, 0) }}/100</span>
                   </div>
                 </div>
@@ -309,12 +297,13 @@ import { ProjectFeedbackPanelComponent } from './project-feedback-panel.componen
 
               <section class="panel p-[18px]">
                 <div class="flex items-center gap-2">
-                  <h2 class="m-0 text-[16px] font-bold text-ink">การประเมินความเสี่ยง (โอกาส × ผลกระทบ 5×5)</h2>
+                  <h2 class="m-0 text-[16px] font-bold text-ink">ข้อมูลประกอบการวิเคราะห์ (โอกาส × ผลกระทบ 5×5)</h2>
                   <app-info-tooltip
-                    text="อ้างอิงมาตรฐานการบริหารจัดการความเสี่ยงสำหรับหน่วยงานของรัฐ (กระทรวงการคลัง) และ COSO ERM — ระดับความเสี่ยง = โอกาส × ผลกระทบ (1–25)"
+                    text="ใช้วิเคราะห์ความรุนแรงของปัจจัยตามโอกาส × ผลกระทบ (1–25) ไม่ใช่ป้ายระดับความเสี่ยงของโครงการ"
                     [width]="300"
                   />
                 </div>
+                <p class="m-0 mt-1 text-[12.5px] text-muted">ป้ายระดับความเสี่ยงของโครงการด้านบนอ้างอิง <span class="font-bold">Risk Score</span> และ <span class="font-bold">risk_level</span> จาก backend เท่านั้น</p>
                 <div class="mt-3.5 grid items-start gap-5 lg:grid-cols-[auto_1fr]">
                   <app-risk-matrix [likelihood]="scoreInfo().matrix_likelihood" [impact]="scoreInfo().matrix_impact" />
                   <div class="grid gap-2.5">
@@ -328,7 +317,7 @@ import { ProjectFeedbackPanelComponent } from './project-feedback-panel.componen
                         <p class="m-0 mt-1 text-[19px] font-extrabold text-ink">{{ number(scoreInfo().matrix_impact, 0) }}<span class="text-[12px] font-bold text-muted">/5</span></p>
                       </div>
                       <div class="rounded-[3px] border border-line-soft p-[11px]" [style.background]="bandColor(scoreInfo().matrix_level) + '14'">
-                        <p class="m-0 text-[11.5px] font-bold text-muted">คะแนน = ระดับ</p>
+                        <p class="m-0 text-[11.5px] font-bold text-muted">คะแนน 5×5 (ประกอบการวิเคราะห์)</p>
                         <p class="m-0 mt-1 text-[19px] font-extrabold" [style.color]="bandColor(scoreInfo().matrix_level)">{{ number(scoreInfo().matrix_score, 0) }} · {{ scoreInfo().matrix_level || '-' }}</p>
                       </div>
                     </div>
