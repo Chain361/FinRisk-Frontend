@@ -74,6 +74,12 @@ export const th: Record<string, string> = {
   'nav.financialInvestment': 'แนวโน้มการลงทุนและการจัดซื้อจัดจ้าง',
   'nav.financialRiskIndicators': 'ตัวชี้วัดความเสี่ยงทางการคลัง',
   'nav.allProjects': 'โครงการทั้งหมด',
+  'nav.projectDetail': 'รายละเอียดโครงการ',
+  'nav.projectStatus': 'สถานะโครงการ',
+  'nav.assignment': 'มอบหมายงาน',
+  'nav.assignmentMain': 'มอบหมายงานหลัก',
+  'nav.assignmentHistory': 'ประวัติการมอบหมายงาน',
+  'nav.assignmentReview': 'ตรวจทานงานที่ส่งกลับมา',
   'nav.accessLog': 'บันทึกการเข้าถึงระบบ',
 
   // ---- app shell (layout) ----

@@ -16,6 +16,7 @@ interface NavItem {
   labelKey: string;
   path: string;
   children?: NavItem[];
+  exact?: boolean;
   /** จำกัดเมนูเฉพาะบาง role (ตาม roles.md) — ไม่ระบุ = ทุก role เห็น */
   roles?: string[];
 }
@@ -81,7 +82,47 @@ const NAV_GROUPS: NavGroup[] = [
           },
         ],
       },
-      { code: 'F3', labelKey: 'nav.allProjects', path: '/risk-factors' },
+      {
+        code: 'F3',
+        labelKey: 'nav.allProjects',
+        path: '/risk-factors',
+        children: [
+          {
+            code: 'F3.1',
+            labelKey: 'nav.projectDetail',
+            path: '/risk-factors',
+            exact: true,
+          },
+          {
+            code: 'F3.2',
+            labelKey: 'nav.projectStatus',
+            path: '/risk-factors/status',
+          },
+        ],
+      },
+      {
+        code: 'F4',
+        labelKey: 'nav.assignment',
+        path: '/assignment-project-auditor',
+        children: [
+          {
+            code: 'F4.1',
+            labelKey: 'nav.assignmentMain',
+            path: '/assignment-project-auditor',
+            exact: true,
+          },
+          {
+            code: 'F4.2',
+            labelKey: 'nav.assignmentHistory',
+            path: '/assignment-project-auditor/history',
+          },
+          {
+            code: 'F4.3',
+            labelKey: 'nav.assignmentReview',
+            path: '/assignment-project-auditor/review',
+          },
+        ],
+      },
     ],
   },
   {
@@ -147,7 +188,7 @@ const NAV_GROUPS: NavGroup[] = [
                             [routerLink]="child.path"
                             class="flex items-center gap-2 border-l-2 px-4 py-2 text-[13px] no-underline hover:bg-white/[.08]"
                             [class]="
-                              isActive(child.path)
+                              isActive(child.path, child.exact)
                                 ? 'border-gold text-white bg-white/10'
                                 : 'border-transparent text-[#c9d4e3]'
                             "
@@ -297,15 +338,26 @@ export class AppShellComponent {
   readonly currentPageLabel = computed(() => {
     const url = this.currentUrl();
     for (const group of NAV_GROUPS) {
-      const item = group.items.find((navItem) => url.startsWith(navItem.path));
-      if (item) {
-        return this.i18n.t(item.labelKey);
+      for (const item of group.items) {
+        const child = item.children?.find((navItem) =>
+          this.matchesUrl(url, navItem.path, navItem.exact),
+        );
+        if (child) {
+          return this.i18n.t(child.labelKey);
+        }
+        if (this.matchesUrl(url, item.path, item.exact)) {
+          return this.i18n.t(item.labelKey);
+        }
       }
     }
     return this.i18n.t('shell.defaultPageLabel');
   });
 
-  isActive(path: string): boolean {
-    return this.currentUrl().startsWith(path);
+  isActive(path: string, exact = false): boolean {
+    return this.matchesUrl(this.currentUrl(), path, exact);
+  }
+
+  private matchesUrl(url: string, path: string, exact = false): boolean {
+    return exact ? url === path : url.startsWith(path);
   }
 }

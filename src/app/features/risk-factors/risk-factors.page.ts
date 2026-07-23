@@ -1,8 +1,15 @@
 ﻿import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
 import { I18nService } from '../../core/i18n/i18n.service';
+import {
+  ANALYSTS,
+  ASSIGNMENT_STORAGE_KEY,
+  SavedAssignment,
+  projectWorkflowStatusLabel,
+} from '../assignment-project-auditor/assignment-project-auditor.models';
 import {
   Project,
   ProjectDetail,
@@ -32,6 +39,7 @@ import {
     EmptyStateComponent,
     FilterBarComponent,
     InfoTooltipComponent,
+    RouterLink,
     RiskBadgeComponent,
     RiskMatrixComponent,
   ],
@@ -122,7 +130,13 @@ import {
                           <p class="text-xs text-slate-500">ID {{ project.project_id }}</p>
                         </td>
                         <td class="px-4 py-3">{{ project.budget_year }}</td>
-                        <td class="px-4 py-3">{{ project.project_type || project.purchase_method_group || '-' }}</td>
+                        <td class="px-4 py-3">
+                          @if (project.project_type || project.purchase_method_group) {
+                            {{ project.project_type || project.purchase_method_group }}
+                          } @else {
+                            <span class="italic text-slate-400">ยังไม่มีข้อมูล</span>
+                          }
+                        </td>
                         <td class="px-4 py-3 text-right">{{ money(project.budget_amount) }}</td>
                         <td class="px-4 py-3 text-right">{{ number(project.price_ratio, 3) }}</td>
                         <td class="px-4 py-3 text-right font-semibold">{{ number(project.risk_score, 2) }}</td>
@@ -204,7 +218,11 @@ import {
                     <h2 class="m-0 mt-1 text-[19px] font-extrabold text-ink">{{ projectDetail()?.project_name }}</h2>
                     <p class="m-0 mt-1.5 text-[13px] text-muted">
                       {{ t('common.yearLabel', { year: projectDetail()?.budget_year ?? '' }) }} ·
-                      {{ projectDetail()?.project_type || projectDetail()?.purchase_method_group || '-' }}
+                      @if (projectDetail()?.project_type || projectDetail()?.purchase_method_group) {
+                        {{ projectDetail()?.project_type || projectDetail()?.purchase_method_group }}
+                      } @else {
+                        <span class="italic text-slate-400">{{ t('common.noData') }}</span>
+                      }
                     </p>
                   </div>
                   <div class="flex flex-col items-end gap-1.5">
@@ -229,6 +247,51 @@ import {
                     }
                   </div>
                 }
+
+                <div class="mt-4 rounded-[4px] border-[1.5px] border-line-soft bg-[#fbfcfd] px-4 py-3.5">
+                  <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex min-w-0 flex-wrap items-center gap-4">
+                      <div class="flex items-center gap-2.5">
+                        <span
+                          class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-extrabold"
+                          [class]="assignmentStatusCircleClass()"
+                        >
+                          {{ projectWorkflowIcon() }}
+                        </span>
+                        <div>
+                          <p class="m-0 text-[11.5px] font-bold text-muted">สถานะโครงการโดยรวม</p>
+                          <p class="m-0 mt-0.5 text-[13.5px] font-extrabold text-ink">{{ projectWorkflowStatusText() }}</p>
+                        </div>
+                      </div>
+
+                      <div class="min-w-[160px] border-l border-line-soft pl-4">
+                        <p class="m-0 text-[11.5px] font-bold text-muted">ผู้รับมอบหมาย</p>
+                        @if (assignmentAnalyst()) {
+                          <p class="m-0 mt-0.5 text-[13.5px] font-extrabold text-ink">{{ assignmentAnalystName() }}</p>
+                        } @else {
+                          <p class="m-0 mt-0.5 text-[13.5px] italic text-slate-400">รอมอบหมาย</p>
+                        }
+                      </div>
+
+                      <div class="min-w-[160px] border-l border-line-soft pl-4">
+                        <p class="m-0 text-[11.5px] font-bold text-muted">ผู้มอบหมาย</p>
+                        @if (latestProjectAssignment()?.assignedBy) {
+                          <p class="m-0 mt-0.5 text-[13.5px] font-extrabold text-ink">{{ latestProjectAssignment()?.assignedBy }}</p>
+                        } @else {
+                          <p class="m-0 mt-0.5 text-[13.5px] italic text-slate-400">ยังไม่มีผู้รับผิดชอบ</p>
+                        }
+                      </div>
+                    </div>
+
+                    <a
+                      routerLink="/risk-factors/status"
+                      [queryParams]="{ projectId: projectDetail()?.project_id }"
+                      class="inline-flex min-h-[38px] items-center justify-center rounded-[3px] border-[1.5px] border-line bg-white px-4 text-[13px] font-bold text-slate-700 no-underline hover:bg-zebra"
+                    >
+                      ดูสถานะเพิ่มเติม
+                    </a>
+                  </div>
+                </div>
 
                 <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
@@ -323,7 +386,14 @@ import {
                       </div>
                       <div class="rounded-[3px] border border-line-soft p-[11px]" [style.background]="bandColor(scoreInfo().matrix_level) + '14'">
                         <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('rf.matrix.scoreLevel') }}</p>
-                        <p class="m-0 mt-1 text-[19px] font-extrabold" [style.color]="bandColor(scoreInfo().matrix_level)">{{ number(scoreInfo().matrix_score, 0) }} · {{ bandText(scoreInfo().matrix_level) || '-' }}</p>
+                        <p class="m-0 mt-1 text-[19px] font-extrabold" [style.color]="bandColor(scoreInfo().matrix_level)">
+                          {{ number(scoreInfo().matrix_score, 0) }} ·
+                          @if (scoreInfo().matrix_level) {
+                            {{ bandText(scoreInfo().matrix_level) }}
+                          } @else {
+                            <span class="text-sm italic text-slate-400">{{ t('common.noData') }}</span>
+                          }
+                        </p>
                       </div>
                     </div>
                     <div class="rounded-[3px] border border-line-soft bg-[#fbfcfd] p-3">
@@ -467,6 +537,7 @@ import {
 export class RiskFactorsPageComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly i18n = inject(I18nService);
+  private readonly route = inject(ActivatedRoute);
   protected readonly t = this.i18n.t;
 
   /** แปลงค่า band (ไทย internal) → ป้ายตามภาษาปัจจุบัน */
@@ -483,6 +554,7 @@ export class RiskFactorsPageComponent implements OnInit {
   readonly projects = signal<Project[]>([]);
   readonly catalog = signal<RiskFactorCatalog[]>([]);
   readonly projectDetail = signal<ProjectDetail | null>(null);
+  readonly assignments = signal<SavedAssignment[]>([]);
   readonly searchQuery = signal('');
 
   readonly selectedSubdistrictId = signal<number | null>(null);
@@ -492,6 +564,7 @@ export class RiskFactorsPageComponent implements OnInit {
   readonly budgetAmountMin = signal('');
   readonly budgetAmountMax = signal('');
   readonly selectedProjectId = signal<string | null>(null);
+  readonly routeProjectId = signal<string | null>(null);
 
   readonly sortedProjects = computed(() => sortProjectsByRisk(this.projects()));
   readonly projectTypes = computed(() => {
@@ -550,8 +623,28 @@ export class RiskFactorsPageComponent implements OnInit {
       });
   });
 
+  readonly latestProjectAssignment = computed(() => {
+    const detail = this.projectDetail();
+    if (!detail) {
+      return null;
+    }
+    const projectId = String(detail.project_id);
+    return (
+      this.assignments()
+        .filter((assignment) => assignment.projectId === projectId)
+        .sort((a, b) => this.dateValue(b.assignedAt) - this.dateValue(a.assignedAt))[0] ?? null
+    );
+  });
+
+  readonly assignmentAnalyst = computed(() => {
+    const assignment = this.latestProjectAssignment();
+    return assignment ? ANALYSTS.find((analyst) => analyst.id === assignment.analystId) ?? null : null;
+  });
+
   ngOnInit(): void {
     this.loadingProjects.set(true);
+    this.applyRouteProject();
+    this.assignments.set(this.readAssignments());
 
     forkJoin({
       subdistricts: this.api.subdistricts(),
@@ -613,6 +706,7 @@ export class RiskFactorsPageComponent implements OnInit {
 
   selectProject(projectId: string | number): void {
     this.selectedProjectId.set(String(projectId));
+    this.assignments.set(this.readAssignments());
     this.loadProjectDetail(projectId);
   }
 
@@ -655,6 +749,34 @@ export class RiskFactorsPageComponent implements OnInit {
 
   contractStatus(): string {
     return this.projectDetail()?.contract_status || '-';
+  }
+
+  assignmentAnalystName(): string {
+    return this.assignmentAnalyst()?.name || 'รอมอบหมาย';
+  }
+
+  assignmentAnalystTeam(): string {
+    return this.assignmentAnalyst()?.team || 'ยังไม่มีผู้รับผิดชอบ';
+  }
+
+  assignmentAssignedAtText(): string {
+    const assignedAt = this.latestProjectAssignment()?.assignedAt;
+    return assignedAt ? this.formatAssignmentDate(assignedAt) : 'รอดำเนินการ';
+  }
+
+  projectWorkflowStatusText(): string {
+    return projectWorkflowStatusLabel(this.latestProjectAssignment()?.workflowStatus ?? null);
+  }
+
+  projectWorkflowIcon(): string {
+    const status = this.latestProjectAssignment()?.workflowStatus;
+    return status === 'completed' ? '✓' : this.latestProjectAssignment() ? '…' : '!';
+  }
+
+  assignmentStatusCircleClass(): string {
+    const status = this.latestProjectAssignment()?.workflowStatus;
+    if (!status) return 'bg-risk-medium text-white';
+    return status === 'completed' ? 'bg-risk-low text-white' : 'bg-navy text-white';
   }
 
   vendorLabel(): string {
@@ -768,13 +890,16 @@ export class RiskFactorsPageComponent implements OnInit {
   private loadProjects(): void {
     this.loadingProjects.set(true);
     this.error.set('');
-    this.selectedProjectId.set(null);
-    this.projectDetail.set(null);
+    if (!this.routeProjectId()) {
+      this.selectedProjectId.set(null);
+      this.projectDetail.set(null);
+    }
 
     this.api.projects(this.filters()).subscribe({
       next: (projects) => {
         this.projects.set(projects);
         this.loadingProjects.set(false);
+        this.openRouteProjectIfNeeded();
       },
       error: () => {
         this.error.set(this.t('rf.error.projects'));
@@ -805,6 +930,22 @@ export class RiskFactorsPageComponent implements OnInit {
     };
   }
 
+  private applyRouteProject(): void {
+    const projectId = this.route.snapshot.queryParamMap.get('projectId');
+    this.routeProjectId.set(projectId);
+    if (projectId) {
+      this.searchQuery.set(projectId);
+    }
+  }
+
+  private openRouteProjectIfNeeded(): void {
+    const projectId = this.routeProjectId();
+    if (!projectId || this.selectedProjectId() === projectId) {
+      return;
+    }
+    this.selectProject(projectId);
+  }
+
   private projectType(project: Project): string {
     return project.project_type || project.purchase_method_group || this.t('common.unspecifiedType');
   }
@@ -829,6 +970,30 @@ export class RiskFactorsPageComponent implements OnInit {
       return null;
     }
     return ((leftValue - rightValue) / rightValue) * 100;
+  }
+
+  private readAssignments(): SavedAssignment[] {
+    try {
+      const parsed: unknown = JSON.parse(localStorage.getItem(ASSIGNMENT_STORAGE_KEY) ?? '[]');
+      return Array.isArray(parsed) ? (parsed as SavedAssignment[]) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private formatAssignmentDate(value: string): string {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+      ? '-'
+      : new Intl.DateTimeFormat('th-TH', {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        }).format(date);
+  }
+
+  private dateValue(value: string): number {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? 0 : date.getTime();
   }
 }
 

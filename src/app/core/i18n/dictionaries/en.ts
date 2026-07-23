@@ -74,6 +74,12 @@ export const en: Record<string, string> = {
   'nav.financialInvestment': 'Investment & procurement trends',
   'nav.financialRiskIndicators': 'Fiscal risk indicators',
   'nav.allProjects': 'All projects',
+  'nav.projectDetail': 'Project detail',
+  'nav.projectStatus': 'Project status',
+  'nav.assignment': 'Assignments',
+  'nav.assignmentMain': 'Assign work',
+  'nav.assignmentHistory': 'Assignment history',
+  'nav.assignmentReview': 'Review returned work',
   'nav.accessLog': 'System access log',
 
   // ---- app shell ----
