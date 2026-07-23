@@ -4,12 +4,13 @@ import { RouterLink } from '@angular/router';
 import { BarChartComponent } from '../../shared/charts/bar-chart.component';
 import { FilterBarComponent } from '../../shared/filters/filter-bar.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
+import { RiskBadgeComponent } from '../../shared/ui/risk-badge.component';
 import { ProjectRiskStateService } from './project-risk-state.service';
 
 @Component({
   selector: 'app-project-risk-analysis-page',
   standalone: true,
-  imports: [BarChartComponent, EmptyStateComponent, FilterBarComponent, RouterLink],
+  imports: [BarChartComponent, EmptyStateComponent, FilterBarComponent, RiskBadgeComponent, RouterLink],
   template: `
     <section class="page-shell">
       <div class="flex flex-wrap items-start justify-between gap-4">
@@ -239,7 +240,7 @@ import { ProjectRiskStateService } from './project-risk-state.service';
                   <tr>
                     <td class="font-bold">{{ item.project.project_name || '-' }}</td>
                     <td>{{ item.project.winner_name || item.project.vendor_name || item.project.contractor_name || '-' }}</td>
-                    <td>{{ item.project.risk_level || '-' }}</td>
+                    <td><app-risk-badge [level]="item.project.risk_level" /></td>
                     <td class="text-right">{{ state.number(item.project.risk_score, 0) }}</td>
                     <td class="text-right">{{ state.number(item.project.price_ratio) }}</td>
                     <td class="text-muted">{{ item.reason }}</td>
