@@ -7,6 +7,8 @@ import {
   AccessLogFilters,
   AccessLogPage,
   AnnualRisk,
+  AuditorFeedback,
+  AuditorFeedbackCreate,
   FinancialStatement,
   LoginRequest,
   LoginResponse,
@@ -98,6 +100,34 @@ export class ApiService {
       }
     });
     return this.http.get<AccessLogPage>(`${this.baseUrl}/audit/access-log`, { params });
+  }
+
+  /** ความเห็นผู้ตรวจสอบทั้งหมดในขอบเขตของผู้ใช้ (backend scope ตามตำบล, เรียง updated_at ล่าสุดก่อน) */
+  feedbackList(): Observable<AuditorFeedback[]> {
+    return this.http.get<AuditorFeedback[]>(`${this.baseUrl}/audit/feedback`);
+  }
+
+  /** ความเห็นของโครงการเดียว — คืน [] เมื่อยังไม่มี (ไม่ 404) */
+  projectFeedback(projectId: string | number): Observable<AuditorFeedback[]> {
+    return this.http.get<AuditorFeedback[]>(`${this.baseUrl}/audit/feedback/${projectId}`);
+  }
+
+  createFeedback(body: AuditorFeedbackCreate): Observable<AuditorFeedback> {
+    return this.http.post<AuditorFeedback>(`${this.baseUrl}/audit/feedback`, body);
+  }
+
+  /** แก้ไขได้เฉพาะสถานะ draft (backend คืน 409 ถ้าไม่ใช่) */
+  updateFeedback(feedbackId: number, body: AuditorFeedbackCreate): Observable<AuditorFeedback> {
+    return this.http.patch<AuditorFeedback>(`${this.baseUrl}/audit/feedback/${feedbackId}`, body);
+  }
+
+  deleteFeedback(feedbackId: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/audit/feedback/${feedbackId}`);
+  }
+
+  /** ปิดเรื่อง — เฉพาะ admin/project_auditor (RESOLVE_ROLES ฝั่ง backend) */
+  resolveFeedback(feedbackId: number): Observable<AuditorFeedback> {
+    return this.http.patch<AuditorFeedback>(`${this.baseUrl}/audit/feedback/${feedbackId}/resolve`, {});
   }
 
   private toParams(filters: ProjectFilters): HttpParams {

@@ -15,3 +15,15 @@ export type RoleCode =
   | 'public_user';
 
 // ชื่อบทบาทสำหรับแสดงผลย้ายไป dictionary i18n แล้ว (key `role.*`) — ดู core/i18n
+
+/** role ที่เห็น/เขียนความเห็นผู้ตรวจสอบได้ — mirror ของ FEEDBACK_ROLES ใน FinRisk-Backend/src/routers/audit.py */
+export const FEEDBACK_ROLES = [
+  'admin',
+  'regional_supervisor',
+  'local_executive',
+  'project_auditor',
+  'risk_analyst',
+] as const;
+
+/** role ที่ปิดเรื่อง (resolve) และจัดการความเห็นของคนอื่นได้ — mirror ของ RESOLVE_ROLES ฝั่ง backend */
+export const RESOLVE_ROLES = ['admin', 'project_auditor'] as const;

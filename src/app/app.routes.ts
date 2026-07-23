@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 
 import { authGuard } from './core/auth/auth.guard';
 import { roleGuard } from './core/auth/role.guard';
+import { FEEDBACK_ROLES } from './core/auth/roles';
 import { AppShellComponent } from './layout/app-shell.component';
 
 export const routes: Routes = [
@@ -134,6 +135,15 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/risk-analyst-feedback/risk-analyst-feedback.page').then(
             (m) => m.RiskAnalystFeedbackPageComponent,
+          ),
+      },
+      {
+        // F6 — จำกัดตาม FEEDBACK_ROLES (public_user เข้าไม่ได้; backend บังคับซ้ำอีกชั้น)
+        path: 'auditor-feedback',
+        canActivate: [roleGuard(...FEEDBACK_ROLES)],
+        loadComponent: () =>
+          import('./features/auditor-feedback/auditor-feedback.page').then(
+            (m) => m.AuditorFeedbackPageComponent,
           ),
       },
     ],
