@@ -1,6 +1,6 @@
 import { Component, computed, input } from '@angular/core';
 
-import { FEEDBACK_STATUS_LABELS, FeedbackStatus } from '../../core/models/feedback.models';
+import { FEEDBACK_STATUS_LABELS, FeedbackStatus } from '../../core/models/domain.models';
 
 @Component({
   selector: 'app-feedback-status-badge',

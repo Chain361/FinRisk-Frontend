@@ -127,6 +127,13 @@ const NAV_GROUPS: NavGroup[] = [
         code: 'F5',
         labelKey: 'nav.riskAnalystFeedback',
         path: '/risk-analyst-feedback',
+        roles: [
+          'admin',
+          'regional_supervisor',
+          'local_executive',
+          'project_auditor',
+          'risk_analyst',
+        ],
       },
     ],
   },
