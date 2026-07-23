@@ -79,7 +79,6 @@ export const en: Record<string, string> = {
   'nav.assignment': 'Assignments',
   'nav.assignmentMain': 'Assign work',
   'nav.assignmentHistory': 'Assignment history',
-  'nav.assignmentReview': 'Review returned work',
   'nav.riskAnalystFeedback': 'Project risk feedback form',
   'nav.group.audit': 'Audit',
   'nav.auditorFeedback': "Auditor's feedback",
