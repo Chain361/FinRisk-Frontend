@@ -64,6 +64,19 @@ const NAV_GROUPS: NavGroup[] = [
       { code: 'F3', label: 'วิเคราะห์ปัจจัยความเสี่ยง', path: '/risk-factors' },
     ],
   },
+  {
+    id: 'audit',
+    label: 'งานตรวจสอบ',
+    items: [
+      {
+        code: 'F6',
+        label: 'ความเห็นผู้ตรวจสอบ',
+        path: '/auditor-feedback',
+        // mirror FEEDBACK_ROLES (core/auth/roles.ts) — ซ่อนจาก public_user
+        roles: ['admin', 'regional_supervisor', 'local_executive', 'project_auditor', 'risk_analyst'],
+      },
+    ],
+  },
 ];
 
 @Component({

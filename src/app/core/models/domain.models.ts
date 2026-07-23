@@ -174,3 +174,40 @@ export interface ProjectFilters {
   subdistrict_id?: number | null;
   risk_level?: string | null;
 }
+
+/** สถานะความเห็นผู้ตรวจสอบ (F5) — draft แก้ได้, submitted แก้ไม่ได้, resolved ปิดเรื่องแล้ว */
+export type FeedbackStatus = 'draft' | 'submitted' | 'resolved';
+
+/** ระดับความกังวลที่ API รับ (DB เผื่อ 'critical' ไว้แต่ API จำกัดเฉพาะ 3 ระดับนี้) */
+export type ConcernLevel = 'low' | 'medium' | 'high';
+
+/** ความเห็นผู้ตรวจสอบ — mirror ของ AuditorFeedbackOut (FinRisk-Backend/src/schemas.py) */
+export interface AuditorFeedback {
+  feedback_id: number;
+  project_id: string;
+  auditor_username: string;
+  auditor_name?: string | null;
+  feedback_text: string;
+  concern_level?: ConcernLevel | string | null;
+  likelihood_score?: number | null;
+  impact_score?: number | null;
+  /** คำนวณฝั่ง backend = likelihood × impact (null ถ้าขาดค่าใดค่าหนึ่ง) */
+  risk_score?: number | null;
+  suggestions?: string | null;
+  status: FeedbackStatus | string;
+  created_at: string;
+  updated_at: string;
+  submitted_at?: string | null;
+  resolved_at?: string | null;
+}
+
+/** payload สร้าง/แก้ไขความเห็น — mirror ของ AuditorFeedbackIn */
+export interface AuditorFeedbackCreate {
+  project_id: string;
+  feedback_text: string;
+  concern_level?: ConcernLevel | null;
+  likelihood_score?: number | null;
+  impact_score?: number | null;
+  suggestions?: string | null;
+  status: 'draft' | 'submitted';
+}
