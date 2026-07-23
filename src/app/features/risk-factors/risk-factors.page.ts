@@ -1,7 +1,10 @@
 ﻿import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
+import { AuthService } from '../../core/auth/auth.service';
+import { FEEDBACK_ROLES } from '../../core/auth/roles';
 import {
   Project,
   ProjectDetail,
@@ -19,10 +22,12 @@ import {
   bandColor,
   formatMoney,
   formatNumber,
+  matrixChip,
   sortProjectsByRisk,
   toBool,
   toNumber,
 } from '../../shared/utils/risk-utils';
+import { ProjectFeedbackPanelComponent } from './project-feedback-panel.component';
 
 @Component({
   selector: 'app-risk-factors-page',
@@ -31,6 +36,7 @@ import {
     EmptyStateComponent,
     FilterBarComponent,
     InfoTooltipComponent,
+    ProjectFeedbackPanelComponent,
     RiskBadgeComponent,
     RiskMatrixComponent,
   ],
@@ -462,6 +468,10 @@ import {
                   </div>
                 }
               </section>
+
+              @if (canSeeFeedback()) {
+                <app-project-feedback-panel [projectId]="String(selectedProjectId())" />
+              }
             }
           </section>
         </div>
@@ -473,6 +483,12 @@ import {
 })
 export class RiskFactorsPageComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly auth = inject(AuthService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+
+  /** แผงความเห็นผู้ตรวจสอบ (F5) — ซ่อนจาก public_user ตาม FEEDBACK_ROLES ฝั่ง backend */
+  readonly canSeeFeedback = computed(() => this.auth.hasRole(...FEEDBACK_ROLES));
 
   protected readonly String = String;
   readonly error = signal('');
@@ -567,6 +583,12 @@ export class RiskFactorsPageComponent implements OnInit {
     });
 
     this.loadProjects();
+
+    // deep-link จากหน้า F6: /risk-factors?projectId=... → เปิดรายละเอียดโครงการนั้นทันที
+    const projectId = this.route.snapshot.queryParamMap.get('projectId');
+    if (projectId) {
+      this.selectProject(projectId);
+    }
   }
 
   setSubdistrict(value: number | null): void {
@@ -614,12 +636,24 @@ export class RiskFactorsPageComponent implements OnInit {
   selectProject(projectId: string | number): void {
     this.selectedProjectId.set(String(projectId));
     this.loadProjectDetail(projectId);
+    this.syncProjectIdQueryParam(String(projectId));
   }
 
   clearSelection(): void {
     this.selectedProjectId.set(null);
     this.projectDetail.set(null);
     this.loadingDetail.set(false);
+    this.syncProjectIdQueryParam(null);
+  }
+
+  /** sync ?projectId= ใน URL ให้ share/refresh แล้วเปิดโครงการเดิมได้ (ไม่เพิ่ม history entry) */
+  private syncProjectIdQueryParam(projectId: string | null): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { projectId },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   money(value: number | string | null | undefined): string {
@@ -776,15 +810,7 @@ export class RiskFactorsPageComponent implements OnInit {
   }
 
   /** ป้ายกำกับ โอกาส×ผลกระทบ ต่อ factor */
-  matrixChip(factor: ProjectRiskFactor): string {
-    const l = toNumber(factor.likelihood);
-    const i = toNumber(factor.impact);
-    const s = toNumber(factor.matrix_score);
-    if (l === null || i === null || s === null) {
-      return '-';
-    }
-    return `โอกาส ${l} × ผลกระทบ ${i} = ${s}`;
-  }
+  readonly matrixChip = matrixChip;
 
   catalogDescription(code: string): string {
     const factor = this.catalog().find((item) => item.factor_code === code);
