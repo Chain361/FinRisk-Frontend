@@ -159,6 +159,21 @@ export function sortProjectsByRisk(projects: Project[]): Project[] {
   });
 }
 
+/** ป้ายกำกับ "โอกาส × ผลกระทบ = คะแนน" ของกรอบ 5×5 — ใช้ร่วมกันทั้งฝั่งปัจจัยรายปีและปัจจัยระดับโครงการ */
+export function matrixChip(row: {
+  likelihood?: number | null;
+  impact?: number | null;
+  matrix_score?: number | null;
+}): string {
+  const l = toNumber(row.likelihood);
+  const i = toNumber(row.impact);
+  const s = toNumber(row.matrix_score);
+  if (l === null || i === null || s === null) {
+    return '-';
+  }
+  return `โอกาส ${l} × ผลกระทบ ${i} = ${s}`;
+}
+
 export function coverageText(rows: AnnualRisk[]): string {
   const years = [...new Set(rows.map((row) => row.fiscal_year))].sort((a, b) => a - b);
   if (!years.length) {
