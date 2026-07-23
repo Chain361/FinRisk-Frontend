@@ -8,6 +8,7 @@ import {
   AuditorFeedbackCreate,
   ConcernLevel,
 } from '../../core/models/domain.models';
+import { ConfirmModalComponent } from '../../shared/ui/confirm-modal.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import {
   computeRiskScore,
@@ -28,7 +29,7 @@ type ModalMode = 'submit' | 'delete' | 'resolve' | null;
 @Component({
   selector: 'app-project-feedback-panel',
   standalone: true,
-  imports: [EmptyStateComponent],
+  imports: [EmptyStateComponent, ConfirmModalComponent],
   template: `
     <section class="panel p-[18px]">
       <div class="flex flex-wrap items-start justify-between gap-3">
@@ -145,6 +146,15 @@ type ModalMode = 'submit' | 'delete' | 'resolve' | null;
           </div>
         }
       }
+
+      <app-confirm-modal
+        [open]="modalMode() !== null"
+        [title]="modalTitle()"
+        [message]="modalMessage()"
+        [confirmLabel]="modalConfirmLabel()"
+        (confirmed)="confirmModal()"
+        (cancelled)="closeModal()"
+      />
     </section>
   `,
 })
