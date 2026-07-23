@@ -5,15 +5,13 @@ import { catchError, filter, map, of } from 'rxjs';
 
 import { ApiService } from '../core/api/api.service';
 import { AuthService } from '../core/auth/auth.service';
-import { I18nService } from '../core/i18n/i18n.service';
 import { SystemMeta } from '../core/models/domain.models';
 import { GuardrailBannerComponent } from '../shared/ui/guardrail-banner.component';
-import { LanguageToggleComponent } from '../shared/ui/language-toggle.component';
 import { PrototypeBannerComponent } from '../shared/ui/prototype-banner.component';
 
 interface NavItem {
   code: string;
-  labelKey: string;
+  label: string;
   path: string;
   children?: NavItem[];
   exact?: boolean;
@@ -23,28 +21,28 @@ interface NavItem {
 
 interface NavGroup {
   id: string;
-  labelKey: string;
+  label: string;
   items: NavItem[];
 }
 
 const NAV_GROUPS: NavGroup[] = [
   {
     id: 'overview',
-    labelKey: 'nav.group.overview',
+    label: 'ภาพรวมความเสี่ยง',
     items: [
       {
         code: 'F1',
-        labelKey: 'nav.projectRiskDashboard',
+        label: 'แดชบอร์ดความเสี่ยงโครงการ',
         path: '/project-risk',
         children: [
           {
             code: 'F1.1',
-            labelKey: 'nav.projectRiskOverview',
+            label: 'ภาพรวมสุขภาพความเสี่ยงโครงการ',
             path: '/project-risk/overview',
           },
           {
             code: 'F1.2',
-            labelKey: 'nav.projectRiskInsights',
+            label: 'วิเคราะห์ข้อมูลโครงการเชิงลึก',
             path: '/project-risk/insights',
           },
         ],
@@ -53,97 +51,85 @@ const NAV_GROUPS: NavGroup[] = [
   },
   {
     id: 'finance',
-    labelKey: 'nav.group.finance',
+    label: 'การเงินและปัจจัยเสี่ยง',
     items: [
       {
         code: 'F2',
-        labelKey: 'nav.financialHealth',
+        label: 'สถานะและสุขภาพการคลัง',
         path: '/financial-health',
         children: [
           {
             code: 'F2.1',
-            labelKey: 'nav.financialOverview',
+            label: 'ภาพรวมสุขภาพการคลัง',
             path: '/financial-health/overview',
           },
           {
             code: 'F2.2',
-            labelKey: 'nav.financialBenchmarking',
+            label: 'เปรียบเทียบสถานะการคลัง',
             path: '/financial-health/benchmarking',
           },
           {
             code: 'F2.3',
-            labelKey: 'nav.financialInvestment',
+            label: 'แนวโน้มการลงทุนและการจัดซื้อจัดจ้าง',
             path: '/financial-health/investment-trends',
           },
           {
             code: 'F2.4',
-            labelKey: 'nav.financialRiskIndicators',
+            label: 'ตัวชี้วัดความเสี่ยงทางการคลัง',
             path: '/financial-health/risk-indicators',
           },
         ],
       },
       {
         code: 'F3',
-        labelKey: 'nav.allProjects',
+        label: 'โครงการทั้งหมด',
         path: '/risk-factors',
         children: [
           {
             code: 'F3.1',
-            labelKey: 'nav.projectDetail',
+            label: 'รายละเอียดโครงการ',
             path: '/risk-factors',
             exact: true,
           },
           {
             code: 'F3.2',
-            labelKey: 'nav.projectStatus',
+            label: 'สถานะโครงการ',
             path: '/risk-factors/status',
           },
         ],
       },
       {
         code: 'F4',
-        labelKey: 'nav.assignment',
+        label: 'มอบหมายงาน',
         path: '/assignment-project-auditor',
         children: [
           {
             code: 'F4.1',
-            labelKey: 'nav.assignmentMain',
+            label: 'มอบหมายงานหลัก',
             path: '/assignment-project-auditor',
             exact: true,
           },
           {
             code: 'F4.2',
-            labelKey: 'nav.assignmentHistory',
+            label: 'ประวัติการมอบหมายงาน',
             path: '/assignment-project-auditor/history',
           },
           {
             code: 'F4.3',
-            labelKey: 'nav.assignmentReview',
+            label: 'ตรวจทานงานที่ส่งกลับมา',
             path: '/assignment-project-auditor/review',
           },
-        ],
-      },
-      {
-        code: 'F5',
-        labelKey: 'nav.riskAnalystFeedback',
-        path: '/risk-analyst-feedback',
-        roles: [
-          'admin',
-          'regional_supervisor',
-          'local_executive',
-          'project_auditor',
-          'risk_analyst',
         ],
       },
     ],
   },
   {
     id: 'admin',
-    labelKey: 'nav.group.admin',
+    label: 'ผู้ดูแลระบบ',
     items: [
       {
         code: 'A1',
-        labelKey: 'nav.accessLog',
+        label: 'บันทึกการเข้าถึงระบบ',
         path: '/admin/access-log',
         roles: ['admin'], // เห็นเฉพาะ admin — ตรงกับ roleGuard('admin') ที่ route
       },
@@ -151,20 +137,14 @@ const NAV_GROUPS: NavGroup[] = [
   },
   {
     id: 'audit',
-    labelKey: 'nav.group.audit',
+    label: 'งานตรวจสอบ',
     items: [
       {
         code: 'F6',
-        labelKey: 'nav.auditorFeedback',
+        label: 'ความเห็นผู้ตรวจสอบ',
         path: '/auditor-feedback',
         // mirror FEEDBACK_ROLES (core/auth/roles.ts) — ซ่อนจาก public_user
-        roles: [
-          'admin',
-          'regional_supervisor',
-          'local_executive',
-          'project_auditor',
-          'risk_analyst',
-        ],
+        roles: ['admin', 'regional_supervisor', 'local_executive', 'project_auditor', 'risk_analyst'],
       },
     ],
   },
@@ -173,23 +153,17 @@ const NAV_GROUPS: NavGroup[] = [
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [
-    RouterOutlet,
-    RouterLink,
-    GuardrailBannerComponent,
-    LanguageToggleComponent,
-    PrototypeBannerComponent,
-  ],
+  imports: [RouterOutlet, RouterLink, GuardrailBannerComponent, PrototypeBannerComponent],
   template: `
     <app-prototype-banner />
     <div class="flex min-h-screen bg-page text-ink">
       <aside class="hidden w-[264px] shrink-0 flex-col bg-navy text-white lg:flex">
         <div class="border-b border-white/20 px-5 py-[22px]">
           <p class="m-0 text-[16px] font-bold leading-normal">
-            {{ t('shell.brand.line1') }}<br />{{ t('shell.brand.line2') }}
+            ระบบวิเคราะห์ความเสี่ยง<br />งบประมาณตำบล
           </p>
           <p class="m-0 mt-2 text-xs tracking-wide text-[#c9d4e3]">
-            {{ t('shell.brand.subtitle') }}
+            Local Budget Financial Risk System
           </p>
         </div>
 
@@ -197,7 +171,7 @@ const NAV_GROUPS: NavGroup[] = [
           @for (group of visibleNavGroups(); track group.id) {
             <div>
               <div class="flex flex-col pb-1.5">
-                @for (item of group.items; track item.labelKey) {
+                @for (item of group.items; track item.label) {
                   @if (item.children?.length) {
                     <div>
                       <a
@@ -210,7 +184,7 @@ const NAV_GROUPS: NavGroup[] = [
                         "
                       >
                         <span class="text-[12.5px] opacity-85">{{ item.code }}</span>
-                        <span>{{ t(item.labelKey) }}</span>
+                        <span>{{ item.label }}</span>
                       </a>
 
                       <div class="ml-6 flex flex-col">
@@ -225,7 +199,7 @@ const NAV_GROUPS: NavGroup[] = [
                             "
                           >
                             <span>•</span>
-                            <span>{{ t(child.labelKey) }}</span>
+                            <span>{{ child.label }}</span>
                           </a>
                         }
                       </div>
@@ -241,7 +215,7 @@ const NAV_GROUPS: NavGroup[] = [
                       "
                     >
                       <span class="text-[12.5px] opacity-85">{{ item.code }}</span>
-                      <span>{{ t(item.labelKey) }}</span>
+                      <span>{{ item.label }}</span>
                     </a>
                   }
                 }
@@ -251,14 +225,10 @@ const NAV_GROUPS: NavGroup[] = [
         </nav>
 
         <div class="border-t border-white/20 px-5 py-[18px]">
-          <p class="m-0 text-xs text-[#9fb0c8]">{{ t('shell.footer.source') }}</p>
-          <p class="m-0 mt-1 text-xs text-[#9fb0c8]">
-            {{ t('shell.footer.dataAsOf', { date: dataAsOf() }) }}
-          </p>
+          <p class="m-0 text-xs text-[#9fb0c8]">ข้อมูลจากระบบ FinRisk Backend</p>
+          <p class="m-0 mt-1 text-xs text-[#9fb0c8]">ข้อมูล ณ วันที่: {{ dataAsOf() }}</p>
           @if (fiscalYearRange()) {
-            <p class="m-0 mt-1 text-xs text-[#9fb0c8]">
-              {{ t('shell.footer.coverage', { range: fiscalYearRange() }) }}
-            </p>
+            <p class="m-0 mt-1 text-xs text-[#9fb0c8]">ครอบคลุมปีงบประมาณ {{ fiscalYearRange() }}</p>
           }
         </div>
       </aside>
@@ -269,16 +239,14 @@ const NAV_GROUPS: NavGroup[] = [
         >
           <div>
             <p class="m-0 text-[12.5px] text-muted">
-              {{ t('shell.breadcrumb.home') }} /
-              <span class="font-bold text-navy">{{ currentPageLabel() }}</span>
+              หน้าหลัก / <span class="font-bold text-navy">{{ currentPageLabel() }}</span>
             </p>
             <p class="m-0 mt-1 text-[13px] font-semibold text-slate-700">
-              {{ t('shell.header.subtitle') }}
+              แดชบอร์ดวิเคราะห์ความเสี่ยงงบประมาณท้องถิ่น
             </p>
           </div>
 
           <div class="flex items-center gap-3.5">
-            <app-language-toggle />
             <div class="rounded-[3px] border-[1.5px] border-line px-3.5 py-[7px] text-right">
               <p class="m-0 text-[13px] font-bold text-ink">
                 {{ auth.user()?.display_name ?? auth.user()?.username ?? auth.token() }}
@@ -288,7 +256,7 @@ const NAV_GROUPS: NavGroup[] = [
                 <span
                   [class]="auth.isScopedRole() ? 'font-bold text-[#8a2a1f]' : 'font-bold text-navy'"
                 >
-                  {{ auth.isScopedRole() ? t('shell.scope.own') : t('shell.scope.all') }}
+                  {{ auth.isScopedRole() ? 'ขอบเขต: ตำบลของตน' : 'ขอบเขต: ทุกตำบล' }}
                 </span>
               </p>
             </div>
@@ -297,7 +265,7 @@ const NAV_GROUPS: NavGroup[] = [
               class="h-[38px] cursor-pointer rounded-[3px] border-[1.5px] border-line bg-white px-4 text-[13px] font-bold text-slate-700 hover:bg-zebra"
               (click)="auth.logout()"
             >
-              {{ t('shell.logout') }}
+              ออกจากระบบ
             </button>
           </div>
         </header>
@@ -314,8 +282,6 @@ export class AppShellComponent {
   readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly api = inject(ApiService);
-  private readonly i18n = inject(I18nService);
-  protected readonly t = this.i18n.t;
 
   readonly navGroups = NAV_GROUPS;
 
@@ -334,7 +300,7 @@ export class AppShellComponent {
     const parsed = new Date(raw);
     return Number.isNaN(parsed.getTime())
       ? '—'
-      : new Intl.DateTimeFormat(this.i18n.locale(), { dateStyle: 'long' }).format(parsed);
+      : new Intl.DateTimeFormat('th-TH', { dateStyle: 'long' }).format(parsed);
   });
 
   /** ช่วงปีงบที่ครอบคลุม เช่น "2566–2568" (ว่างเมื่อไม่มีข้อมูล) */
@@ -374,14 +340,14 @@ export class AppShellComponent {
           this.matchesUrl(url, navItem.path, navItem.exact),
         );
         if (child) {
-          return this.i18n.t(child.labelKey);
+          return child.label;
         }
         if (this.matchesUrl(url, item.path, item.exact)) {
-          return this.i18n.t(item.labelKey);
+          return item.label;
         }
       }
     }
-    return this.i18n.t('shell.defaultPageLabel');
+    return 'Project Risk Dashboard';
   });
 
   isActive(path: string, exact = false): boolean {

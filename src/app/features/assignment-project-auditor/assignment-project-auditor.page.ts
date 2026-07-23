@@ -3,15 +3,12 @@ import { FormsModule } from '@angular/forms';
 import { catchError, forkJoin, of } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
-import { AuthService } from '../../core/auth/auth.service';
-import { Project, Subdistrict } from '../../core/models/domain.models';
+import { AssignmentAssignee, AuditAssignment, Project, Subdistrict } from '../../core/models/domain.models';
 import { ConfirmModalComponent } from '../../shared/ui/confirm-modal.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { formatMoney, normalizeRiskLevel, subdistrictLabel } from '../../shared/utils/risk-utils';
 import {
-  ANALYSTS,
-  ASSIGNMENT_STORAGE_KEY,
-  DEFAULT_ASSIGNMENT_WORKFLOW_STATUS,
+  Analyst,
   SavedAssignment,
   projectWorkflowStatusLabel,
 } from './assignment-project-auditor.models';
@@ -112,6 +109,9 @@ import {
                       }
                     </span>
                   </div>
+                  <div class="mt-2 flex flex-wrap gap-1.5">
+                    <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">รหัส {{ projectId(project) }}</span>
+                  </div>
                   @if (projectAssignment(project)) {
                     <div class="mt-2 rounded-[4px] border border-green-100 bg-green-50 px-3 py-2 text-xs leading-5 text-risk-low">
                       มอบหมายแล้วให้ <span class="font-extrabold">{{ assignmentAnalystName(projectAssignment(project)!) }}</span>
@@ -177,10 +177,10 @@ import {
           </div>
 
           <div class="mt-4 rounded-[4px] border border-line-soft bg-[#f8fafc] px-3 py-2.5 text-xs leading-5 text-muted">
-            ระบบจะบันทึกผู้มอบหมาย ผู้รับมอบหมาย เวลา Due date, Budget hours, Audit steps และคำแนะนำเพื่อรองรับ audit trail
+            ระบบจะบันทึกผู้มอบหมาย ผู้รับมอบหมาย เวลา Due date และคำแนะนำเพื่อรองรับ audit trail
           </div>
 
-          <div class="mt-4 grid gap-4 sm:grid-cols-2">
+          <div class="mt-4">
             <label>
               <span class="mb-1.5 block text-sm font-bold text-ink">Due date <span class="text-risk-high">*</span></span>
               <input
@@ -190,29 +190,7 @@ import {
                 (ngModelChange)="dueDate.set($event)"
               />
             </label>
-            <label>
-              <span class="mb-1.5 block text-sm font-bold text-ink">Budget hours <span class="text-risk-high">*</span></span>
-              <input
-                class="gov-input"
-                type="number"
-                min="0.5"
-                step="0.5"
-                placeholder="เช่น 16"
-                [ngModel]="budgetHours()"
-                (ngModelChange)="setBudgetHours($event)"
-              />
-            </label>
           </div>
-
-          <label class="mt-4 block">
-            <span class="mb-1.5 block text-sm font-bold text-ink">Audit steps <span class="text-risk-high">*</span></span>
-            <textarea
-              class="min-h-[104px] w-full rounded-[3px] border-[1.5px] border-line bg-white p-2.5 text-sm"
-              placeholder="ระบุขั้นตอนการตรวจ เช่น ตรวจเอกสารสัญญา, ตรวจพื้นที่, สรุปประเด็นความเสี่ยง"
-              [ngModel]="auditSteps()"
-              (ngModelChange)="auditSteps.set($event)"
-            ></textarea>
-          </label>
 
           <label class="mt-4 block">
             <span class="mb-1.5 block text-sm font-bold text-ink">คำแนะนำหรือรายละเอียดการตรวจสอบ <span class="text-risk-high">*</span></span>
@@ -274,21 +252,18 @@ import {
 })
 export class AssignmentProjectAuditorPageComponent implements OnInit {
   private readonly api = inject(ApiService);
-  private readonly auth = inject(AuthService);
-
   readonly loading = signal(true);
   readonly error = signal('');
   readonly projects = signal<Project[]>([]);
   readonly subdistricts = signal<Subdistrict[]>([]);
+  readonly analysts = signal<Analyst[]>([]);
   readonly assignments = signal<SavedAssignment[]>([]);
   readonly projectSearch = signal('');
-  readonly riskFilter = signal('high');
+  readonly riskFilter = signal('all');
   readonly analystSearch = signal('');
   readonly selectedProjectId = signal<string | null>(null);
   readonly selectedAnalystId = signal<string | null>(null);
   readonly dueDate = signal('');
-  readonly budgetHours = signal<number | null>(null);
-  readonly auditSteps = signal('');
   readonly assignmentNote = signal('');
   readonly formError = signal('');
   readonly confirmOpen = signal(false);
@@ -329,32 +304,32 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
 
   readonly filteredAnalysts = computed(() => {
     const search = this.analystSearch().trim().toLocaleLowerCase('th');
-    return ANALYSTS.filter((analyst) =>
+    return this.analysts().filter((analyst) =>
       !search || `${analyst.name} ${analyst.team} ${analyst.specialties.join(' ')}`.toLocaleLowerCase('th').includes(search),
     );
   });
 
   readonly confirmationMessage = computed(() => {
     const project = this.selectedProject();
-    const analyst = ANALYSTS.find((item) => item.id === this.selectedAnalystId());
-    const assignmentScope =
-      this.dueDate() && this.budgetHours()
-        ? ` Due date ${this.dueDate()} · Budget ${this.budgetHours()} ชม.`
-        : '';
+    const analyst = this.analysts().find((item) => item.id === this.selectedAnalystId());
+    const assignmentScope = this.dueDate() ? ` Due date ${this.dueDate()}.` : '';
     return project && analyst
       ? `ต้องการมอบหมาย “${project.project_name}” ให้ ${analyst.name} ใช่หรือไม่?${assignmentScope} ระบบจะบันทึกการมอบหมายและแจ้งผลสำเร็จทันที`
       : 'กรุณาตรวจสอบข้อมูลการมอบหมายอีกครั้ง';
   });
 
   ngOnInit(): void {
-    this.assignments.set(this.readAssignments());
     forkJoin({
       projects: this.api.projects().pipe(catchError(() => of<Project[]>([]))),
       subdistricts: this.api.subdistricts().pipe(catchError(() => of<Subdistrict[]>([]))),
+      assignments: this.api.assignments().pipe(catchError(() => of<AuditAssignment[]>([]))),
+      analysts: this.api.assignmentAssignees().pipe(catchError(() => of<AssignmentAssignee[]>([]))),
     }).subscribe({
-      next: ({ projects, subdistricts }) => {
+      next: ({ projects, subdistricts, assignments, analysts }) => {
         this.projects.set(projects);
         this.subdistricts.set(subdistricts);
+        this.assignments.set(assignments.map((assignment) => this.toSavedAssignment(assignment)));
+        this.analysts.set(analysts.map((analyst) => this.toAnalyst(analyst)));
         this.selectedProjectId.set(this.filteredProjects()[0] ? this.projectId(this.filteredProjects()[0]) : null);
         this.loading.set(false);
         if (!projects.length) this.error.set('ไม่สามารถโหลดรายการโครงการได้ กรุณาตรวจสอบการเชื่อมต่อ FinRisk Backend');
@@ -369,14 +344,6 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
   selectProject(project: Project): void {
     this.selectedProjectId.set(this.projectId(project));
     this.formError.set('');
-  }
-
-  setBudgetHours(value: string | number | null): void {
-    if (value === '' || value === null) {
-      this.budgetHours.set(null);
-      return;
-    }
-    this.budgetHours.set(Number(value));
   }
 
   requestConfirmation(): void {
@@ -397,14 +364,6 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
       this.formError.set('กรุณาระบุ Due date');
       return;
     }
-    if (!this.budgetHours() || !Number.isFinite(this.budgetHours()) || Number(this.budgetHours()) <= 0) {
-      this.formError.set('กรุณาระบุ Budget hours มากกว่า 0');
-      return;
-    }
-    if (!this.auditSteps().trim()) {
-      this.formError.set('กรุณาระบุ Audit steps');
-      return;
-    }
     if (!this.assignmentNote().trim()) {
       this.formError.set('กรุณาระบุคำแนะนำหรือรายละเอียดการตรวจสอบ');
       return;
@@ -416,38 +375,24 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
     const project = this.selectedProject();
     const analystId = this.selectedAnalystId();
     if (!project || !analystId) return;
-    const stored = this.readAssignments();
-    if (stored.some((assignment) => assignment.projectId === this.projectId(project))) {
-      this.assignments.set(stored);
-      this.formError.set('โครงการนี้มีผู้รับมอบหมายแล้ว ไม่สามารถมอบหมายซ้ำได้');
-      this.confirmOpen.set(false);
-      return;
-    }
-
-    const entry: SavedAssignment = {
-      projectId: this.projectId(project),
-      analystId,
+    this.api.createAssignment({
+      project_id: this.projectId(project),
+      assignee_id: Number(analystId),
       note: this.assignmentNote().trim(),
-      dueDate: this.dueDate(),
-      budgetHours: Number(this.budgetHours()),
-      auditSteps: this.auditSteps().trim(),
-      workflowStatus: DEFAULT_ASSIGNMENT_WORKFLOW_STATUS,
-      assignedAt: new Date().toISOString(),
-      assignedBy:
-        this.auth.user()?.display_name ??
-        this.auth.user()?.full_name ??
-        this.auth.user()?.username ??
-        this.auth.token() ??
-        undefined,
-    };
-    localStorage.setItem(ASSIGNMENT_STORAGE_KEY, JSON.stringify([entry, ...stored]));
-    this.assignments.set([entry, ...stored]);
-    this.dueDate.set('');
-    this.budgetHours.set(null);
-    this.auditSteps.set('');
-    this.assignmentNote.set('');
-    this.confirmOpen.set(false);
-    this.successOpen.set(true);
+      due_date: this.dueDate(),
+    }).subscribe({
+      next: () => {
+        this.reloadAssignments();
+        this.dueDate.set('');
+        this.assignmentNote.set('');
+        this.confirmOpen.set(false);
+        this.successOpen.set(true);
+      },
+      error: (response: { error?: { detail?: string } }) => {
+        this.confirmOpen.set(false);
+        this.formError.set(response.error?.detail ?? 'บันทึกการมอบหมายงานไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+      },
+    });
   }
 
   projectId(project: Project): string {
@@ -463,7 +408,7 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
   }
 
   assignmentAnalystName(assignment: SavedAssignment): string {
-    return ANALYSTS.find((item) => item.id === assignment.analystId)?.name ?? assignment.analystId;
+    return this.analysts().find((item) => item.id === assignment.analystId)?.name ?? assignment.analystId;
   }
 
   assignmentProjectStatus(assignment: SavedAssignment): string {
@@ -500,12 +445,35 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
     return Number.isNaN(date.getTime()) ? 0 : date.getTime();
   }
 
-  private readAssignments(): SavedAssignment[] {
-    try {
-      const parsed: unknown = JSON.parse(localStorage.getItem(ASSIGNMENT_STORAGE_KEY) ?? '[]');
-      return Array.isArray(parsed) ? (parsed as SavedAssignment[]) : [];
-    } catch {
-      return [];
-    }
+  private reloadAssignments(): void {
+    this.api.assignments().subscribe({
+      next: (assignments) => this.assignments.set(assignments.map((assignment) => this.toSavedAssignment(assignment))),
+      error: () => this.formError.set('โหลดรายการงานล่าสุดไม่สำเร็จ กรุณารีเฟรชหน้าอีกครั้ง'),
+    });
+  }
+
+  private toAnalyst(analyst: AssignmentAssignee): Analyst {
+    return {
+      id: String(analyst.user_id),
+      name: analyst.display_name || analyst.username,
+      team: 'นักวิเคราะห์ความเสี่ยง',
+      activeCases: analyst.active_cases,
+      specialties: [],
+    };
+  }
+
+  private toSavedAssignment(assignment: AuditAssignment): SavedAssignment {
+    return {
+      projectId: assignment.project_id,
+      analystId: String(assignment.assigned_to),
+      assignedAt: assignment.created_at,
+      priority: assignment.priority === 'normal' ? 'normal' : assignment.priority,
+      note: assignment.note,
+      dueDate: assignment.due_date ?? undefined,
+      budgetHours: assignment.budget_hours ?? undefined,
+      auditSteps: assignment.audit_steps,
+      workflowStatus: assignment.status,
+      assignedBy: assignment.assigned_by_display_name || assignment.assigned_by_username || undefined,
+    };
   }
 }

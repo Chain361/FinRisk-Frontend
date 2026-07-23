@@ -3,7 +3,6 @@ import { RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 
 import { ApiService } from '../../../core/api/api.service';
-import { I18nService } from '../../../core/i18n/i18n.service';
 import {
   AnnualRisk,
   Project,
@@ -48,8 +47,12 @@ interface RepeatedEntity {
       <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F1.2</p>
-          <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">{{ t('prInsights.title') }}</h1>
-          <p class="m-0 mt-1.5 text-sm text-muted">{{ t('prInsights.subtitle') }}</p>
+          <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">
+            วิเคราะห์ข้อมูลโครงการเชิงลึก
+          </h1>
+          <p class="m-0 mt-1.5 text-sm text-muted">
+            วิเคราะห์ผู้รับจ้าง รายการซ้ำ และแนวโน้มงบประมาณ
+          </p>
         </div>
       </div>
 
@@ -73,29 +76,29 @@ interface RepeatedEntity {
 
       <section class="panel p-[18px]">
         <div class="mb-4">
-          <h2 class="m-0 text-[16px] font-bold text-ink">{{ t('prInsights.vendors.title') }}</h2>
-          <p class="m-0 mt-1 text-[13px] text-muted">{{ t('prInsights.vendors.subtitle') }}</p>
+          <h2 class="m-0 text-[16px] font-bold text-ink">ผู้รับจ้างที่ได้รับงานบ่อยที่สุด</h2>
+          <p class="m-0 mt-1 text-[13px] text-muted">
+            Top 10 ผู้รับจ้างตามจำนวนโครงการ ภายใต้ตัวกรองที่เลือก
+          </p>
         </div>
         <div class="mb-4 grid gap-3.5 md:grid-cols-[1.2fr_0.8fr]">
           <label class="block"
-            ><span class="text-[12.5px] font-bold text-muted">{{
-              t('prInsights.vendors.searchLabel')
-            }}</span
+            ><span class="text-[12.5px] font-bold text-muted">ค้นหาผู้รับจ้าง</span
             ><input
               type="search"
               class="gov-input mt-[5px]"
-              [placeholder]="t('prInsights.vendors.searchPlaceholder')"
+              placeholder="พิมพ์ชื่อผู้รับจ้าง"
               [value]="vendorSearchText()"
               (input)="setVendorSearch($any($event.target).value)"
           /></label>
           <label class="block"
-            ><span class="text-[12.5px] font-bold text-muted">{{ t('common.projectType') }}</span
+            ><span class="text-[12.5px] font-bold text-muted">ประเภทโครงการ</span
             ><select
               class="gov-select mt-[5px]"
               [value]="selectedProjectType() ?? 'all'"
               (change)="setProjectType($any($event.target).value)"
             >
-              <option value="all">{{ t('filter.allProjectTypes') }}</option>
+              <option value="all">ทุกประเภท</option>
               @for (type of projectTypes(); track type) {
                 <option [value]="type">{{ type }}</option>
               }
@@ -104,20 +107,20 @@ interface RepeatedEntity {
         </div>
         @if (!vendorRankings().length) {
           <app-empty-state
-            [title]="t('prInsights.vendors.emptyTitle')"
-            [message]="t('prInsights.vendors.emptyMsg')"
+            title="ไม่พบข้อมูลผู้รับจ้าง"
+            message="ลองเปลี่ยนตัวกรองหรือคำค้นหาอีกครั้ง"
           />
         } @else {
           <div class="overflow-x-auto">
             <table class="gov-table min-w-[900px]">
               <thead>
                 <tr>
-                  <th>{{ t('prInsights.vendors.colRank') }}</th>
-                  <th>{{ t('prInsights.vendors.colVendor') }}</th>
-                  <th class="text-right!">{{ t('prInsights.vendors.colProjectCount') }}</th>
-                  <th class="text-right!">{{ t('prInsights.vendors.colWinCount') }}</th>
-                  <th class="text-right!">{{ t('prInsights.vendors.colContractValue') }}</th>
-                  <th>{{ t('prInsights.vendors.colSamples') }}</th>
+                  <th>อันดับ</th>
+                  <th>ผู้รับจ้าง</th>
+                  <th class="text-right!">จำนวนโครงการ</th>
+                  <th class="text-right!">จำนวนครั้งที่ชนะ</th>
+                  <th class="text-right!">มูลค่าสัญญารวม</th>
+                  <th>รายชื่อโครงการตัวอย่าง</th>
                 </tr>
               </thead>
               <tbody>
@@ -130,13 +133,13 @@ interface RepeatedEntity {
                         @if (vendor.isRecurring) {
                           <span
                             class="rounded-[3px] bg-risk-low px-2 py-0.5 text-[11px] font-bold text-white"
-                            >{{ t('prInsights.vendors.recurring') }}</span
+                            >Recurring Vendor</span
                           >
                         }
                         @if (vendor.isFrequentWinner) {
                           <span
                             class="rounded-[3px] bg-chart-blue-deep px-2 py-0.5 text-[11px] font-bold text-white"
-                            >{{ t('prInsights.vendors.frequentWinner') }}</span
+                            >Frequent Winner</span
                           >
                         }
                       </div>
@@ -164,14 +167,16 @@ interface RepeatedEntity {
 
       <section class="panel overflow-hidden">
         <div class="border-b-[1.5px] border-line px-[18px] py-4">
-          <h2 class="m-0 text-[16px] font-bold text-ink">{{ t('prInsights.repeated.title') }}</h2>
-          <p class="m-0 mt-1 text-[13px] text-muted">{{ t('prInsights.repeated.subtitle') }}</p>
+          <h2 class="m-0 text-[16px] font-bold text-ink">รายการที่ซ้ำข้ามปี</h2>
+          <p class="m-0 mt-1 text-[13px] text-muted">
+            แสดงผู้รับจ้าง/ประเภท/วิธีจัดซื้อที่พบอย่างน้อย 2 ปีงบประมาณ
+          </p>
         </div>
         @if (!repeatedEntities().length) {
           <div class="p-4">
             <app-empty-state
-              [title]="t('prInsights.repeated.emptyTitle')"
-              [message]="t('prInsights.repeated.emptyMsg')"
+              title="ยังไม่พบรายการซ้ำ 2 ปีขึ้นไป"
+              message="ข้อมูลในขอบเขตปัจจุบันอาจมีเพียงปีเดียว"
             />
           </div>
         } @else {
@@ -179,10 +184,10 @@ interface RepeatedEntity {
             <table class="gov-table">
               <thead>
                 <tr>
-                  <th>{{ t('common.item') }}</th>
-                  <th>{{ t('common.foundYears') }}</th>
-                  <th class="text-right!">{{ t('common.count') }}</th>
-                  <th class="text-right!">{{ t('common.totalBudgetBaht') }}</th>
+                  <th>รายการ</th>
+                  <th>ปีที่พบ</th>
+                  <th class="text-right!">จำนวน</th>
+                  <th class="text-right!">งบรวม (บาท)</th>
                 </tr>
               </thead>
               <tbody>
@@ -202,15 +207,17 @@ interface RepeatedEntity {
 
       <section class="panel p-[18px]">
         <div>
-          <h2 class="m-0 text-[16px] font-bold text-ink">{{ t('prInsights.coverage.title') }}</h2>
-          <p class="m-0 mt-1 text-[13px] text-muted">{{ t('prInsights.coverage.subtitle') }}</p>
+          <h2 class="m-0 text-[16px] font-bold text-ink">Financial Risk Coverage</h2>
+          <p class="m-0 mt-1 text-[13px] text-muted">
+            แสดงเฉพาะจำนวนปัจจัยที่คำนวณได้ และปัจจัยที่ประเมินไม่ได้
+          </p>
         </div>
 
         @if (!scopedAnnualRisks().length) {
           <div class="py-10">
             <app-empty-state
-              [title]="t('prInsights.coverage.emptyTitle')"
-              [message]="t('prInsights.coverage.emptyMsg')"
+              title="ไม่พบข้อมูลสุขภาพการคลัง"
+              message="ลองเปลี่ยนตำบล หรือตรวจสอบข้อมูล Annual Risk"
             />
           </div>
         } @else {
@@ -218,19 +225,15 @@ interface RepeatedEntity {
             @for (year of FISCAL_YEARS; track year) {
               <div class="rounded-[4px] border-[1.5px] border-line p-4">
                 <div class="flex items-center justify-between">
-                  <p class="m-0 text-base font-extrabold text-ink">
-                    {{ t('common.yearLabel', { year }) }}
-                  </p>
-                  <p class="m-0 text-xs text-muted">
-                    {{ annualRowsForYear(year).length }} {{ t('common.factorsUnit') }}
-                  </p>
+                  <p class="m-0 text-base font-extrabold text-ink">ปี {{ year }}</p>
+                  <p class="m-0 text-xs text-muted">{{ annualRowsForYear(year).length }} ปัจจัย</p>
                 </div>
                 <div class="mt-4 grid grid-cols-2 gap-3 text-center text-sm">
                   <div
                     class="rounded-[3px] border border-[#a9d9bb] bg-[#e9f6ee] px-2 py-3 text-[#0f5132]"
                   >
                     <p class="m-0 text-[22px] font-extrabold">{{ annualComputableCount(year) }}</p>
-                    <p class="m-0 mt-1 text-xs">{{ t('common.computable') }}</p>
+                    <p class="m-0 mt-1 text-xs">คำนวณได้</p>
                   </div>
                   <div
                     class="rounded-[3px] border border-[#c7cfd8] bg-page px-2 py-3 text-slate-700"
@@ -238,7 +241,7 @@ interface RepeatedEntity {
                     <p class="m-0 text-[22px] font-extrabold">
                       {{ annualNotComputableCount(year) }}
                     </p>
-                    <p class="m-0 mt-1 text-xs">{{ t('common.cannotEvaluate') }}</p>
+                    <p class="m-0 mt-1 text-xs">ประเมินไม่ได้</p>
                   </div>
                 </div>
               </div>
@@ -250,33 +253,34 @@ interface RepeatedEntity {
       <div class="grid gap-4 xl:grid-cols-2">
         <app-bar-chart
           [title]="
-            t('trends.avgBudget.title', {
-              from: FISCAL_YEARS[0],
-              to: FISCAL_YEARS[FISCAL_YEARS.length - 1],
-            })
+            'งบเฉลี่ยตามประเภทโครงการ (ปี ' +
+            FISCAL_YEARS[0] +
+            '-' +
+            FISCAL_YEARS[FISCAL_YEARS.length - 1] +
+            ')'
           "
-          [subtitle]="t('prInsights.avgBudget.subtitle')"
+          subtitle="ปีที่ไม่มีโครงการประเภทนั้นจะเว้นช่อง ไม่แทนด้วย 0"
           [categories]="fiscalYearLabels"
           [series]="averageBudgetBarSeries()"
-          [unitSuffix]="t('common.unit.baht')"
-          [rowHeader]="t('common.projectType')"
+          unitSuffix="บาท"
+          rowHeader="ประเภทโครงการ"
           [compactValueLabels]="true"
         />
         <app-bar-chart
           [title]="
             selectedSubdistrictId()
-              ? t('trends.riskCross.titleSelected')
-              : t('trends.riskCross.titleAll')
+              ? 'ความเสี่ยงข้ามปี (ตำบลที่เลือก)'
+              : 'ความเสี่ยงข้ามปี (ทุกตำบล)'
           "
           [subtitle]="
             selectedSubdistrictId()
-              ? t('trends.riskCross.subtitleSelected')
-              : t('trends.riskCross.subtitleAll')
+              ? 'จำนวนโครงการตามระดับความเสี่ยงรายปี'
+              : 'จำนวนโครงการเสี่ยงสูงรายปี แยกตามตำบล'
           "
           [categories]="fiscalYearLabels"
           [series]="riskTrendBarSeries()"
-          [unitSuffix]="t('common.unit.project')"
-          [rowHeader]="selectedSubdistrictId() ? t('filter.riskLevel') : t('common.subdistrict')"
+          unitSuffix="โครงการ"
+          [rowHeader]="selectedSubdistrictId() ? 'ระดับความเสี่ยง' : 'ตำบล'"
         />
       </div>
     </section>
@@ -284,8 +288,6 @@ interface RepeatedEntity {
 })
 export class InsightsPageComponent implements OnInit {
   private readonly api = inject(ApiService);
-  private readonly i18n = inject(I18nService);
-  protected readonly t = this.i18n.t;
   readonly FISCAL_YEARS = FISCAL_YEARS;
   readonly fiscalYearLabels = FISCAL_YEARS.map(String);
   readonly error = signal('');
@@ -309,7 +311,7 @@ export class InsightsPageComponent implements OnInit {
       ...new Set(
         this.projects()
           .map((project) => this.projectTypeLabel(project))
-          .filter((type) => type !== this.t('common.unspecifiedType')),
+          .filter((type) => type !== 'ไม่ระบุประเภท'),
       ),
     ].sort((a, b) => a.localeCompare(b, 'th')),
   );
@@ -381,7 +383,7 @@ export class InsightsPageComponent implements OnInit {
   readonly riskTrendBarSeries = computed<BarChartSeries[]>(() => {
     if (this.selectedSubdistrictId())
       return RISK_SERIES.map((risk) => ({
-        name: this.i18n.riskLabel(risk.level),
+        name: risk.name,
         color: risk.color,
         values: FISCAL_YEARS.map(
           (year) =>
@@ -435,7 +437,7 @@ export class InsightsPageComponent implements OnInit {
     this.loadTimeSeries();
     this.api.annualRisk().subscribe({
       next: (rows) => this.annualRisks.set(rows),
-      error: () => this.error.set(this.t('prInsights.error.annualRisk')),
+      error: () => this.error.set('โหลดข้อมูลสุขภาพการคลังไม่สำเร็จ'),
     });
   }
   setSubdistrict(value: number | null): void {
@@ -484,14 +486,14 @@ export class InsightsPageComponent implements OnInit {
   private loadSubdistricts(): void {
     this.api.subdistricts().subscribe({
       next: (rows) => this.subdistricts.set(rows),
-      error: () => this.error.set(this.t('prInsights.error.subdistricts')),
+      error: () => this.error.set('โหลดรายการตำบลไม่สำเร็จ'),
     });
   }
   private loadDashboard(): void {
     this.error.set('');
     this.api.projects(this.filters()).subscribe({
       next: (projects) => this.projects.set(projects),
-      error: () => this.error.set(this.t('prInsights.error.dashboard')),
+      error: () => this.error.set('โหลดข้อมูลวิเคราะห์เชิงลึกไม่สำเร็จ'),
     });
   }
   private loadTimeSeries(): void {
@@ -502,7 +504,7 @@ export class InsightsPageComponent implements OnInit {
       ),
     ).subscribe({
       next: (rows) => this.multiYearProjects.set(rows.flat()),
-      error: () => this.error.set(this.t('prInsights.error.timeSeries')),
+      error: () => this.error.set('โหลดข้อมูลโครงการย้อนหลังไม่สำเร็จ'),
     });
   }
   private filters(): ProjectFilters {
@@ -513,7 +515,7 @@ export class InsightsPageComponent implements OnInit {
     };
   }
   private projectTypeLabel(project: Project): string {
-    return project.project_type || project.purchase_method_group || this.t('common.unspecifiedType');
+    return project.project_type || project.purchase_method_group || 'ไม่ระบุประเภท';
   }
   private topProjectTypes(): string[] {
     const counts = new Map<string, number>();
@@ -533,7 +535,7 @@ export class InsightsPageComponent implements OnInit {
       project.supplier_name ||
       project.purchase_method_group ||
       project.project_type ||
-      this.t('common.unspecifiedItem')
+      'ไม่ระบุรายการ'
     );
   }
   private subdistrictName(id: number): string {
@@ -548,7 +550,7 @@ export class InsightsPageComponent implements OnInit {
       project.contractor_name ||
       project.supplier_name ||
       project.bidder_name ||
-      this.t('prInsights.unspecifiedVendor')
+      'ไม่ระบุผู้รับจ้าง'
     );
   }
 }

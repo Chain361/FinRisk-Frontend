@@ -5,13 +5,10 @@ import { catchError, forkJoin, of } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
 import { AuthService } from '../../core/auth/auth.service';
-import { Project, Subdistrict } from '../../core/models/domain.models';
-import { ConfirmModalComponent } from '../../shared/ui/confirm-modal.component';
+import { AssignmentAssignee, AuditAssignment, Project, Subdistrict } from '../../core/models/domain.models';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { formatMoney, normalizeRiskLevel, subdistrictLabel } from '../../shared/utils/risk-utils';
 import {
-  ANALYSTS,
-  ASSIGNMENT_STORAGE_KEY,
   Analyst,
   SavedAssignment,
 } from './assignment-project-auditor.models';
@@ -30,7 +27,7 @@ interface AssignmentHistoryRow {
 @Component({
   selector: 'app-assignment-project-auditor-history-page',
   standalone: true,
-  imports: [FormsModule, RouterLink, ConfirmModalComponent, EmptyStateComponent],
+  imports: [FormsModule, RouterLink, EmptyStateComponent],
   template: `
     <section class="page-shell">
       <div class="flex flex-wrap items-start justify-between gap-4">
@@ -43,16 +40,6 @@ interface AssignmentHistoryRow {
         </div>
         <div class="flex flex-wrap gap-2">
           <button type="button" class="gov-btn-outline" (click)="reloadAssignments()">รีเฟรชประวัติ</button>
-          @if (isAdmin()) {
-            <button
-              type="button"
-              class="min-h-[42px] cursor-pointer rounded-[3px] border-[1.5px] border-risk-high bg-white px-5 text-sm font-extrabold text-risk-high hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-              [disabled]="!selectedCount()"
-              (click)="requestDeleteSelected()"
-            >
-              ลบรายการที่เลือก
-            </button>
-          }
         </div>
       </div>
 
@@ -81,9 +68,6 @@ interface AssignmentHistoryRow {
               <p class="m-0 mt-1 text-[13px] text-muted">ค้นหาโครงการ ผู้รับมอบหมาย หรือคำแนะนำที่เคยบันทึกไว้</p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-              @if (isAdmin() && selectedCount()) {
-                <span class="rounded-full bg-red-100 px-2.5 py-1 text-xs font-bold text-risk-high">เลือกแล้ว {{ selectedCount() }} รายการ</span>
-              }
               <span class="rounded-full bg-navy px-2.5 py-1 text-xs font-bold text-white">{{ filteredRows().length }} รายการ</span>
             </div>
           </div>
@@ -103,7 +87,7 @@ interface AssignmentHistoryRow {
               <span class="sr-only">กรองผู้รับมอบหมาย</span>
               <select class="gov-select" [ngModel]="analystFilter()" (ngModelChange)="analystFilter.set($event)">
                 <option value="all">ทุกผู้รับมอบหมาย</option>
-                @for (analyst of analysts; track analyst.id) {
+                @for (analyst of analysts(); track analyst.id) {
                   <option [value]="analyst.id">{{ analyst.name }}</option>
                 }
               </select>
@@ -122,42 +106,23 @@ interface AssignmentHistoryRow {
           </div>
         } @else {
           <div class="overflow-x-auto">
-            <table class="gov-table min-w-[1040px]">
+            <table class="gov-table min-w-[1180px]">
               <thead>
                 <tr>
-                  @if (isAdmin()) {
-                    <th class="w-[54px] text-center">
-                      <input
-                        type="checkbox"
-                        class="h-4 w-4 cursor-pointer accent-navy"
-                        aria-label="เลือกประวัติที่แสดงทั้งหมด"
-                        [ngModel]="allFilteredRowsSelected()"
-                        [indeterminate]="someFilteredRowsSelected()"
-                        (ngModelChange)="setFilteredRowsSelected($event)"
-                      />
-                    </th>
-                  }
-                  <th>วันที่มอบหมาย</th>
-                  <th>โครงการ</th>
-                  <th>ผู้รับมอบหมาย</th>
-                  <th>ความเสี่ยง</th>
+                  <th class="w-[116px]">วันที่มอบหมาย</th>
+                  <th class="w-[390px]">โครงการ</th>
+                  <th class="w-[128px]">Due date</th>
+                  <th class="w-[140px]">ผู้รับมอบหมาย</th>
+                  <th class="w-[112px]">ความเสี่ยง</th>
                   <th>คำแนะนำ</th>
+                  @if (canDeleteHistory()) {
+                    <th class="w-[92px] text-right">จัดการ</th>
+                  }
                 </tr>
               </thead>
               <tbody>
                 @for (row of filteredRows(); track row.key) {
                   <tr>
-                    @if (isAdmin()) {
-                      <td class="text-center align-top">
-                        <input
-                          type="checkbox"
-                          class="h-4 w-4 cursor-pointer accent-navy"
-                          aria-label="เลือกประวัติรายการนี้"
-                          [ngModel]="isSelected(row.key)"
-                          (ngModelChange)="setSelection(row.key, $event)"
-                        />
-                      </td>
-                    }
                     <td class="align-top">
                       <p class="m-0 font-bold text-ink">{{ row.assignedAtText }}</p>
                       <p class="m-0 mt-1 text-xs text-muted">
@@ -173,7 +138,8 @@ interface AssignmentHistoryRow {
                       <a
                         routerLink="/risk-factors"
                         [queryParams]="{ projectId: row.assignment.projectId }"
-                        class="font-extrabold leading-6 text-ink no-underline hover:text-navy hover:underline"
+                        class="line-clamp-3 max-w-[380px] font-extrabold leading-6 text-ink no-underline hover:text-navy hover:underline"
+                        [title]="row.projectName"
                       >
                         {{ row.projectName }}
                       </a>
@@ -189,6 +155,16 @@ interface AssignmentHistoryRow {
                         </span>
                         <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">รหัส {{ row.assignment.projectId }}</span>
                       </div>
+                    </td>
+                    <td class="align-top">
+                      @if (row.assignment.dueDate) {
+                        <div class="inline-flex min-w-[104px] flex-col rounded-[4px] border border-blue-100 bg-blue-50 px-3 py-2 text-sm leading-5 text-navy">
+                          <span class="text-[11px] font-extrabold uppercase tracking-wide text-muted">Due date</span>
+                          <span class="mt-0.5 font-extrabold">{{ formatDueDate(row.assignment.dueDate) }}</span>
+                        </div>
+                      } @else {
+                        <span class="text-sm italic text-slate-400">ยังไม่ระบุ</span>
+                      }
                     </td>
                     <td class="align-top">
                       <p class="m-0 font-bold text-ink">{{ row.analyst?.name || row.assignment.analystId }}</p>
@@ -209,11 +185,8 @@ interface AssignmentHistoryRow {
                       } @else {
                         <p class="m-0 text-sm italic text-slate-400">ยังไม่มีข้อมูล</p>
                       }
-                      @if (row.assignment.dueDate || row.assignment.budgetHours || row.assignment.auditSteps) {
+                      @if (row.assignment.budgetHours || row.assignment.auditSteps) {
                         <div class="mt-2 max-w-[320px] rounded-[4px] bg-slate-50 p-2 text-xs leading-5 text-muted">
-                          @if (row.assignment.dueDate) {
-                            <p class="m-0"><span class="font-bold text-ink">Due date:</span> {{ row.assignment.dueDate }}</p>
-                          }
                           @if (row.assignment.budgetHours) {
                             <p class="m-0"><span class="font-bold text-ink">Budget:</span> {{ row.assignment.budgetHours }} ชม.</p>
                           }
@@ -223,6 +196,22 @@ interface AssignmentHistoryRow {
                         </div>
                       }
                     </td>
+                    @if (canDeleteHistory()) {
+                      <td class="align-top text-right">
+                        <button
+                          type="button"
+                          class="gov-btn-outline border-risk-high px-3 py-2 text-xs text-risk-high disabled:cursor-not-allowed disabled:opacity-60"
+                          [disabled]="deletingAssignmentId() === row.assignment.assignmentId"
+                          (click)="deleteHistory(row)"
+                        >
+                          @if (deletingAssignmentId() === row.assignment.assignmentId) {
+                            กำลังลบ...
+                          } @else {
+                            ลบ
+                          }
+                        </button>
+                      </td>
+                    }
                   </tr>
                 }
               </tbody>
@@ -232,31 +221,22 @@ interface AssignmentHistoryRow {
       </section>
     </section>
 
-    <app-confirm-modal
-      [open]="deleteConfirmOpen()"
-      title="ยืนยันการลบรายการที่เลือก"
-      [message]="deleteConfirmMessage()"
-      confirmLabel="ลบรายการที่เลือก"
-      cancelLabel="ยกเลิก"
-      (confirmed)="deleteSelectedHistory()"
-      (cancelled)="deleteConfirmOpen.set(false)"
-    />
   `,
 })
 export class AssignmentProjectAuditorHistoryPageComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly auth = inject(AuthService);
 
-  readonly analysts = ANALYSTS;
+  readonly analysts = signal<Analyst[]>([]);
   readonly loading = signal(true);
   readonly error = signal('');
-  readonly deleteConfirmOpen = signal(false);
-  readonly selectedKeys = signal<string[]>([]);
   readonly assignments = signal<SavedAssignment[]>([]);
   readonly projects = signal<Project[]>([]);
   readonly subdistricts = signal<Subdistrict[]>([]);
   readonly search = signal('');
   readonly analystFilter = signal('all');
+  readonly deletingAssignmentId = signal<number | null>(null);
+  readonly canDeleteHistory = computed(() => this.auth.hasRole('admin'));
 
   readonly historyRows = computed<AssignmentHistoryRow[]>(() =>
     this.assignments()
@@ -275,35 +255,18 @@ export class AssignmentProjectAuditorHistoryPageComponent implements OnInit {
   });
 
   readonly latestAssignmentText = computed(() => this.historyRows()[0]?.assignedAtText ?? 'ยังไม่มีข้อมูล');
-  readonly isAdmin = computed(() => this.auth.hasRole('admin'));
-  readonly selectedKeySet = computed(() => new Set(this.selectedKeys()));
-  readonly selectedCount = computed(
-    () => this.historyRows().filter((row) => this.selectedKeySet().has(row.key)).length,
-  );
-  readonly allFilteredRowsSelected = computed(() => {
-    const rows = this.filteredRows();
-    const selectedKeys = this.selectedKeySet();
-    return rows.length > 0 && rows.every((row) => selectedKeys.has(row.key));
-  });
-  readonly someFilteredRowsSelected = computed(() => {
-    const rows = this.filteredRows();
-    const selectedKeys = this.selectedKeySet();
-    return rows.some((row) => selectedKeys.has(row.key)) && !this.allFilteredRowsSelected();
-  });
-  readonly deleteConfirmMessage = computed(
-    () =>
-      `ต้องการลบประวัติการมอบหมายงานที่เลือก ${this.selectedCount()} รายการใช่หรือไม่? รายการที่บันทึกไว้ในเครื่องนี้จะถูกลบออก`,
-  );
 
   ngOnInit(): void {
     this.reloadAssignments();
     forkJoin({
       projects: this.api.projects().pipe(catchError(() => of<Project[]>([]))),
       subdistricts: this.api.subdistricts().pipe(catchError(() => of<Subdistrict[]>([]))),
+      analysts: this.api.assignmentAssignees().pipe(catchError(() => of<AssignmentAssignee[]>([]))),
     }).subscribe({
-      next: ({ projects, subdistricts }) => {
+      next: ({ projects, subdistricts, analysts }) => {
         this.projects.set(projects);
         this.subdistricts.set(subdistricts);
+        this.analysts.set(analysts.map((analyst) => this.toAnalyst(analyst)));
         this.loading.set(false);
       },
       error: () => {
@@ -314,58 +277,35 @@ export class AssignmentProjectAuditorHistoryPageComponent implements OnInit {
   }
 
   reloadAssignments(): void {
-    const assignments = this.readAssignments();
-    this.assignments.set(assignments);
-    this.syncSelectedKeys(assignments);
-  }
-
-  requestDeleteSelected(): void {
-    if (!this.isAdmin() || !this.selectedCount()) {
-      return;
-    }
-    this.deleteConfirmOpen.set(true);
-  }
-
-  deleteSelectedHistory(): void {
-    if (!this.isAdmin()) {
-      this.deleteConfirmOpen.set(false);
-      return;
-    }
-
-    const selectedKeys = this.selectedKeySet();
-    const remaining = this.assignments().filter(
-      (assignment) => !selectedKeys.has(this.assignmentKey(assignment)),
-    );
-    this.writeAssignments(remaining);
-    this.assignments.set(remaining);
-    this.selectedKeys.set([]);
-    this.deleteConfirmOpen.set(false);
-  }
-
-  isSelected(key: string): boolean {
-    return this.selectedKeySet().has(key);
-  }
-
-  setSelection(key: string, selected: boolean): void {
-    const keys = new Set(this.selectedKeys());
-    if (selected) {
-      keys.add(key);
-    } else {
-      keys.delete(key);
-    }
-    this.selectedKeys.set([...keys]);
-  }
-
-  setFilteredRowsSelected(selected: boolean): void {
-    const keys = new Set(this.selectedKeys());
-    this.filteredRows().forEach((row) => {
-      if (selected) {
-        keys.add(row.key);
-      } else {
-        keys.delete(row.key);
-      }
+    this.error.set('');
+    this.api.assignments().subscribe({
+      next: (assignments) => this.assignments.set(assignments.map((assignment) => this.toSavedAssignment(assignment))),
+      error: () => this.error.set('โหลดประวัติการมอบหมายงานจากระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'),
     });
-    this.selectedKeys.set([...keys]);
+  }
+
+  deleteHistory(row: AssignmentHistoryRow): void {
+    const assignmentId = row.assignment.assignmentId;
+    if (!assignmentId) {
+      this.error.set('ไม่พบรหัสรายการประวัติที่จะลบ กรุณารีเฟรชหน้าแล้วลองใหม่');
+      return;
+    }
+    const confirmed = window.confirm(`ต้องการลบประวัติการมอบหมายงานของโครงการ "${row.projectName}" ใช่หรือไม่?`);
+    if (!confirmed) {
+      return;
+    }
+    this.error.set('');
+    this.deletingAssignmentId.set(assignmentId);
+    this.api.deleteAssignment(assignmentId).subscribe({
+      next: () => {
+        this.deletingAssignmentId.set(null);
+        this.reloadAssignments();
+      },
+      error: () => {
+        this.deletingAssignmentId.set(null);
+        this.error.set('ลบประวัติจากระบบไม่สำเร็จ กรุณาตรวจสิทธิ์หรือโหลดข้อมูลใหม่อีกครั้ง');
+      },
+    });
   }
 
   riskLabel(project: Project | null): string {
@@ -397,7 +337,7 @@ export class AssignmentProjectAuditorHistoryPageComponent implements OnInit {
   private toHistoryRow(assignment: SavedAssignment): AssignmentHistoryRow {
     const key = this.assignmentKey(assignment);
     const project = this.projects().find((item) => String(item.project_id) === assignment.projectId) ?? null;
-    const analyst = ANALYSTS.find((item) => item.id === assignment.analystId) ?? null;
+    const analyst = this.analysts().find((item) => item.id === assignment.analystId) ?? null;
     const subdistrictName = project
       ? subdistrictLabel(this.subdistricts().find((item) => item.subdistrict_id === project.subdistrict_id))
       : 'ยังไม่มีข้อมูล';
@@ -430,40 +370,66 @@ export class AssignmentProjectAuditorHistoryPageComponent implements OnInit {
   }
 
   private formatAssignedAt(value: string): string {
-    const date = new Date(value);
+    const date = this.parseBackendDate(value);
     return Number.isNaN(date.getTime())
       ? '-'
       : new Intl.DateTimeFormat('th-TH', {
           dateStyle: 'medium',
           timeStyle: 'short',
+          timeZone: 'Asia/Bangkok',
         }).format(date);
   }
 
+  formatDueDate(value: string): string {
+    const [year, month, day] = value.split('-').map(Number);
+    if (!year || !month || !day) {
+      return value;
+    }
+    return new Intl.DateTimeFormat('th-TH', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    }).format(new Date(year, month - 1, day));
+  }
+
   private dateValue(value: string): number {
-    const date = new Date(value);
+    const date = this.parseBackendDate(value);
     return Number.isNaN(date.getTime()) ? 0 : date.getTime();
   }
 
-  private readAssignments(): SavedAssignment[] {
-    try {
-      const parsed: unknown = JSON.parse(localStorage.getItem(ASSIGNMENT_STORAGE_KEY) ?? '[]');
-      return Array.isArray(parsed) ? (parsed as SavedAssignment[]) : [];
-    } catch {
-      return [];
+  private parseBackendDate(value: string): Date {
+    if (!value) {
+      return new Date(Number.NaN);
     }
+    const normalized = value.includes('T') ? value : value.replace(' ', 'T');
+    const hasTimezone = /(?:Z|[+-]\d{2}:?\d{2})$/.test(normalized);
+    return new Date(hasTimezone ? normalized : `${normalized}Z`);
   }
 
-  private writeAssignments(assignments: SavedAssignment[]): void {
-    if (!assignments.length) {
-      localStorage.removeItem(ASSIGNMENT_STORAGE_KEY);
-      return;
-    }
-    localStorage.setItem(ASSIGNMENT_STORAGE_KEY, JSON.stringify(assignments));
+  private toAnalyst(analyst: AssignmentAssignee): Analyst {
+    return {
+      id: String(analyst.user_id),
+      name: analyst.display_name || analyst.username,
+      team: 'นักวิเคราะห์ความเสี่ยง',
+      activeCases: analyst.active_cases,
+      specialties: [],
+    };
   }
 
-  private syncSelectedKeys(assignments: SavedAssignment[]): void {
-    const availableKeys = new Set(assignments.map((assignment) => this.assignmentKey(assignment)));
-    this.selectedKeys.set(this.selectedKeys().filter((key) => availableKeys.has(key)));
+  private toSavedAssignment(assignment: AuditAssignment): SavedAssignment {
+    return {
+      assignmentId: assignment.assignment_id,
+      projectId: assignment.project_id,
+      analystId: String(assignment.assigned_to),
+      assignedAt: assignment.created_at,
+      priority: assignment.priority,
+      note: assignment.note,
+      dueDate: assignment.due_date ?? undefined,
+      budgetHours: assignment.budget_hours ?? undefined,
+      auditSteps: assignment.audit_steps,
+      workflowStatus: assignment.status,
+      assignedBy: assignment.assigned_by_display_name || assignment.assigned_by_username || undefined,
+    };
   }
 
   private assignmentKey(assignment: SavedAssignment): string {

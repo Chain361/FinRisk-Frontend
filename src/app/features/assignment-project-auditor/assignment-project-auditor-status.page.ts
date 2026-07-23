@@ -4,12 +4,10 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { catchError, forkJoin, of } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
-import { Project, Subdistrict } from '../../core/models/domain.models';
+import { AuditAssignment, Project, Subdistrict } from '../../core/models/domain.models';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { normalizeRiskLevel, subdistrictLabel } from '../../shared/utils/risk-utils';
 import {
-  ANALYSTS,
-  ASSIGNMENT_STORAGE_KEY,
   Analyst,
   AssignmentWorkflowStatus,
   SavedAssignment,
@@ -120,7 +118,7 @@ interface ProjectStatusRow {
               <span class="sr-only">กรองผู้รับมอบหมาย</span>
               <select class="gov-select" [ngModel]="analystFilter()" (ngModelChange)="analystFilter.set($event)">
                 <option value="all">ทุกผู้รับมอบหมาย</option>
-                @for (analyst of analysts; track analyst.id) {
+                @for (analyst of analysts(); track analyst.id) {
                   <option [value]="analyst.id">{{ analyst.name }}</option>
                 }
               </select>
@@ -232,7 +230,15 @@ export class AssignmentProjectAuditorStatusPageComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly route = inject(ActivatedRoute);
 
-  readonly analysts = ANALYSTS;
+  readonly analysts = computed<Analyst[]>(() => {
+    const unique = new Map<string, Analyst>();
+    this.assignments().forEach((assignment) => {
+      if (!unique.has(assignment.analystId)) {
+        unique.set(assignment.analystId, this.analystFromAssignment(assignment));
+      }
+    });
+    return [...unique.values()].sort((left, right) => left.name.localeCompare(right.name, 'th'));
+  });
   readonly loading = signal(true);
   readonly error = signal('');
   readonly projects = signal<Project[]>([]);
@@ -317,7 +323,11 @@ export class AssignmentProjectAuditorStatusPageComponent implements OnInit {
   }
 
   reloadAssignments(): void {
-    this.assignments.set(this.readAssignments());
+    this.error.set('');
+    this.api.assignments().subscribe({
+      next: (assignments) => this.assignments.set(assignments.map((assignment) => this.toSavedAssignment(assignment))),
+      error: () => this.error.set('โหลดสถานะงานจากระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'),
+    });
   }
 
   private applyRouteSearch(): void {
@@ -370,7 +380,7 @@ export class AssignmentProjectAuditorStatusPageComponent implements OnInit {
     const projectId = String(project.project_id);
     const latestAssignment = this.latestAssignmentsByProject().get(projectId) ?? null;
     const analyst = latestAssignment
-      ? ANALYSTS.find((item) => item.id === latestAssignment.analystId) ?? null
+      ? this.analystFromAssignment(latestAssignment)
       : null;
     const subdistrictName = subdistrictLabel(
       this.subdistricts().find((item) => item.subdistrict_id === project.subdistrict_id),
@@ -423,12 +433,30 @@ export class AssignmentProjectAuditorStatusPageComponent implements OnInit {
     return risk === 'high' ? 3 : risk === 'medium' ? 2 : risk === 'low' ? 1 : 0;
   }
 
-  private readAssignments(): SavedAssignment[] {
-    try {
-      const parsed: unknown = JSON.parse(localStorage.getItem(ASSIGNMENT_STORAGE_KEY) ?? '[]');
-      return Array.isArray(parsed) ? (parsed as SavedAssignment[]) : [];
-    } catch {
-      return [];
-    }
+  private analystFromAssignment(assignment: SavedAssignment): Analyst {
+    return {
+      id: assignment.analystId,
+      name: assignment.analystName || assignment.analystId,
+      team: assignment.analystTeam || 'นักวิเคราะห์ความเสี่ยง',
+      activeCases: 0,
+      specialties: [],
+    };
+  }
+
+  private toSavedAssignment(assignment: AuditAssignment): SavedAssignment {
+    return {
+      assignmentId: assignment.assignment_id,
+      projectId: assignment.project_id,
+      analystId: String(assignment.assigned_to),
+      analystName: assignment.assignee_display_name || assignment.assignee_username || undefined,
+      assignedAt: assignment.created_at,
+      priority: assignment.priority,
+      note: assignment.note,
+      dueDate: assignment.due_date ?? undefined,
+      budgetHours: assignment.budget_hours ?? undefined,
+      auditSteps: assignment.audit_steps,
+      workflowStatus: assignment.status,
+      assignedBy: assignment.assigned_by_display_name || assignment.assigned_by_username || undefined,
+    };
   }
 }

@@ -208,13 +208,99 @@ export interface AccessLogFilters {
   offset?: number | null;
 }
 
-/** สถานะความเห็นผู้ตรวจสอบ — draft แก้ได้, submitted แก้ไม่ได้, resolved ปิดเรื่องแล้ว */
-export type FeedbackStatus = 'draft' | 'submitted' | 'resolved';
+export type AssignmentPriority = 'low' | 'normal' | 'high';
+export type AssignmentStatus =
+  | 'waiting_acceptance'
+  | 'accepted'
+  | 'in_progress'
+  | 'clarification_needed'
+  | 'ready_for_review'
+  | 'under_review'
+  | 'revision_requested'
+  | 'completed';
 
-/** ระดับความกังวลที่ API รับ (DB เผื่อ 'critical' ไว้แต่ API จำกัดเฉพาะ 3 ระดับนี้) */
+export interface AuditAssignment {
+  assignment_id: number;
+  project_id: string;
+  assigned_to: number;
+  assigned_by: number;
+  priority: AssignmentPriority;
+  note: string;
+  due_date?: string | null;
+  budget_hours?: number | null;
+  audit_steps: string;
+  status: AssignmentStatus;
+  created_at: string;
+  updated_at: string;
+  project_name?: string | null;
+  subdistrict_id?: number | null;
+  assignee_username?: string | null;
+  assignee_display_name?: string | null;
+  assigned_by_username?: string | null;
+  assigned_by_display_name?: string | null;
+}
+
+export interface AssignmentAssignee {
+  user_id: number;
+  username: string;
+  display_name?: string | null;
+  subdistrict_id: number;
+  active_cases: number;
+}
+
+export interface CreateAssignmentRequest {
+  project_id: string;
+  assignee_id: number;
+  priority?: AssignmentPriority;
+  note: string;
+  due_date?: string;
+  budget_hours?: number;
+  audit_steps?: string;
+}
+
+export type FeedbackStatus = 'draft' | 'submitted' | 'resolved';
 export type ConcernLevel = 'low' | 'medium' | 'high';
 
-/** ความเห็นผู้ตรวจสอบ — mirror ของ AuditorFeedbackOut (FinRisk-Backend/src/schemas.py) */
+export const FEEDBACK_STATUS_LABELS: Record<FeedbackStatus, string> = {
+  draft: 'แบบร่าง',
+  submitted: 'ส่งแล้ว',
+  resolved: 'ปิดเรื่องแล้ว',
+};
+
+export const CONCERN_LEVEL_OPTIONS: ReadonlyArray<{
+  value: ConcernLevel;
+  label: string;
+  hint: string;
+}> = [
+  { value: 'low', label: 'ต่ำ', hint: 'มีข้อสังเกตเล็กน้อย ติดตามตามรอบปกติ' },
+  { value: 'medium', label: 'ปานกลาง', hint: 'ควรตรวจสอบเอกสารหรือบริบทเพิ่มเติม' },
+  { value: 'high', label: 'สูง', hint: 'ควรเร่งตรวจสอบและบันทึกหลักฐานประกอบ' },
+];
+
+export const LIKELIHOOD_OPTIONS: ReadonlyArray<{
+  value: number;
+  label: string;
+  hint: string;
+}> = [
+  { value: 1, label: '1', hint: 'พบได้น้อยมาก' },
+  { value: 2, label: '2', hint: 'พบได้น้อย' },
+  { value: 3, label: '3', hint: 'มีโอกาสเกิดปานกลาง' },
+  { value: 4, label: '4', hint: 'มีโอกาสเกิดสูง' },
+  { value: 5, label: '5', hint: 'มีโอกาสเกิดสูงมากหรือพบสัญญาณชัดเจน' },
+];
+
+export const IMPACT_OPTIONS: ReadonlyArray<{
+  value: number;
+  label: string;
+  hint: string;
+}> = [
+  { value: 1, label: '1', hint: 'ผลกระทบต่ำมาก' },
+  { value: 2, label: '2', hint: 'ผลกระทบต่ำ' },
+  { value: 3, label: '3', hint: 'ผลกระทบปานกลาง' },
+  { value: 4, label: '4', hint: 'ผลกระทบสูง' },
+  { value: 5, label: '5', hint: 'ผลกระทบสูงมาก ต้องติดตามใกล้ชิด' },
+];
+
 export interface AuditorFeedback {
   feedback_id: number;
   project_id: string;
@@ -224,7 +310,6 @@ export interface AuditorFeedback {
   concern_level?: ConcernLevel | string | null;
   likelihood_score?: number | null;
   impact_score?: number | null;
-  /** คำนวณฝั่ง backend = likelihood × impact (null ถ้าขาดค่าใดค่าหนึ่ง) */
   risk_score?: number | null;
   suggestions?: string | null;
   status: FeedbackStatus | string;
@@ -234,7 +319,6 @@ export interface AuditorFeedback {
   resolved_at?: string | null;
 }
 
-/** payload สร้าง/แก้ไขความเห็น — mirror ของ AuditorFeedbackIn */
 export interface AuditorFeedbackCreate {
   project_id: string;
   feedback_text: string;
@@ -244,31 +328,3 @@ export interface AuditorFeedbackCreate {
   suggestions?: string | null;
   status: 'draft' | 'submitted';
 }
-
-export const FEEDBACK_STATUS_LABELS: Record<FeedbackStatus, string> = {
-  draft: 'ฉบับร่าง',
-  submitted: 'ส่งแล้ว',
-  resolved: 'แก้ไขแล้ว',
-};
-
-export const CONCERN_LEVEL_OPTIONS: ReadonlyArray<{ value: ConcernLevel; label: string }> = [
-  { value: 'low', label: 'ต่ำ' },
-  { value: 'medium', label: 'ปานกลาง' },
-  { value: 'high', label: 'สูง' },
-];
-
-export const LIKELIHOOD_OPTIONS: ReadonlyArray<{ value: number; label: string; hint: string }> = [
-  { value: 1, label: '1 - ต่ำมาก', hint: 'แทบไม่มีโอกาสเกิดขึ้น' },
-  { value: 2, label: '2 - ต่ำ', hint: 'มีโอกาสเกิดขึ้นน้อย' },
-  { value: 3, label: '3 - ปานกลาง', hint: 'มีโอกาสเกิดขึ้นปานกลาง' },
-  { value: 4, label: '4 - สูง', hint: 'มีโอกาสเกิดขึ้นค่อนข้างสูง' },
-  { value: 5, label: '5 - สูงมาก', hint: 'มีโอกาสเกิดขึ้นสูงมากหรือเกิดขึ้นแล้ว' },
-];
-
-export const IMPACT_OPTIONS: ReadonlyArray<{ value: number; label: string; hint: string }> = [
-  { value: 1, label: '1 - ต่ำมาก', hint: 'ผลกระทบน้อยมาก ไม่กระทบการดำเนินโครงการ' },
-  { value: 2, label: '2 - ต่ำ', hint: 'ผลกระทบน้อย แก้ไขได้ในระดับปฏิบัติงาน' },
-  { value: 3, label: '3 - ปานกลาง', hint: 'ผลกระทบปานกลาง อาจกระทบงบประมาณหรือระยะเวลา' },
-  { value: 4, label: '4 - สูง', hint: 'ผลกระทบสูง กระทบวัตถุประสงค์ของโครงการ' },
-  { value: 5, label: '5 - สูงมาก', hint: 'ผลกระทบรุนแรง อาจนำไปสู่ความเสียหายร้ายแรง' },
-];

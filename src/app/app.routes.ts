@@ -131,14 +131,6 @@ export const routes: Routes = [
           import('./features/admin/access-log.page').then((m) => m.AccessLogPageComponent),
       },
       {
-        path: 'risk-analyst-feedback',
-        loadComponent: () =>
-          import('./features/risk-analyst-feedback/risk-analyst-feedback.page').then(
-            (m) => m.RiskAnalystFeedbackPageComponent,
-          ),
-      },
-      {
-        // F6 — จำกัดตาม FEEDBACK_ROLES (public_user เข้าไม่ได้; backend บังคับซ้ำอีกชั้น)
         path: 'auditor-feedback',
         canActivate: [roleGuard(...FEEDBACK_ROLES)],
         loadComponent: () =>

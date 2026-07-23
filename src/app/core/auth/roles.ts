@@ -27,3 +27,12 @@ export const FEEDBACK_ROLES = [
 
 /** role ที่ปิดเรื่อง (resolve) และจัดการความเห็นของคนอื่นได้ — mirror ของ RESOLVE_ROLES ฝั่ง backend */
 export const RESOLVE_ROLES = ['admin', 'project_auditor'] as const;
+
+export const ROLE_LABELS: Record<string, string> = {
+  admin: 'ผู้ดูแลระบบ',
+  regional_supervisor: 'ผู้กำกับดูแลระดับภูมิภาค',
+  local_executive: 'ผู้บริหารท้องถิ่น',
+  project_auditor: 'ผู้ตรวจสอบโครงการ',
+  risk_analyst: 'นักวิเคราะห์ความเสี่ยง',
+  public_user: 'ผู้ใช้ทั่วไป',
+};

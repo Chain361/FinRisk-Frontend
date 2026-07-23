@@ -2,9 +2,28 @@ import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { ApiService } from '../../core/api/api.service';
-import { I18nService } from '../../core/i18n/i18n.service';
+import { ROLE_LABELS } from '../../core/auth/roles';
 import { AccessLogEntry, AccessLogFilters } from '../../core/models/domain.models';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
+
+/** ป้ายภาษาไทยของ action (map จากค่าที่ backend derive) */
+const ACTION_LABELS: Record<string, string> = {
+  login: 'เข้าสู่ระบบ',
+  view_list: 'ดูรายการ',
+  view_detail: 'ดูรายละเอียด',
+  export: 'ส่งออกข้อมูล',
+  write: 'แก้ไขข้อมูล',
+  other: 'อื่น ๆ',
+};
+
+const RESOURCE_LABELS: Record<string, string> = {
+  project: 'โครงการ',
+  risk: 'ความเสี่ยง',
+  subdistrict: 'ตำบล',
+  financial: 'การเงิน',
+  audit: 'การตรวจสอบ',
+  auth: 'การยืนยันตัวตน',
+};
 
 const PAGE_SIZE = 100;
 
@@ -15,57 +34,60 @@ const PAGE_SIZE = 100;
   template: `
     <section class="page-shell">
       <div>
-        <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">{{ t('nav.group.admin') }}</p>
-        <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">{{ t('accessLog.title') }}</h1>
-        <p class="m-0 mt-1.5 text-sm text-muted">{{ t('accessLog.subtitle') }}</p>
+        <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">ผู้ดูแลระบบ</p>
+        <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">บันทึกการเข้าถึงระบบ (Access Log)</h1>
+        <p class="m-0 mt-1.5 text-sm text-muted">
+          บันทึกว่าใครเข้าดูหรือทำอะไรกับข้อมูลใด เมื่อไหร่ — เพื่อความรับผิดชอบและตรวจสอบย้อนหลังได้
+          (บันทึกทั้งที่สำเร็จและที่ถูกปฏิเสธสิทธิ์)
+        </p>
       </div>
 
       <!-- ตัวกรอง -->
       <div class="grid gap-3.5 rounded-[4px] border-[1.5px] border-line bg-white px-[18px] py-4 sm:grid-cols-2 lg:grid-cols-5">
         <label class="block">
-          <span class="text-[12.5px] font-bold text-muted">{{ t('accessLog.filter.username') }}</span>
-          <input class="gov-input mt-[5px]" [(ngModel)]="fUsername" [placeholder]="t('accessLog.filter.usernamePlaceholder')" />
+          <span class="text-[12.5px] font-bold text-muted">ชื่อผู้ใช้</span>
+          <input class="gov-input mt-[5px]" [(ngModel)]="fUsername" placeholder="เช่น analyst1" />
         </label>
         <label class="block">
-          <span class="text-[12.5px] font-bold text-muted">{{ t('accessLog.filter.action') }}</span>
+          <span class="text-[12.5px] font-bold text-muted">การกระทำ</span>
           <select class="gov-select mt-[5px]" [(ngModel)]="fAction">
-            <option value="">{{ t('common.all') }}</option>
-            <option value="view_list">{{ t('accessLog.action.view_list') }}</option>
-            <option value="view_detail">{{ t('accessLog.action.view_detail') }}</option>
-            <option value="export">{{ t('accessLog.action.export') }}</option>
-            <option value="write">{{ t('accessLog.action.write') }}</option>
-            <option value="login">{{ t('accessLog.action.login') }}</option>
+            <option value="">ทั้งหมด</option>
+            <option value="view_list">ดูรายการ</option>
+            <option value="view_detail">ดูรายละเอียด</option>
+            <option value="export">ส่งออกข้อมูล</option>
+            <option value="write">แก้ไขข้อมูล</option>
+            <option value="login">เข้าสู่ระบบ</option>
           </select>
         </label>
         <label class="block">
-          <span class="text-[12.5px] font-bold text-muted">{{ t('accessLog.filter.resource') }}</span>
+          <span class="text-[12.5px] font-bold text-muted">ประเภทข้อมูล</span>
           <select class="gov-select mt-[5px]" [(ngModel)]="fResource">
-            <option value="">{{ t('common.all') }}</option>
-            <option value="project">{{ t('accessLog.resource.project') }}</option>
-            <option value="risk">{{ t('accessLog.resource.risk') }}</option>
-            <option value="subdistrict">{{ t('accessLog.resource.subdistrict') }}</option>
-            <option value="financial">{{ t('accessLog.resource.financial') }}</option>
-            <option value="audit">{{ t('accessLog.resource.audit') }}</option>
+            <option value="">ทั้งหมด</option>
+            <option value="project">โครงการ</option>
+            <option value="risk">ความเสี่ยง</option>
+            <option value="subdistrict">ตำบล</option>
+            <option value="financial">การเงิน</option>
+            <option value="audit">การตรวจสอบ</option>
           </select>
         </label>
         <label class="block">
-          <span class="text-[12.5px] font-bold text-muted">{{ t('accessLog.filter.dateFrom') }}</span>
+          <span class="text-[12.5px] font-bold text-muted">ตั้งแต่วันที่</span>
           <input type="date" class="gov-input mt-[5px]" [(ngModel)]="fFrom" />
         </label>
         <label class="block">
-          <span class="text-[12.5px] font-bold text-muted">{{ t('accessLog.filter.dateTo') }}</span>
+          <span class="text-[12.5px] font-bold text-muted">ถึงวันที่</span>
           <input type="date" class="gov-input mt-[5px]" [(ngModel)]="fTo" />
         </label>
         <div class="flex items-end gap-2 sm:col-span-2 lg:col-span-5">
           <button type="button" class="gov-btn-primary h-[38px] px-4 text-[13px] font-bold" (click)="applyFilters()">
-            {{ t('accessLog.filter.apply') }}
+            กรองข้อมูล
           </button>
           <button
             type="button"
             class="h-[38px] cursor-pointer rounded-[3px] border-[1.5px] border-line bg-white px-4 text-[13px] font-bold text-slate-700 hover:bg-zebra"
             (click)="resetFilters()"
           >
-            {{ t('accessLog.filter.clear') }}
+            ล้างตัวกรอง
           </button>
         </div>
       </div>
@@ -77,23 +99,17 @@ const PAGE_SIZE = 100;
       }
 
       @if (loading()) {
-        <p class="text-sm text-muted">{{ t('accessLog.loading') }}</p>
+        <p class="text-sm text-muted">กำลังโหลดบันทึก…</p>
       } @else if (entries().length === 0) {
         <app-empty-state
-          [title]="t('accessLog.emptyTitle')"
-          [message]="t('accessLog.emptyMsg')"
+          title="ยังไม่มีบันทึกการเข้าถึง"
+          message="ยังไม่มีเหตุการณ์ที่ตรงกับตัวกรอง หรือระบบยังไม่ได้บันทึก (บนโฮสต์ที่ฐานข้อมูลเขียนไม่ได้ เช่น serverless บันทึกจะว่าง)"
         />
       } @else {
         <section class="panel p-[18px]">
           <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
             <p class="m-0 text-[13px] text-muted">
-              {{
-                t('accessLog.summary', {
-                  total: total(),
-                  from: offset() + 1,
-                  to: offset() + entries().length,
-                })
-              }}
+              พบ {{ total() }} รายการ · แสดง {{ offset() + 1 }}–{{ offset() + entries().length }}
             </p>
             <div class="flex items-center gap-2">
               <button
@@ -102,7 +118,7 @@ const PAGE_SIZE = 100;
                 [disabled]="offset() === 0"
                 (click)="prevPage()"
               >
-                {{ t('common.prev') }}
+                ก่อนหน้า
               </button>
               <button
                 type="button"
@@ -110,7 +126,7 @@ const PAGE_SIZE = 100;
                 [disabled]="offset() + entries().length >= total()"
                 (click)="nextPage()"
               >
-                {{ t('common.next') }}
+                ถัดไป
               </button>
             </div>
           </div>
@@ -119,13 +135,13 @@ const PAGE_SIZE = 100;
             <table class="gov-table">
               <thead>
                 <tr>
-                  <th>{{ t('accessLog.col.time') }}</th>
-                  <th>{{ t('accessLog.col.user') }}</th>
-                  <th>{{ t('accessLog.col.role') }}</th>
-                  <th>{{ t('accessLog.col.action') }}</th>
-                  <th>{{ t('accessLog.col.resource') }}</th>
-                  <th>{{ t('accessLog.col.path') }}</th>
-                  <th class="text-right!">{{ t('accessLog.col.status') }}</th>
+                  <th>เวลา</th>
+                  <th>ผู้ใช้</th>
+                  <th>บทบาท</th>
+                  <th>การกระทำ</th>
+                  <th>ประเภทข้อมูล</th>
+                  <th>เส้นทาง (endpoint)</th>
+                  <th class="text-right!">สถานะ</th>
                   <th>IP</th>
                 </tr>
               </thead>
@@ -160,8 +176,6 @@ const PAGE_SIZE = 100;
 })
 export class AccessLogPageComponent implements OnInit {
   private readonly api = inject(ApiService);
-  private readonly i18n = inject(I18nService);
-  protected readonly t = this.i18n.t;
 
   readonly loading = signal(false);
   readonly error = signal('');
@@ -233,34 +247,25 @@ export class AccessLogPageComponent implements OnInit {
       error: () => {
         this.entries.set([]);
         this.total.set(0);
-        this.error.set(this.t('accessLog.error'));
+        this.error.set('โหลดบันทึกไม่สำเร็จ — ต้องเป็นผู้ดูแลระบบ (admin) และเชื่อมต่อ backend ได้');
         this.loading.set(false);
       },
     });
   }
 
   actionLabel(action: string): string {
-    const key = `accessLog.action.${action}`;
-    const label = this.t(key);
-    return label === key ? action : label;
+    return ACTION_LABELS[action] ?? action;
   }
 
   roleLabel(role: string | null): string {
-    if (!role) {
-      return '—';
-    }
-    const key = `role.${role}`;
-    const label = this.t(key);
-    return label === key ? role : label;
+    return role ? (ROLE_LABELS[role] ?? role) : '—';
   }
 
   resourceLabel(row: AccessLogEntry): string {
     if (!row.resource_type) {
       return '—';
     }
-    const key = `accessLog.resource.${row.resource_type}`;
-    const label = this.t(key);
-    const base = label === key ? row.resource_type : label;
+    const base = RESOURCE_LABELS[row.resource_type] ?? row.resource_type;
     return row.resource_id ? `${base} · ${row.resource_id}` : base;
   }
 
@@ -282,9 +287,6 @@ export class AccessLogPageComponent implements OnInit {
     if (Number.isNaN(d.getTime())) {
       return value;
     }
-    return new Intl.DateTimeFormat(this.i18n.locale(), {
-      dateStyle: 'medium',
-      timeStyle: 'medium',
-    }).format(d);
+    return new Intl.DateTimeFormat('th-TH', { dateStyle: 'medium', timeStyle: 'medium' }).format(d);
   }
 }
