@@ -14,17 +14,21 @@ import {
   Project,
   ProjectDetail,
   ProjectFilters,
+  ProjectRiskFactor,
   RiskFactorCatalog,
   Subdistrict,
 } from '../../core/models/domain.models';
+import { RiskMatrixComponent } from '../../shared/charts/risk-matrix.component';
 import { FilterBarComponent } from '../../shared/filters/filter-bar.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
+import { InfoTooltipComponent } from '../../shared/ui/info-tooltip.component';
 import { RiskBadgeComponent } from '../../shared/ui/risk-badge.component';
 import {
   bandColor,
   formatMoney,
   formatNumber,
   sortProjectsByRisk,
+  toBool,
   toNumber,
 } from '../../shared/utils/risk-utils';
 
@@ -34,8 +38,10 @@ import {
   imports: [
     EmptyStateComponent,
     FilterBarComponent,
+    InfoTooltipComponent,
     RouterLink,
     RiskBadgeComponent,
+    RiskMatrixComponent,
   ],
   template: `
     <section class="page-shell">
@@ -289,23 +295,236 @@ import {
 
                 <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                    <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('common.budget') }}</p>
+                    <p class="m-0 mt-1 text-[15px] font-extrabold text-ink">{{ money(projectDetail()?.budget_amount) }}</p>
+                  </div>
+                  <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                    <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('rf.detail.refPrice') }}</p>
+                    <p class="m-0 mt-1 text-[15px] font-extrabold text-ink">{{ money(projectDetail()?.reference_price) }}</p>
+                  </div>
+                  <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                    <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('rf.detail.contractPrice') }}</p>
+                    <p class="m-0 mt-1 text-[15px] font-extrabold text-ink">{{ money(contractValue()) }}</p>
+                  </div>
+                  <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                    <p class="m-0 text-[11.5px] font-bold text-muted">Risk Score</p>
+                    <p class="m-0 mt-1 text-[15px] font-extrabold text-ink">{{ number(projectDetail()?.risk_score, 2) }}</p>
+                  </div>
+                </div>
+
+                <div class="mt-2.5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
                     <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('rf.detail.dept') }}</p>
                     <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">{{ projectDeptName() }}</p>
                   </div>
                   <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
-                    <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('common.budget') }}</p>
-                    <p class="m-0 mt-1 text-[15px] font-extrabold text-ink">{{ money(projectDetail()?.budget_amount) }}</p>
+                    <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('rf.detail.projectStatus') }}</p>
+                    <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">{{ projectStatus() }}</p>
+                  </div>
+                  <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                    <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('rf.detail.contractNo') }}</p>
+                    <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">{{ contractNo() }}</p>
+                  </div>
+                  <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                    <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('rf.detail.contractStatus') }}</p>
+                    <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">{{ contractStatus() }}</p>
+                  </div>
+                </div>
+
+                <div class="mt-2.5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                    <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('rf.detail.vendor') }}</p>
+                    <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">{{ vendorLabel() }}</p>
                   </div>
                   <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
                     <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('rf.detail.purchaseMethod') }}</p>
                     <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">{{ purchaseMethodLabel() }}</p>
                   </div>
                   <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
-                    <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('rf.detail.projectStatus') }}</p>
-                    <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">{{ projectStatus() }}</p>
+                    <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('rf.detail.contractVsRef') }}</p>
+                    <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">
+                      {{ comparisonLabel(contractValue(), projectDetail()?.reference_price) }}
+                    </p>
+                    <p class="m-0 mt-1 text-xs text-muted">{{ percentageLabel(contractValue(), projectDetail()?.reference_price) }}</p>
+                  </div>
+                  <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                    <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('rf.detail.contractVsBudget') }}</p>
+                    <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">
+                      {{ comparisonLabel(contractValue(), projectDetail()?.budget_amount) }}
+                    </p>
+                    <p class="m-0 mt-1 text-xs text-muted">{{ percentageLabel(contractValue(), projectDetail()?.budget_amount) }}</p>
                   </div>
                 </div>
+
+                <div class="mt-3.5 rounded-[3px] border border-line-soft bg-[#fbfcfd] p-3.5">
+                  <div class="flex items-center gap-2">
+                    <h3 class="m-0 text-sm font-bold text-ink">{{ t('rf.formula.title') }}</h3>
+                    <app-info-tooltip [text]="t('rf.formula.tooltip')" [width]="280" />
+                  </div>
+                  <p class="m-0 mt-2 text-[13px] text-slate-700">{{ t('rf.formula.line1') }}</p>
+                  <p class="m-0 mt-1 text-[13px] text-slate-700">{{ t('rf.formula.line2') }}</p>
+                </div>
+
               </article>
+
+              <section class="panel p-[18px]">
+                <div class="flex items-center gap-2">
+                  <h2 class="m-0 text-[16px] font-bold text-ink">{{ t('rf.matrix.title') }}</h2>
+                  <app-info-tooltip [text]="t('rf.matrix.tooltip')" [width]="300" />
+                </div>
+                <div class="mt-3.5 grid items-start gap-5 lg:grid-cols-[auto_1fr]">
+                  <app-risk-matrix [likelihood]="scoreInfo().matrix_likelihood" [impact]="scoreInfo().matrix_impact" />
+                  <div class="grid gap-2.5">
+                    <div class="grid grid-cols-3 gap-2.5">
+                      <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                        <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('rf.matrix.likelihoodSum') }}</p>
+                        <p class="m-0 mt-1 text-[19px] font-extrabold text-ink">{{ number(scoreInfo().matrix_likelihood, 0) }}<span class="text-[12px] font-bold text-muted">/5</span></p>
+                      </div>
+                      <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                        <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('rf.matrix.impactMax') }}</p>
+                        <p class="m-0 mt-1 text-[19px] font-extrabold text-ink">{{ number(scoreInfo().matrix_impact, 0) }}<span class="text-[12px] font-bold text-muted">/5</span></p>
+                      </div>
+                      <div class="rounded-[3px] border border-line-soft p-[11px]" [style.background]="bandColor(scoreInfo().matrix_level) + '14'">
+                        <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('rf.matrix.scoreLevel') }}</p>
+                        <p class="m-0 mt-1 text-[19px] font-extrabold" [style.color]="bandColor(scoreInfo().matrix_level)">
+                          {{ number(scoreInfo().matrix_score, 0) }} ·
+                          @if (scoreInfo().matrix_level) {
+                            {{ bandText(scoreInfo().matrix_level) }}
+                          } @else {
+                            <span class="text-sm italic text-slate-400">{{ t('common.noData') }}</span>
+                          }
+                        </p>
+                      </div>
+                    </div>
+                    <div class="rounded-[3px] border border-line-soft bg-[#fbfcfd] p-3">
+                      <p class="m-0 text-[12px] font-bold text-slate-700">{{ t('rf.matrix.composition') }}</p>
+                      <p class="m-0 mt-1 text-[12.5px] leading-relaxed text-muted">
+                        {{ t('rf.matrix.foundSignalsPre') }} <span class="font-bold text-ink">{{ number(scoreInfo().factors_triggered, 0) }}</span> {{ t('common.factorsUnit') }}
+                        @if (scoreInfo().factors_not_computable) {
+                          · {{ t('common.cannotEvaluate') }} <span class="font-bold text-[#8a2a1f]">{{ number(scoreInfo().factors_not_computable, 0) }}</span> {{ t('common.factorsUnit') }}
+                        }
+                        · {{ t('rf.matrix.proportionScore') }} {{ number(scoreInfo().risk_score, 0) }}/100
+                      </p>
+                      @if (scoreInfo().summary_text) {
+                        <p class="m-0 mt-1.5 text-[12.5px] leading-relaxed text-slate-700">{{ scoreInfo().summary_text }}</p>
+                      }
+                      @if ((scoreInfo().factors_triggered ?? 0) >= 3) {
+                        <p class="m-0 mt-1.5 text-[11.5px] text-muted">{{ t('rf.matrix.corroboration') }}</p>
+                      }
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="panel p-[18px]">
+                <h2 class="m-0 mb-3.5 text-[16px] font-bold text-ink">{{ t('rf.factors.title') }}</h2>
+
+                @if (!triggeredFactors().length) {
+                  <app-empty-state
+                    [title]="t('rf.factors.emptyTitle')"
+                    [message]="t('rf.factors.emptyMsg')"
+                  />
+                } @else {
+                  <div class="grid gap-3">
+                    @for (factor of triggeredFactors(); track factor.factor_code) {
+                      <article class="rounded-[4px] border-[1.5px] border-line p-3.5">
+                        <div class="flex flex-wrap items-start justify-between gap-2">
+                          <div>
+                            <p class="m-0 text-sm font-bold text-ink">{{ factor.name_th }}</p>
+                            <p class="m-0 mt-0.5 text-[11.5px] text-muted">{{ factor.factor_code }}</p>
+                          </div>
+                          @if (factor.risk_band) {
+                            <span
+                              class="shrink-0 rounded-[3px] px-2.5 py-1 text-[11.5px] font-extrabold text-white"
+                              [style.background]="bandColor(factor.risk_band)"
+                              [title]="matrixChip(factor)"
+                            >{{ matrixChip(factor) }} · {{ bandText(factor.risk_band) }}</span>
+                          }
+                        </div>
+
+                        <!-- เทียบค่าที่วัดได้ ↔ เกณฑ์ (audit line) -->
+                        <div class="mt-2.5 grid gap-2 sm:grid-cols-2">
+                          <div class="rounded-[3px] border border-line-soft bg-zebra p-2.5">
+                            <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('rf.factors.observedValue') }}</p>
+                            <p class="m-0 mt-1 text-[15px] font-extrabold" [class]="isComputable(factor) ? 'text-ink' : 'text-[#8a2a1f]'">
+                              {{ isComputable(factor) ? value(factor.observed_value) : t('common.cannotEvaluate') }}
+                            </p>
+                          </div>
+                          <div class="rounded-[3px] border border-line-soft bg-zebra p-2.5">
+                            <p class="m-0 text-[11.5px] font-bold text-muted">{{ t('rf.factors.threshold') }}</p>
+                            <p class="m-0 mt-1 text-[12.5px] font-bold text-slate-700 break-words">{{ thresholdText(factor) }}</p>
+                          </div>
+                        </div>
+
+                        @if (factor.evidence_text) {
+                          <p class="m-0 mt-2.5 text-[12.5px] leading-relaxed text-slate-700">{{ factor.evidence_text }}</p>
+                        }
+                        @if (catalogDescription(factor.factor_code)) {
+                          <p class="m-0 mt-1.5 text-[12.5px] leading-relaxed text-muted">{{ catalogDescription(factor.factor_code) }}</p>
+                        }
+                        @if (factor.legal_ref) {
+                          <p class="m-0 mt-2 border-t border-line-soft pt-2 text-[11.5px] leading-relaxed text-muted">
+                            <span class="font-bold text-slate-600">{{ t('rf.factors.legalRef') }}</span> {{ factor.legal_ref }}
+                          </p>
+                        }
+                      </article>
+                    }
+                  </div>
+                }
+
+                @if (notComputableFactors().length) {
+                  <div class="mt-3.5 rounded-[3px] border border-[#e6cfca] bg-[#fdf6f5] p-3">
+                    <p class="m-0 text-[12px] font-bold text-[#8a2a1f]">{{ t('rf.factors.notComputableTitle') }}</p>
+                    <div class="mt-1.5 grid gap-1">
+                      @for (factor of notComputableFactors(); track factor.factor_code) {
+                        <p class="m-0 text-[12px] text-slate-700">
+                          <span class="font-bold">{{ factor.factor_code }} {{ factor.name_th }}</span>
+                          @if (factor.evidence_text) { — {{ factor.evidence_text }} }
+                        </p>
+                      }
+                    </div>
+                  </div>
+                }
+              </section>
+
+              <section class="panel p-[18px]">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <h2 class="m-0 text-[16px] font-bold text-ink">{{ t('rf.catalog.title') }}</h2>
+                    <p class="m-0 mt-1 text-[13px] text-muted">{{ t('rf.catalog.subtitle') }}</p>
+                  </div>
+                  <span class="rounded-[20px] border border-line bg-zebra px-3 py-1 text-xs font-bold text-slate-700">
+                    {{ t('rf.catalog.triggerCount', { count: selectedProjectCatalog().length }) }}
+                  </span>
+                </div>
+
+                @if (!selectedProjectCatalog().length) {
+                  <div class="mt-3">
+                    <app-empty-state
+                      [title]="t('rf.catalog.emptyTitle')"
+                      [message]="t('rf.catalog.emptyMsg')"
+                    />
+                  </div>
+                } @else {
+                  <div class="mt-3.5 grid gap-2.5 md:grid-cols-2">
+                    @for (factor of selectedProjectCatalog(); track factor.factor_code) {
+                      <div class="rounded-[3px] border border-line px-3 py-2.5">
+                        <div class="flex items-start justify-between gap-1.5">
+                          <p class="m-0 text-[13px] font-bold text-ink">{{ factor.factor_code }} · {{ factor.name_th }}</p>
+                          @if (factor.severity) {
+                            <span class="shrink-0 rounded-[20px] bg-row-active px-2 py-0.5 text-[11px] font-bold text-slate-700">
+                              {{ factor.severity }}
+                            </span>
+                          }
+                        </div>
+                        <p class="m-0 mt-1 text-xs leading-relaxed text-muted">
+                          {{ factor.description_th || factor.category || t('rf.catalog.noDescription') }}
+                        </p>
+                      </div>
+                    }
+                  </div>
+                }
+              </section>
             }
           </section>
         </div>
@@ -374,6 +593,34 @@ export class RiskFactorsPageComponent implements OnInit {
       const matchesQuery = idText.includes(query) || nameText.includes(query) || typeText.includes(query);
       return matchesQuery && this.projectMatchesFilters(project, selectedType, minBudget, maxBudget);
     });
+  });
+
+  readonly triggeredFactors = computed(() => {
+    const factors = this.projectDetail()?.risk_factors ?? [];
+    return factors.filter((factor) => toBool(factor.triggered));
+  });
+
+  readonly selectedProjectCatalog = computed(() => {
+    const factors = this.triggeredFactors();
+    const catalog = this.catalog();
+    const seen = new Set<string>();
+    return factors
+      .map(
+        (factor) =>
+          catalog.find((item) => item.factor_code === factor.factor_code) ?? {
+            factor_code: factor.factor_code,
+            name_th: factor.name_th,
+            severity: factor.severity ?? null,
+            description_th: factor.evidence_text ?? null,
+          },
+      )
+      .filter((factor) => {
+        if (seen.has(factor.factor_code)) {
+          return false;
+        }
+        seen.add(factor.factor_code);
+        return true;
+      });
   });
 
   readonly latestProjectAssignment = computed(() => {
@@ -477,6 +724,15 @@ export class RiskFactorsPageComponent implements OnInit {
     return formatNumber(value, fractionDigits);
   }
 
+  value(value: number | string | null | undefined): string {
+    return formatNumber(value, 3);
+  }
+
+  contractValue(): number | string | null | undefined {
+    const detail = this.projectDetail();
+    return detail?.contract_value ?? detail?.contract_price ?? detail?.contract_amount ?? detail?.winning_price ?? null;
+  }
+
   projectStatus(): string {
     const detail = this.projectDetail();
     return detail?.project_status || detail?.status || this.t('common.unspecified');
@@ -485,6 +741,14 @@ export class RiskFactorsPageComponent implements OnInit {
   projectDeptName(): string {
     const detail = this.projectDetail();
     return detail?.dept_name || detail?.dept_sub_name || this.t('common.unspecified');
+  }
+
+  contractNo(): string {
+    return this.projectDetail()?.contract_no || '-';
+  }
+
+  contractStatus(): string {
+    return this.projectDetail()?.contract_status || '-';
   }
 
   assignmentAnalystName(): string {
@@ -515,9 +779,49 @@ export class RiskFactorsPageComponent implements OnInit {
     return status === 'completed' ? 'bg-risk-low text-white' : 'bg-navy text-white';
   }
 
+  vendorLabel(): string {
+    const detail = this.projectDetail();
+    if (!detail) {
+      return '-';
+    }
+    return (
+      detail.vendor_name ||
+      detail.contractor_name ||
+      detail.supplier_name ||
+      detail.bidder_name ||
+      (detail.vendor_id !== null && detail.vendor_id !== undefined ? `Vendor #${detail.vendor_id}` : '-')
+    );
+  }
+
   purchaseMethodLabel(): string {
     const detail = this.projectDetail();
     return detail?.purchase_method || detail?.purchase_method_group || '-';
+  }
+
+  comparisonLabel(left: number | string | null | undefined, right: number | string | null | undefined): string {
+    const diff = this.percentageDifference(left, right);
+    if (diff === null) {
+      return '-';
+    }
+    if (diff === 0) {
+      return this.t('rf.compare.equal');
+    }
+    return diff > 0
+      ? this.t('rf.compare.higher', { pct: Math.abs(diff).toFixed(2) })
+      : this.t('rf.compare.lower', { pct: Math.abs(diff).toFixed(2) });
+  }
+
+  percentageLabel(left: number | string | null | undefined, right: number | string | null | undefined): string {
+    const diff = this.percentageDifference(left, right);
+    if (diff === null) {
+      return this.t('rf.compare.notCalculable');
+    }
+    const sign = diff > 0 ? '+' : '';
+    return this.t('rf.compare.pctFromBase', { sign, pct: diff.toFixed(2) });
+  }
+
+  isComputable(factor: ProjectRiskFactor): boolean {
+    return toBool(factor.computable);
   }
 
   /** ข้อมูลคะแนนรวม (จาก ProjectDetailResponse.risk_score ที่ api ผสมเข้ามาบน detail) */
@@ -539,6 +843,48 @@ export class RiskFactorsPageComponent implements OnInit {
   /** สีของ band สำหรับ chip/badge ระดับ 5×5 */
   bandColor(band: string | null | undefined): string {
     return bandColor(band);
+  }
+
+  /** จำนวนปัจจัยที่ประเมินไม่ได้ (computable=0) */
+  notComputableFactors(): ProjectRiskFactor[] {
+    const factors = this.projectDetail()?.risk_factors ?? [];
+    return factors.filter((f) => !toBool(f.computable));
+  }
+
+  /** แปลง threshold_used (JSON string หรือ object) → ข้อความสั้นสำหรับผู้ตรวจ */
+  thresholdText(factor: ProjectRiskFactor): string {
+    const raw = factor.threshold_used;
+    if (raw === null || raw === undefined || raw === '') {
+      return '-';
+    }
+    let obj: Record<string, unknown>;
+    try {
+      obj = typeof raw === 'string' ? JSON.parse(raw) : (raw as unknown as Record<string, unknown>);
+    } catch {
+      return String(raw);
+    }
+    // ตัด likelihood_map / account_map ออก แสดงเฉพาะ threshold ที่อ่านง่าย
+    const skip = new Set(['likelihood_map', 'account_map', 'likelihood_by']);
+    const parts = Object.entries(obj)
+      .filter(([k]) => !skip.has(k))
+      .map(([k, v]) => `${k}=${typeof v === 'number' ? v : JSON.stringify(v)}`);
+    return parts.length ? parts.join(', ') : '-';
+  }
+
+  /** ป้ายกำกับ โอกาส×ผลกระทบ ต่อ factor */
+  matrixChip(factor: ProjectRiskFactor): string {
+    const l = toNumber(factor.likelihood);
+    const i = toNumber(factor.impact);
+    const s = toNumber(factor.matrix_score);
+    if (l === null || i === null || s === null) {
+      return '-';
+    }
+    return this.t('rf.matrixChip', { l, i, s });
+  }
+
+  catalogDescription(code: string): string {
+    const factor = this.catalog().find((item) => item.factor_code === code);
+    return factor?.description_th ?? factor?.category ?? '';
   }
 
   private loadProjects(): void {
@@ -615,6 +961,15 @@ export class RiskFactorsPageComponent implements OnInit {
     const matchesMin = minBudget === null || (projectBudget !== null && projectBudget >= minBudget);
     const matchesMax = maxBudget === null || (projectBudget !== null && projectBudget <= maxBudget);
     return matchesType && matchesMin && matchesMax;
+  }
+
+  private percentageDifference(left: number | string | null | undefined, right: number | string | null | undefined): number | null {
+    const leftValue = toNumber(left);
+    const rightValue = toNumber(right);
+    if (leftValue === null || rightValue === null || rightValue === 0) {
+      return null;
+    }
+    return ((leftValue - rightValue) / rightValue) * 100;
   }
 
   private readAssignments(): SavedAssignment[] {
