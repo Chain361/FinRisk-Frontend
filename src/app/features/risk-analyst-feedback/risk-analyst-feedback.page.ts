@@ -13,10 +13,11 @@ import {
 import {
   CONCERN_LEVEL_OPTIONS,
   ConcernLevel,
+  FeedbackStatus,
   IMPACT_OPTIONS,
   LIKELIHOOD_OPTIONS,
-  ProjectFeedback,
-} from '../../core/models/feedback.models';
+  AuditorFeedback,
+} from '../../core/models/domain.models';
 import {
   Project,
   ProjectDetail,
@@ -330,7 +331,7 @@ import {
                       </p>
                     </div>
                     <div class="flex flex-col items-start gap-1.5">
-                      <app-feedback-status-badge [status]="currentFeedback()?.status" />
+                      <app-feedback-status-badge [status]="asFeedbackStatus(currentFeedback()?.status)" />
                       <span class="text-[11.5px] text-muted"
                         >ผู้ตรวจสอบ: {{ auditorDisplayName() }}</span
                       >
@@ -355,7 +356,8 @@ import {
                     <p
                       class="mt-3 rounded-[3px] border border-line-soft bg-zebra px-3 py-2 text-[12.5px] text-muted"
                     >
-                      ความคิดเห็นนี้ถูกส่งแล้ว ไม่สามารถแก้ไขได้ แต่คุณสามารถเขียนความคิดเห็นเพิ่มเติมได้
+                      ความคิดเห็นนี้ถูกส่งแล้ว ไม่สามารถแก้ไขได้
+                      แต่คุณสามารถเขียนความคิดเห็นเพิ่มเติมได้
                     </p>
                   }
 
@@ -557,7 +559,7 @@ import {
                                 {{ entry.risk_score ?? '-' }}
                               </td>
                               <td class="px-3 py-2.5 text-right">
-                                <app-feedback-status-badge [status]="entry.status" />
+                                <app-feedback-status-badge [status]="asFeedbackStatus(entry.status)" />
                               </td>
                               <td class="px-3 py-2.5 text-right">
                                 @if (canDeleteFeedback(entry)) {
@@ -574,7 +576,7 @@ import {
                                     <button
                                       type="button"
                                       class="inline-flex h-8 items-center justify-center rounded-[3px] border-[1.5px] border-risk-high px-2.5 text-[12px] font-bold text-risk-high hover:bg-red-50"
-                                      (click)="requestDeleteFeedback(entry.feedback_id)"
+                                      (click)="requestDeleteFeedback(String(entry.feedback_id))"
                                     >
                                       ลบ
                                     </button>
@@ -630,8 +632,8 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
   readonly allProjects = signal<Project[]>([]);
   readonly projects = signal<Project[]>([]);
   readonly catalog = signal<RiskFactorCatalog[]>([]);
-  readonly allFeedback = signal<ProjectFeedback[]>([]);
-  readonly selectedFeedbackHistory = signal<ProjectFeedback[]>([]);
+  readonly allFeedback = signal<AuditorFeedback[]>([]);
+  readonly selectedFeedbackHistory = signal<AuditorFeedback[]>([]);
   readonly feedbackLoading = signal(false);
   readonly feedbackSaving = signal(false);
   readonly projectDetail = signal<ProjectDetail | null>(null);
@@ -676,7 +678,7 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     () => this.impactOptions.find((option) => option.value === this.impactScore())?.hint ?? '',
   );
 
-  readonly currentFeedback = computed<ProjectFeedback | null>(() => {
+  readonly currentFeedback = computed<AuditorFeedback | null>(() => {
     const projectId = this.selectedProjectId();
     const username = this.auth.user()?.username;
     if (!projectId || !username) {
@@ -685,7 +687,7 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     return activeOf(this.selectedFeedbackHistory(), projectId, username);
   });
 
-  readonly feedbackHistory = computed<ProjectFeedback[]>(() => this.selectedFeedbackHistory());
+  readonly feedbackHistory = computed<AuditorFeedback[]>(() => this.selectedFeedbackHistory());
 
   readonly isFeedbackLocked = computed(() => {
     if (this.isEditingEntry() || this.isComposingNewFeedback()) {
@@ -863,8 +865,8 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     this.resetFeedbackForm();
   }
 
-  feedbackStatusFor(projectId: string | number): ProjectFeedback['status'] | null {
-    return latestOf(this.allFeedback(), projectId)?.status ?? null;
+  feedbackStatusFor(projectId: string | number): FeedbackStatus | null {
+    return this.asFeedbackStatus(latestOf(this.allFeedback(), projectId)?.status);
   }
 
   feedbackUpdatedFor(projectId: string | number): string {
@@ -872,7 +874,11 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     return record ? this.dateLabel(record.updated_at) : '-';
   }
 
-  concernLabel(level: ConcernLevel | null): string {
+  asFeedbackStatus(status: string | null | undefined): FeedbackStatus | null {
+    return (status as FeedbackStatus | null | undefined) ?? null;
+  }
+
+  concernLabel(level: ConcernLevel | string | null | undefined): string {
     return this.concernLevelOptions.find((option) => option.value === level)?.label ?? '-';
   }
 
@@ -895,7 +901,7 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     this.feedbackSaving.set(true);
     this.feedbackService.saveDraft(draft).subscribe({
       next: (record) => {
-        this.activeFeedbackId.set(record.feedback_id);
+        this.activeFeedbackId.set(String(record.feedback_id));
         this.refreshFeedbackLists(() => {
           this.feedbackSaving.set(false);
           this.feedbackSuccessMessage.set('บันทึกฉบับร่างเรียบร้อยแล้ว');
@@ -947,17 +953,17 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     });
   }
 
-  canDeleteFeedback(entry: ProjectFeedback): boolean {
+  canDeleteFeedback(entry: AuditorFeedback): boolean {
     const username = this.auth.user()?.username;
     return entry.auditor_username === username || this.auth.hasRole('admin', 'project_auditor');
   }
 
-  editFeedback(entry: ProjectFeedback): void {
-    this.activeFeedbackId.set(entry.feedback_id);
+  editFeedback(entry: AuditorFeedback): void {
+    this.activeFeedbackId.set(String(entry.feedback_id));
     this.feedbackText.set(entry.feedback_text);
-    this.concernLevel.set(entry.concern_level);
-    this.likelihoodScore.set(entry.likelihood_score);
-    this.impactScore.set(entry.impact_score);
+    this.concernLevel.set((entry.concern_level as ConcernLevel | null | undefined) ?? null);
+    this.likelihoodScore.set(entry.likelihood_score ?? null);
+    this.impactScore.set(entry.impact_score ?? null);
     this.suggestions.set(entry.suggestions ?? '');
     this.isEditingEntry.set(true);
     this.isComposingNewFeedback.set(false);
@@ -1000,7 +1006,7 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     if (!current) {
       return;
     }
-    this.feedbackService.resolve(current.feedback_id).subscribe({
+    this.feedbackService.resolve(String(current.feedback_id)).subscribe({
       next: () => {
         this.refreshFeedbackLists(() => {
           this.feedbackSuccessMessage.set('เปลี่ยนสถานะเป็น Resolved เรียบร้อยแล้ว');
@@ -1039,9 +1045,9 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
         this.feedbackLoading.set(false);
         const username = this.auth.user()?.username;
         const existing = username ? activeOf(records, projectId, username) : null;
-        this.activeFeedbackId.set(existing?.feedback_id ?? null);
+        this.activeFeedbackId.set(existing ? String(existing.feedback_id) : null);
         this.feedbackText.set(existing?.feedback_text ?? '');
-        this.concernLevel.set(existing?.concern_level ?? null);
+        this.concernLevel.set((existing?.concern_level as ConcernLevel | null | undefined) ?? null);
         this.likelihoodScore.set(existing?.likelihood_score ?? null);
         this.impactScore.set(existing?.impact_score ?? null);
         this.suggestions.set(existing?.suggestions ?? '');
@@ -1058,7 +1064,7 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     const projectId = this.selectedProjectId();
     forkJoin({
       all: this.feedbackService.all(),
-      history: projectId ? this.feedbackService.historyFor(projectId) : of<ProjectFeedback[]>([]),
+      history: projectId ? this.feedbackService.historyFor(projectId) : of<AuditorFeedback[]>([]),
     }).subscribe({
       next: ({ all, history }) => {
         this.allFeedback.set(all);

@@ -3,7 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
-import { ConcernLevel, FeedbackStatus, ProjectFeedback } from '../models/feedback.models';
+import { ConcernLevel, FeedbackStatus, AuditorFeedback } from '../models/domain.models';
 
 export interface FeedbackDraftInput {
   feedback_id: string | null;
@@ -17,9 +17,9 @@ export interface FeedbackDraftInput {
 
 /** feedback ล่าสุดของแต่ละโครงการ จาก list ที่โหลดมาแล้ว (ใหม่สุดตาม updated_at) */
 export function latestOf(
-  records: ProjectFeedback[],
+  records: AuditorFeedback[],
   projectId: string | number,
-): ProjectFeedback | null {
+): AuditorFeedback | null {
   const id = String(projectId);
   return (
     records
@@ -30,10 +30,10 @@ export function latestOf(
 
 /** ฉบับที่ auditor คนนี้กำลังทำอยู่สำหรับโครงการนี้ (ยังไม่ resolved) */
 export function activeOf(
-  records: ProjectFeedback[],
+  records: AuditorFeedback[],
   projectId: string | number,
   username: string,
-): ProjectFeedback | null {
+): AuditorFeedback | null {
   const id = String(projectId);
   return (
     records
@@ -53,19 +53,19 @@ export class ProjectFeedbackService {
   private readonly baseUrl = environment.apiBaseUrl;
 
   /** feedback ทั้งหมดที่ผู้ใช้เห็นได้ (scope ตามตำบล) — ใช้แสดงสถานะบนรายการโครงการ */
-  all(): Observable<ProjectFeedback[]> {
-    return this.http.get<ProjectFeedback[]>(`${this.baseUrl}/audit/feedback`);
+  all(): Observable<AuditorFeedback[]> {
+    return this.http.get<AuditorFeedback[]>(`${this.baseUrl}/audit/feedback`);
   }
 
-  historyFor(projectId: string | number): Observable<ProjectFeedback[]> {
-    return this.http.get<ProjectFeedback[]>(`${this.baseUrl}/audit/feedback/${projectId}`);
+  historyFor(projectId: string | number): Observable<AuditorFeedback[]> {
+    return this.http.get<AuditorFeedback[]>(`${this.baseUrl}/audit/feedback/${projectId}`);
   }
 
-  saveDraft(input: FeedbackDraftInput): Observable<ProjectFeedback> {
+  saveDraft(input: FeedbackDraftInput): Observable<AuditorFeedback> {
     return this.upsert(input, 'draft');
   }
 
-  submit(input: FeedbackDraftInput): Observable<ProjectFeedback> {
+  submit(input: FeedbackDraftInput): Observable<AuditorFeedback> {
     return this.upsert(input, 'submitted');
   }
 
@@ -73,14 +73,14 @@ export class ProjectFeedbackService {
     return this.http.delete<void>(`${this.baseUrl}/audit/feedback/${feedbackId}`);
   }
 
-  resolve(feedbackId: string): Observable<ProjectFeedback> {
-    return this.http.patch<ProjectFeedback>(
+  resolve(feedbackId: string): Observable<AuditorFeedback> {
+    return this.http.patch<AuditorFeedback>(
       `${this.baseUrl}/audit/feedback/${feedbackId}/resolve`,
       {},
     );
   }
 
-  private upsert(input: FeedbackDraftInput, status: FeedbackStatus): Observable<ProjectFeedback> {
+  private upsert(input: FeedbackDraftInput, status: FeedbackStatus): Observable<AuditorFeedback> {
     const body = {
       project_id: String(input.project_id),
       feedback_text: input.feedback_text,
@@ -91,10 +91,10 @@ export class ProjectFeedbackService {
       status,
     };
     return input.feedback_id
-      ? this.http.patch<ProjectFeedback>(
+      ? this.http.patch<AuditorFeedback>(
           `${this.baseUrl}/audit/feedback/${input.feedback_id}`,
           body,
         )
-      : this.http.post<ProjectFeedback>(`${this.baseUrl}/audit/feedback`, body);
+      : this.http.post<AuditorFeedback>(`${this.baseUrl}/audit/feedback`, body);
   }
 }

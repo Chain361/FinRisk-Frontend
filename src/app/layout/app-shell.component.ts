@@ -66,6 +66,13 @@ const NAV_GROUPS: NavGroup[] = [
         code: 'F5',
         label: 'แบบฟอร์มบันทึกความคิดเห็นด้านความเสี่ยงของโครงการ',
         path: '/risk-analyst-feedback',
+        roles: [
+          'admin',
+          'regional_supervisor',
+          'local_executive',
+          'project_auditor',
+          'risk_analyst',
+        ],
       },
     ],
   },
@@ -78,7 +85,13 @@ const NAV_GROUPS: NavGroup[] = [
         label: 'ความเห็นผู้ตรวจสอบ',
         path: '/auditor-feedback',
         // mirror FEEDBACK_ROLES (core/auth/roles.ts) — ซ่อนจาก public_user
-        roles: ['admin', 'regional_supervisor', 'local_executive', 'project_auditor', 'risk_analyst'],
+        roles: [
+          'admin',
+          'regional_supervisor',
+          'local_executive',
+          'project_auditor',
+          'risk_analyst',
+        ],
       },
     ],
   },

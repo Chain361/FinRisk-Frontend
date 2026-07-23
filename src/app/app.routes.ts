@@ -82,6 +82,7 @@ export const routes: Routes = [
       },
       {
         path: 'risk-analyst-feedback',
+        canActivate: [roleGuard(...FEEDBACK_ROLES)],
         loadComponent: () =>
           import('./features/risk-analyst-feedback/risk-analyst-feedback.page').then(
             (m) => m.RiskAnalystFeedbackPageComponent,
