@@ -34,7 +34,9 @@ import {
       </div>
 
       @if (error()) {
-        <p class="rounded-[4px] border-[1.5px] border-risk-high bg-red-50 px-4 py-3 text-sm text-risk-high">
+        <p
+          class="rounded-[4px] border-[1.5px] border-risk-high bg-red-50 px-4 py-3 text-sm text-risk-high"
+        >
           {{ error() }}
         </p>
       }
@@ -43,11 +45,11 @@ import {
         <section class="panel overflow-hidden">
           <div class="border-b-[1.5px] border-line px-4 py-3.5">
             <div class="flex flex-wrap items-end justify-between gap-3">
-              <div class="flex flex-wrap items-end gap-3">
+              <div class="flex flex-wrap items-end gap-4">
                 <label class="block">
-                  <span class="text-[12.5px] font-bold text-muted">สถานะ</span>
+                  <p class="text-[12.5px] font-bold text-muted">สถานะ</p>
                   <select
-                    class="gov-select mt-1 w-auto!"
+                    class="gov-select mt-1 w-40!"
                     [value]="statusFilter()"
                     (change)="statusFilter.set($any($event.target).value)"
                   >
@@ -58,9 +60,9 @@ import {
                   </select>
                 </label>
                 <label class="block">
-                  <span class="text-[12.5px] font-bold text-muted">ระดับความกังวล</span>
+                  <p class="text-[12.5px] font-bold text-muted">ระดับความกังวล</p>
                   <select
-                    class="gov-select mt-1 w-auto!"
+                    class="gov-select mt-1 w-40!"
                     [value]="concernFilter()"
                     (change)="concernFilter.set($any($event.target).value)"
                   >
@@ -70,20 +72,16 @@ import {
                     <option value="low">ต่ำ</option>
                   </select>
                 </label>
-                <label class="block w-full max-w-xs">
-                  <span class="text-[12.5px] font-bold text-muted">ค้นหา</span>
-                  <input
-                    type="search"
-                    class="gov-input mt-1"
-                    placeholder="Project ID ผู้ให้ความเห็น หรือข้อความ"
-                    [value]="searchQuery()"
-                    (input)="searchQuery.set($any($event.target).value)"
-                  />
-                </label>
               </div>
-              <span class="rounded-[20px] border border-line bg-zebra px-3 py-1 text-xs font-bold text-slate-700">
-                {{ filteredItems().length }} / {{ items().length }} รายการ
-              </span>
+              <label class="w-76">
+                <input
+                  type="search"
+                  class="gov-input mt-1 w-24"
+                  placeholder="ค้นหาProject ID ผู้ให้ความเห็น หรือข้อความ"
+                  [value]="searchQuery()"
+                  (input)="searchQuery.set($any($event.target).value)"
+                />
+              </label>
             </div>
           </div>
 
@@ -111,7 +109,10 @@ import {
                 </thead>
                 <tbody class="divide-y divide-slate-100 bg-white">
                   @for (item of filteredItems(); track item.feedback_id) {
-                    <tr class="cursor-pointer hover:bg-slate-50" (click)="openProject(item.project_id)">
+                    <tr
+                      class="cursor-pointer hover:bg-slate-50"
+                      (click)="openProject(item.project_id)"
+                    >
                       <td class="max-w-md px-4 py-3">
                         <p class="m-0 text-xs font-bold text-muted">ID {{ item.project_id }}</p>
                         <p class="m-0 mt-0.5 line-clamp-2 text-[13px] text-slate-800">
@@ -126,7 +127,8 @@ import {
                           <span
                             class="inline-flex items-center rounded-[3px] px-2 py-1 text-[11.5px] font-extrabold text-white"
                             [style.background]="concernColor(item.concern_level)"
-                          >{{ concernLabel(item.concern_level) }}</span>
+                            >{{ concernLabel(item.concern_level) }}</span
+                          >
                         } @else {
                           <span class="text-muted">-</span>
                         }
@@ -138,7 +140,8 @@ import {
                         <span
                           class="inline-flex items-center rounded-[3px] px-2 py-1 text-[11.5px] font-extrabold"
                           [class]="statusChipClass(item.status)"
-                        >{{ statusLabel(item.status) }}</span>
+                          >{{ statusLabel(item.status) }}</span
+                        >
                       </td>
                       <td class="whitespace-nowrap px-4 py-3 text-[12.5px] text-muted">
                         {{ date(item.updated_at) }}
@@ -166,23 +169,39 @@ import {
             <article class="panel p-[18px]">
               <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p class="m-0 text-[12.5px] font-bold text-muted">Project ID {{ projectDetail()?.project_id }}</p>
-                  <h2 class="m-0 mt-1 text-[19px] font-extrabold text-ink">{{ projectDetail()?.project_name }}</h2>
+                  <p class="m-0 text-[12.5px] font-bold text-muted">
+                    Project ID {{ projectDetail()?.project_id }}
+                  </p>
+                  <h2 class="m-0 mt-1 text-[19px] font-extrabold text-ink">
+                    {{ projectDetail()?.project_name }}
+                  </h2>
                   <p class="m-0 mt-1.5 text-[13px] text-muted">
                     ปี {{ projectDetail()?.budget_year }} ·
-                    {{ projectDetail()?.project_type || projectDetail()?.purchase_method_group || '-' }}
+                    {{
+                      projectDetail()?.project_type || projectDetail()?.purchase_method_group || '-'
+                    }}
                   </p>
                 </div>
-                <span class="text-[11px] font-bold text-muted">คะแนนความเสี่ยง {{ projectDetail()?.risk_score ?? '-' }}/100</span>
+                <span class="text-[11px] font-bold text-muted"
+                  >คะแนนความเสี่ยง {{ projectDetail()?.risk_score ?? '-' }}/100</span
+                >
               </div>
 
               @if (projectDetail()?.source_file || projectDetail()?.data_quality_note) {
-                <div class="mt-3 rounded-[3px] border border-line-soft bg-[#fbfcfd] px-3 py-2 text-[11.5px] text-muted">
+                <div
+                  class="mt-3 rounded-[3px] border border-line-soft bg-[#fbfcfd] px-3 py-2 text-[11.5px] text-muted"
+                >
                   @if (projectDetail()?.source_file) {
-                    <p class="m-0"><span class="font-bold text-slate-600">ที่มาข้อมูล:</span> {{ projectDetail()?.source_file }}</p>
+                    <p class="m-0">
+                      <span class="font-bold text-slate-600">ที่มาข้อมูล:</span>
+                      {{ projectDetail()?.source_file }}
+                    </p>
                   }
                   @if (projectDetail()?.data_quality_note) {
-                    <p class="m-0 mt-0.5"><span class="font-bold text-[#8a2a1f]">ข้อจำกัดข้อมูล:</span> {{ projectDetail()?.data_quality_note }}</p>
+                    <p class="m-0 mt-0.5">
+                      <span class="font-bold text-[#8a2a1f]">ข้อจำกัดข้อมูล:</span>
+                      {{ projectDetail()?.data_quality_note }}
+                    </p>
                   }
                 </div>
               }
@@ -194,7 +213,9 @@ import {
                 </div>
                 <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
                   <p class="m-0 text-[11.5px] font-bold text-muted">งบประมาณ</p>
-                  <p class="m-0 mt-1 text-[15px] font-extrabold text-ink">{{ money(projectDetail()?.budget_amount) }}</p>
+                  <p class="m-0 mt-1 text-[15px] font-extrabold text-ink">
+                    {{ money(projectDetail()?.budget_amount) }}
+                  </p>
                 </div>
                 <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
                   <p class="m-0 text-[11.5px] font-bold text-muted">ประเภทจัดซื้อจัดจ้าง</p>
