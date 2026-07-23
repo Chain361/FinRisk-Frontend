@@ -543,6 +543,7 @@ import { ProjectFeedbackPanelComponent } from './project-feedback-panel.componen
   `,
 })
 export class RiskFactorsPageComponent implements OnInit {
+  private readonly api = inject(ApiService);
   private readonly i18n = inject(I18nService);
   private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
