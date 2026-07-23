@@ -110,8 +110,8 @@ import {
                     <th class="px-4 py-3">โครงการ</th>
                     <th class="px-4 py-3">ปี</th>
                     <th class="px-4 py-3 text-right">คะแนนความเสี่ยง</th>
-                    <th class="px-4 py-3 text-right">สถานะความคิดเห็น</th>
-                    <th class="px-4 py-3 text-right">วันที่ตรวจล่าสุด</th>
+                    <th class="px-4 py-3">สถานะความคิดเห็น</th>
+                    <th class="px-4 py-3">วันที่ตรวจล่าสุด</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 bg-white">
@@ -140,12 +140,12 @@ import {
                         <td class="px-4 py-3 text-right font-semibold">
                           {{ number(project.risk_score, 2) }}
                         </td>
-                        <td class="px-4 py-3 text-right">
+                        <td class="px-4 py-3">
                           <app-feedback-status-badge
                             [status]="feedbackStatusFor(project.project_id)"
                           />
                         </td>
-                        <td class="px-4 py-3 text-right">
+                        <td class="px-4 py-3">
                           {{ feedbackUpdatedFor(project.project_id) }}
                         </td>
                       </tr>
@@ -565,15 +565,6 @@ import {
                               <td class="px-3 py-2.5 text-right">
                                 @if (canDeleteFeedback(entry)) {
                                   <div class="flex justify-end gap-2">
-                                    @if (entry.status === 'draft') {
-                                      <button
-                                        type="button"
-                                        class="inline-flex h-8 items-center justify-center rounded-[3px] border-[1.5px] border-line px-2.5 text-[12px] font-bold text-slate-700 hover:bg-zebra"
-                                        (click)="editFeedback(entry)"
-                                      >
-                                        แก้ไข
-                                      </button>
-                                    }
                                     <button
                                       type="button"
                                       class="inline-flex h-8 items-center justify-center rounded-[3px] border-[1.5px] border-risk-high px-2.5 text-[12px] font-bold text-risk-high hover:bg-red-50"
@@ -956,19 +947,6 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
   canDeleteFeedback(entry: AuditorFeedback): boolean {
     const username = this.auth.user()?.username;
     return entry.auditor_username === username || this.auth.hasRole(...RESOLVE_ROLES);
-  }
-
-  editFeedback(entry: AuditorFeedback): void {
-    this.activeFeedbackId.set(String(entry.feedback_id));
-    this.feedbackText.set(entry.feedback_text);
-    this.concernLevel.set((entry.concern_level as ConcernLevel | null | undefined) ?? null);
-    this.likelihoodScore.set(entry.likelihood_score ?? null);
-    this.impactScore.set(entry.impact_score ?? null);
-    this.suggestions.set(entry.suggestions ?? '');
-    this.isEditingEntry.set(true);
-    this.isComposingNewFeedback.set(false);
-    this.feedbackSuccessMessage.set('');
-    this.feedbackValidationError.set('');
   }
 
   startNewFeedback(): void {
