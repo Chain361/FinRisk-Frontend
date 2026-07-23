@@ -106,16 +106,17 @@ interface AssignmentHistoryRow {
           </div>
         } @else {
           <div class="overflow-x-auto">
-            <table class="gov-table min-w-[1120px]">
+            <table class="gov-table min-w-[1180px]">
               <thead>
                 <tr>
-                  <th>วันที่มอบหมาย</th>
-                  <th>โครงการ</th>
-                  <th>ผู้รับมอบหมาย</th>
-                  <th>ความเสี่ยง</th>
+                  <th class="w-[116px]">วันที่มอบหมาย</th>
+                  <th class="w-[390px]">โครงการ</th>
+                  <th class="w-[128px]">Due date</th>
+                  <th class="w-[140px]">ผู้รับมอบหมาย</th>
+                  <th class="w-[112px]">ความเสี่ยง</th>
                   <th>คำแนะนำ</th>
                   @if (canDeleteHistory()) {
-                    <th class="text-right">จัดการ</th>
+                    <th class="w-[92px] text-right">จัดการ</th>
                   }
                 </tr>
               </thead>
@@ -137,7 +138,8 @@ interface AssignmentHistoryRow {
                       <a
                         routerLink="/risk-factors"
                         [queryParams]="{ projectId: row.assignment.projectId }"
-                        class="font-extrabold leading-6 text-ink no-underline hover:text-navy hover:underline"
+                        class="line-clamp-3 max-w-[380px] font-extrabold leading-6 text-ink no-underline hover:text-navy hover:underline"
+                        [title]="row.projectName"
                       >
                         {{ row.projectName }}
                       </a>
@@ -153,6 +155,16 @@ interface AssignmentHistoryRow {
                         </span>
                         <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">รหัส {{ row.assignment.projectId }}</span>
                       </div>
+                    </td>
+                    <td class="align-top">
+                      @if (row.assignment.dueDate) {
+                        <div class="inline-flex min-w-[104px] flex-col rounded-[4px] border border-blue-100 bg-blue-50 px-3 py-2 text-sm leading-5 text-navy">
+                          <span class="text-[11px] font-extrabold uppercase tracking-wide text-muted">Due date</span>
+                          <span class="mt-0.5 font-extrabold">{{ formatDueDate(row.assignment.dueDate) }}</span>
+                        </div>
+                      } @else {
+                        <span class="text-sm italic text-slate-400">ยังไม่ระบุ</span>
+                      }
                     </td>
                     <td class="align-top">
                       <p class="m-0 font-bold text-ink">{{ row.analyst?.name || row.assignment.analystId }}</p>
@@ -173,11 +185,8 @@ interface AssignmentHistoryRow {
                       } @else {
                         <p class="m-0 text-sm italic text-slate-400">ยังไม่มีข้อมูล</p>
                       }
-                      @if (row.assignment.dueDate || row.assignment.budgetHours || row.assignment.auditSteps) {
+                      @if (row.assignment.budgetHours || row.assignment.auditSteps) {
                         <div class="mt-2 max-w-[320px] rounded-[4px] bg-slate-50 p-2 text-xs leading-5 text-muted">
-                          @if (row.assignment.dueDate) {
-                            <p class="m-0"><span class="font-bold text-ink">Due date:</span> {{ row.assignment.dueDate }}</p>
-                          }
                           @if (row.assignment.budgetHours) {
                             <p class="m-0"><span class="font-bold text-ink">Budget:</span> {{ row.assignment.budgetHours }} ชม.</p>
                           }
@@ -361,18 +370,40 @@ export class AssignmentProjectAuditorHistoryPageComponent implements OnInit {
   }
 
   private formatAssignedAt(value: string): string {
-    const date = new Date(value);
+    const date = this.parseBackendDate(value);
     return Number.isNaN(date.getTime())
       ? '-'
       : new Intl.DateTimeFormat('th-TH', {
           dateStyle: 'medium',
           timeStyle: 'short',
+          timeZone: 'Asia/Bangkok',
         }).format(date);
   }
 
+  formatDueDate(value: string): string {
+    const [year, month, day] = value.split('-').map(Number);
+    if (!year || !month || !day) {
+      return value;
+    }
+    return new Intl.DateTimeFormat('th-TH', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    }).format(new Date(year, month - 1, day));
+  }
+
   private dateValue(value: string): number {
-    const date = new Date(value);
+    const date = this.parseBackendDate(value);
     return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+  }
+
+  private parseBackendDate(value: string): Date {
+    if (!value) {
+      return new Date(Number.NaN);
+    }
+    const normalized = value.includes('T') ? value : value.replace(' ', 'T');
+    const hasTimezone = /(?:Z|[+-]\d{2}:?\d{2})$/.test(normalized);
+    return new Date(hasTimezone ? normalized : `${normalized}Z`);
   }
 
   private toAnalyst(analyst: AssignmentAssignee): Analyst {

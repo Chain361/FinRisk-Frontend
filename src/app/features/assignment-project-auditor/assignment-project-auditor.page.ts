@@ -109,6 +109,9 @@ import {
                       }
                     </span>
                   </div>
+                  <div class="mt-2 flex flex-wrap gap-1.5">
+                    <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">รหัส {{ projectId(project) }}</span>
+                  </div>
                   @if (projectAssignment(project)) {
                     <div class="mt-2 rounded-[4px] border border-green-100 bg-green-50 px-3 py-2 text-xs leading-5 text-risk-low">
                       มอบหมายแล้วให้ <span class="font-extrabold">{{ assignmentAnalystName(projectAssignment(project)!) }}</span>
@@ -256,7 +259,7 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
   readonly analysts = signal<Analyst[]>([]);
   readonly assignments = signal<SavedAssignment[]>([]);
   readonly projectSearch = signal('');
-  readonly riskFilter = signal('high');
+  readonly riskFilter = signal('all');
   readonly analystSearch = signal('');
   readonly selectedProjectId = signal<string | null>(null);
   readonly selectedAnalystId = signal<string | null>(null);
