@@ -279,12 +279,36 @@ import {
                   <div class="flex items-center gap-2">
                     <h3 class="m-0 text-sm font-bold text-ink">สูตรที่ใช้คำนวณ</h3>
                     <app-info-tooltip
-                      text="อ้างอิงตามหนังสือซักซ้อมแนวทางการคำนวณราคากลางและการเปรียบเทียบราคาสัญญา กรมส่งเสริมการปกครองท้องถิ่น"
+                      text="แสดงสูตรและการแทนค่าจากตัวเลขของโครงการที่เลือก เพื่อให้ตรวจสอบผลคำนวณย้อนกลับได้"
                       [width]="280"
                     />
                   </div>
-                  <p class="m-0 mt-2 text-[13px] text-slate-700">ราคาสัญญาเทียบราคากลาง = (ราคาสัญญา − ราคากลาง) ÷ ราคากลาง × 100</p>
-                  <p class="m-0 mt-1 text-[13px] text-slate-700">ราคาสัญญาเทียบงบประมาณ = (ราคาสัญญา − งบประมาณ) ÷ งบประมาณ × 100</p>
+                  <p class="m-0 mt-2 text-[12.5px] leading-relaxed text-muted">
+                    หลักการคำนวณใช้ค่าฐานเป็นตัวหาร แล้วแปลงผลต่างเป็นเปอร์เซ็นต์:
+                    <span class="font-bold text-ink">(ราคาสัญญา − ค่าฐาน) ÷ ค่าฐาน × 100</span>
+                  </p>
+
+                  <div class="mt-3 grid gap-2.5 lg:grid-cols-2">
+                    <div class="rounded-[3px] border border-line-soft bg-white p-3">
+                      <p class="m-0 text-[12px] font-extrabold text-ink">1. ราคาสัญญาเทียบราคากลาง</p>
+                      <p class="m-0 mt-1 text-[12.5px] text-muted">ค่าฐาน = ราคากลาง {{ money(projectDetail()?.reference_price) }} บาท</p>
+                      <p class="m-0 mt-2 font-mono text-[12px] leading-relaxed text-slate-700">{{ calculationFormulaLine(projectDetail()?.reference_price) }}</p>
+                      <p class="m-0 mt-1 font-mono text-[12px] leading-relaxed text-slate-700">{{ calculationDifferenceLine(projectDetail()?.reference_price) }}</p>
+                      <p class="m-0 mt-1 text-[13px] font-extrabold text-ink">{{ calculationResultLine(projectDetail()?.reference_price) }}</p>
+                    </div>
+
+                    <div class="rounded-[3px] border border-line-soft bg-white p-3">
+                      <p class="m-0 text-[12px] font-extrabold text-ink">2. ราคาสัญญาเทียบงบประมาณ</p>
+                      <p class="m-0 mt-1 text-[12.5px] text-muted">ค่าฐาน = งบประมาณ {{ money(projectDetail()?.budget_amount) }} บาท</p>
+                      <p class="m-0 mt-2 font-mono text-[12px] leading-relaxed text-slate-700">{{ calculationFormulaLine(projectDetail()?.budget_amount) }}</p>
+                      <p class="m-0 mt-1 font-mono text-[12px] leading-relaxed text-slate-700">{{ calculationDifferenceLine(projectDetail()?.budget_amount) }}</p>
+                      <p class="m-0 mt-1 text-[13px] font-extrabold text-ink">{{ calculationResultLine(projectDetail()?.budget_amount) }}</p>
+                    </div>
+                  </div>
+
+                  <p class="m-0 mt-2 text-[11.5px] leading-relaxed text-muted">
+                    ผลลัพธ์เป็นบวกหมายถึงราคาสัญญาสูงกว่าค่าฐาน ผลลัพธ์เป็นลบหมายถึงราคาสัญญาต่ำกว่าค่าฐาน
+                  </p>
                 </div>
 
               </article>
@@ -670,6 +694,34 @@ export class RiskFactorsPageComponent implements OnInit {
     }
     const sign = diff > 0 ? '+' : '';
     return `(${sign}${diff.toFixed(2)}%) เทียบจากค่าฐาน`;
+  }
+
+  calculationFormulaLine(base: number | string | null | undefined): string {
+    const contract = toNumber(this.contractValue());
+    const baseValue = toNumber(base);
+    if (contract === null || baseValue === null || baseValue === 0) {
+      return 'แทนค่าไม่ได้ เพราะราคาสัญญาหรือค่าฐานไม่ครบ';
+    }
+    return `(${this.money(contract)} - ${this.money(baseValue)}) / ${this.money(baseValue)} x 100`;
+  }
+
+  calculationDifferenceLine(base: number | string | null | undefined): string {
+    const contract = toNumber(this.contractValue());
+    const baseValue = toNumber(base);
+    if (contract === null || baseValue === null || baseValue === 0) {
+      return 'ผลต่างและเปอร์เซ็นต์: คำนวณไม่ได้';
+    }
+    const difference = contract - baseValue;
+    return `ผลต่าง = ${this.money(difference)} บาท`;
+  }
+
+  calculationResultLine(base: number | string | null | undefined): string {
+    const diff = this.percentageDifference(this.contractValue(), base);
+    if (diff === null) {
+      return 'ผลลัพธ์: คำนวณไม่ได้';
+    }
+    const sign = diff > 0 ? '+' : '';
+    return `ผลลัพธ์ = ${sign}${diff.toFixed(2)}%`;
   }
 
   isComputable(factor: ProjectRiskFactor): boolean {
