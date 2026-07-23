@@ -257,3 +257,34 @@ export interface CreateAssignmentRequest {
   budget_hours?: number;
   audit_steps?: string;
 }
+
+export type FeedbackStatus = 'draft' | 'submitted' | 'resolved';
+export type ConcernLevel = 'low' | 'medium' | 'high';
+
+export interface AuditorFeedback {
+  feedback_id: number;
+  project_id: string;
+  auditor_username: string;
+  auditor_name?: string | null;
+  feedback_text: string;
+  concern_level?: ConcernLevel | string | null;
+  likelihood_score?: number | null;
+  impact_score?: number | null;
+  risk_score?: number | null;
+  suggestions?: string | null;
+  status: FeedbackStatus | string;
+  created_at: string;
+  updated_at: string;
+  submitted_at?: string | null;
+  resolved_at?: string | null;
+}
+
+export interface AuditorFeedbackCreate {
+  project_id: string;
+  feedback_text: string;
+  concern_level?: ConcernLevel | null;
+  likelihood_score?: number | null;
+  impact_score?: number | null;
+  suggestions?: string | null;
+  status: 'draft' | 'submitted';
+}

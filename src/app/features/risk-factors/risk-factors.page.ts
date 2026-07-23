@@ -1,8 +1,10 @@
 ﻿import { Component, computed, inject, OnInit, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { catchError, forkJoin, of } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
+import { AuthService } from '../../core/auth/auth.service';
+import { FEEDBACK_ROLES } from '../../core/auth/roles';
 import {
   SavedAssignment,
   projectWorkflowStatusLabel,
@@ -25,10 +27,12 @@ import {
   bandColor,
   formatMoney,
   formatNumber,
+  matrixChip,
   sortProjectsByRisk,
   toBool,
   toNumber,
 } from '../../shared/utils/risk-utils';
+import { ProjectFeedbackPanelComponent } from './project-feedback-panel.component';
 
 @Component({
   selector: 'app-risk-factors-page',
@@ -37,6 +41,7 @@ import {
     EmptyStateComponent,
     FilterBarComponent,
     InfoTooltipComponent,
+    ProjectFeedbackPanelComponent,
     RouterLink,
     RiskBadgeComponent,
     RiskMatrixComponent,
@@ -107,7 +112,7 @@ import {
                     <th class="px-4 py-3 text-right">งบประมาณ</th>
                     <th class="px-4 py-3 text-right">ราคา/อ้างอิง</th>
                     <th class="px-4 py-3 text-right">Risk Score</th>
-                    <th class="px-4 py-3">ระดับ 5×5</th>
+                    <th class="px-4 py-3">ระดับความเสี่ยง</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 bg-white">
@@ -135,13 +140,7 @@ import {
                         <td class="px-4 py-3 text-right">{{ money(project.budget_amount) }}</td>
                         <td class="px-4 py-3 text-right">{{ number(project.price_ratio, 3) }}</td>
                         <td class="px-4 py-3 text-right font-semibold">{{ number(project.risk_score, 2) }}</td>
-                        <td class="px-4 py-3">
-                          @if (project.matrix_level) {
-                            <span class="inline-flex items-center rounded-[3px] px-2.5 py-1 text-[12px] font-extrabold text-white" [style.background]="bandColor(project.matrix_level)">{{ project.matrix_level }}</span>
-                          } @else {
-                            <app-risk-badge [level]="project.risk_level" />
-                          }
-                        </td>
+                        <td class="px-4 py-3"><app-risk-badge [level]="project.risk_level" /></td>
                       </tr>
                     }
                   }
@@ -219,13 +218,7 @@ import {
                     </p>
                   </div>
                   <div class="flex flex-col items-end gap-1.5">
-                    @if (scoreInfo().matrix_level) {
-                      <span
-                        class="inline-flex items-center rounded-[3px] px-3 py-1 text-[13px] font-extrabold text-white"
-                        [style.background]="bandColor(scoreInfo().matrix_level)"
-                        title="ระดับความเสี่ยงตามกรอบ โอกาส × ผลกระทบ 5×5"
-                      >ระดับ{{ scoreInfo().matrix_level }}</span>
-                    }
+                    <app-risk-badge [level]="scoreInfo().risk_level" />
                     <span class="text-[11px] font-bold text-muted">Risk Score {{ number(scoreInfo().risk_score, 0) }}/100</span>
                   </div>
                 </div>
@@ -353,24 +346,49 @@ import {
                   <div class="flex items-center gap-2">
                     <h3 class="m-0 text-sm font-bold text-ink">สูตรที่ใช้คำนวณ</h3>
                     <app-info-tooltip
-                      text="อ้างอิงตามหนังสือซักซ้อมแนวทางการคำนวณราคากลางและการเปรียบเทียบราคาสัญญา กรมส่งเสริมการปกครองท้องถิ่น"
+                      text="แสดงสูตรและการแทนค่าจากตัวเลขของโครงการที่เลือก เพื่อให้ตรวจสอบผลคำนวณย้อนกลับได้"
                       [width]="280"
                     />
                   </div>
-                  <p class="m-0 mt-2 text-[13px] text-slate-700">ราคาสัญญาเทียบราคากลาง = (ราคาสัญญา − ราคากลาง) ÷ ราคากลาง × 100</p>
-                  <p class="m-0 mt-1 text-[13px] text-slate-700">ราคาสัญญาเทียบงบประมาณ = (ราคาสัญญา − งบประมาณ) ÷ งบประมาณ × 100</p>
+                  <p class="m-0 mt-2 text-[12.5px] leading-relaxed text-muted">
+                    หลักการคำนวณใช้ค่าฐานเป็นตัวหาร แล้วแปลงผลต่างเป็นเปอร์เซ็นต์:
+                    <span class="font-bold text-ink">(ราคาสัญญา − ค่าฐาน) ÷ ค่าฐาน × 100</span>
+                  </p>
+
+                  <div class="mt-3 grid gap-2.5 lg:grid-cols-2">
+                    <div class="rounded-[3px] border border-line-soft bg-white p-3">
+                      <p class="m-0 text-[12px] font-extrabold text-ink">1. ราคาสัญญาเทียบราคากลาง</p>
+                      <p class="m-0 mt-1 text-[12.5px] text-muted">ค่าฐาน = ราคากลาง {{ money(projectDetail()?.reference_price) }} บาท</p>
+                      <p class="m-0 mt-2 font-mono text-[12px] leading-relaxed text-slate-700">{{ calculationFormulaLine(projectDetail()?.reference_price) }}</p>
+                      <p class="m-0 mt-1 font-mono text-[12px] leading-relaxed text-slate-700">{{ calculationDifferenceLine(projectDetail()?.reference_price) }}</p>
+                      <p class="m-0 mt-1 text-[13px] font-extrabold text-ink">{{ calculationResultLine(projectDetail()?.reference_price) }}</p>
+                    </div>
+
+                    <div class="rounded-[3px] border border-line-soft bg-white p-3">
+                      <p class="m-0 text-[12px] font-extrabold text-ink">2. ราคาสัญญาเทียบงบประมาณ</p>
+                      <p class="m-0 mt-1 text-[12.5px] text-muted">ค่าฐาน = งบประมาณ {{ money(projectDetail()?.budget_amount) }} บาท</p>
+                      <p class="m-0 mt-2 font-mono text-[12px] leading-relaxed text-slate-700">{{ calculationFormulaLine(projectDetail()?.budget_amount) }}</p>
+                      <p class="m-0 mt-1 font-mono text-[12px] leading-relaxed text-slate-700">{{ calculationDifferenceLine(projectDetail()?.budget_amount) }}</p>
+                      <p class="m-0 mt-1 text-[13px] font-extrabold text-ink">{{ calculationResultLine(projectDetail()?.budget_amount) }}</p>
+                    </div>
+                  </div>
+
+                  <p class="m-0 mt-2 text-[11.5px] leading-relaxed text-muted">
+                    ผลลัพธ์เป็นบวกหมายถึงราคาสัญญาสูงกว่าค่าฐาน ผลลัพธ์เป็นลบหมายถึงราคาสัญญาต่ำกว่าค่าฐาน
+                  </p>
                 </div>
 
               </article>
 
               <section class="panel p-[18px]">
                 <div class="flex items-center gap-2">
-                  <h2 class="m-0 text-[16px] font-bold text-ink">การประเมินความเสี่ยง (โอกาส × ผลกระทบ 5×5)</h2>
+                  <h2 class="m-0 text-[16px] font-bold text-ink">ข้อมูลประกอบการวิเคราะห์ (โอกาส × ผลกระทบ 5×5)</h2>
                   <app-info-tooltip
-                    text="อ้างอิงมาตรฐานการบริหารจัดการความเสี่ยงสำหรับหน่วยงานของรัฐ (กระทรวงการคลัง) และ COSO ERM — ระดับความเสี่ยง = โอกาส × ผลกระทบ (1–25)"
+                    text="ใช้วิเคราะห์ความรุนแรงของปัจจัยตามโอกาส × ผลกระทบ (1–25) ไม่ใช่ป้ายระดับความเสี่ยงของโครงการ"
                     [width]="300"
                   />
                 </div>
+                <p class="m-0 mt-1 text-[12.5px] text-muted">ป้ายระดับความเสี่ยงของโครงการด้านบนอ้างอิง <span class="font-bold">Risk Score</span> และ <span class="font-bold">risk_level</span> จาก backend เท่านั้น</p>
                 <div class="mt-3.5 grid items-start gap-5 lg:grid-cols-[auto_1fr]">
                   <app-risk-matrix [likelihood]="scoreInfo().matrix_likelihood" [impact]="scoreInfo().matrix_impact" />
                   <div class="grid gap-2.5">
@@ -384,15 +402,8 @@ import {
                         <p class="m-0 mt-1 text-[19px] font-extrabold text-ink">{{ number(scoreInfo().matrix_impact, 0) }}<span class="text-[12px] font-bold text-muted">/5</span></p>
                       </div>
                       <div class="rounded-[3px] border border-line-soft p-[11px]" [style.background]="bandColor(scoreInfo().matrix_level) + '14'">
-                        <p class="m-0 text-[11.5px] font-bold text-muted">คะแนน = ระดับ</p>
-                        <p class="m-0 mt-1 text-[19px] font-extrabold" [style.color]="bandColor(scoreInfo().matrix_level)">
-                          {{ number(scoreInfo().matrix_score, 0) }} ·
-                          @if (scoreInfo().matrix_level) {
-                            {{ scoreInfo().matrix_level }}
-                          } @else {
-                            <span class="text-sm italic text-slate-400">ยังไม่มีข้อมูล</span>
-                          }
-                        </p>
+                        <p class="m-0 text-[11.5px] font-bold text-muted">คะแนน 5×5 (ประกอบการวิเคราะห์)</p>
+                        <p class="m-0 mt-1 text-[19px] font-extrabold" [style.color]="bandColor(scoreInfo().matrix_level)">{{ number(scoreInfo().matrix_score, 0) }} · {{ scoreInfo().matrix_level || '-' }}</p>
                       </div>
                     </div>
                     <div class="rounded-[3px] border border-line-soft bg-[#fbfcfd] p-3">
@@ -483,6 +494,10 @@ import {
                 }
               </section>
 
+              @if (canSeeFeedback()) {
+                <app-project-feedback-panel [projectId]="String(selectedProjectId())" />
+              }
+
               <section class="panel p-[18px]">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                   <div>
@@ -529,7 +544,11 @@ import {
 })
 export class RiskFactorsPageComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+
+  readonly canSeeFeedback = computed(() => this.auth.hasRole(...FEEDBACK_ROLES));
 
   protected readonly String = String;
   readonly error = signal('');
@@ -704,12 +723,23 @@ export class RiskFactorsPageComponent implements OnInit {
     this.selectedProjectId.set(String(projectId));
     this.reloadAssignments();
     this.loadProjectDetail(projectId);
+    this.syncProjectIdQueryParam(String(projectId));
   }
 
   clearSelection(): void {
     this.selectedProjectId.set(null);
     this.projectDetail.set(null);
     this.loadingDetail.set(false);
+    this.syncProjectIdQueryParam(null);
+  }
+
+  private syncProjectIdQueryParam(projectId: string | null): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { projectId },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   money(value: number | string | null | undefined): string {
@@ -814,6 +844,34 @@ export class RiskFactorsPageComponent implements OnInit {
     return `(${sign}${diff.toFixed(2)}%) เทียบจากค่าฐาน`;
   }
 
+  calculationFormulaLine(base: number | string | null | undefined): string {
+    const contract = toNumber(this.contractValue());
+    const baseValue = toNumber(base);
+    if (contract === null || baseValue === null || baseValue === 0) {
+      return 'แทนค่าไม่ได้ เพราะราคาสัญญาหรือค่าฐานไม่ครบ';
+    }
+    return `(${this.money(contract)} - ${this.money(baseValue)}) / ${this.money(baseValue)} x 100`;
+  }
+
+  calculationDifferenceLine(base: number | string | null | undefined): string {
+    const contract = toNumber(this.contractValue());
+    const baseValue = toNumber(base);
+    if (contract === null || baseValue === null || baseValue === 0) {
+      return 'ผลต่างและเปอร์เซ็นต์: คำนวณไม่ได้';
+    }
+    const difference = contract - baseValue;
+    return `ผลต่าง = ${this.money(difference)} บาท`;
+  }
+
+  calculationResultLine(base: number | string | null | undefined): string {
+    const diff = this.percentageDifference(this.contractValue(), base);
+    if (diff === null) {
+      return 'ผลลัพธ์: คำนวณไม่ได้';
+    }
+    const sign = diff > 0 ? '+' : '';
+    return `ผลลัพธ์ = ${sign}${diff.toFixed(2)}%`;
+  }
+
   isComputable(factor: ProjectRiskFactor): boolean {
     return toBool(factor.computable);
   }
@@ -865,16 +923,7 @@ export class RiskFactorsPageComponent implements OnInit {
     return parts.length ? parts.join(', ') : '-';
   }
 
-  /** ป้ายกำกับ โอกาส×ผลกระทบ ต่อ factor */
-  matrixChip(factor: ProjectRiskFactor): string {
-    const l = toNumber(factor.likelihood);
-    const i = toNumber(factor.impact);
-    const s = toNumber(factor.matrix_score);
-    if (l === null || i === null || s === null) {
-      return '-';
-    }
-    return `โอกาส ${l} × ผลกระทบ ${i} = ${s}`;
-  }
+  readonly matrixChip = matrixChip;
 
   catalogDescription(code: string): string {
     const factor = this.catalog().find((item) => item.factor_code === code);

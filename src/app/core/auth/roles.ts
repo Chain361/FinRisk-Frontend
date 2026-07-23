@@ -23,3 +23,15 @@ export const ROLE_LABELS: Record<string, string> = {
   risk_analyst: 'นักวิเคราะห์/ตรวจสอบภายใน',
   public_user: 'ประชาชนทั่วไป',
 };
+
+/** role ที่เห็น/เขียนความเห็นผู้ตรวจสอบได้ — mirror ของ FEEDBACK_ROLES ใน FinRisk-Backend/src/routers/audit.py */
+export const FEEDBACK_ROLES = [
+  'admin',
+  'regional_supervisor',
+  'local_executive',
+  'project_auditor',
+  'risk_analyst',
+] as const;
+
+/** role ที่ปิดเรื่อง (resolve) และจัดการความเห็นของคนอื่นได้ — mirror ของ RESOLVE_ROLES ฝั่ง backend */
+export const RESOLVE_ROLES = ['admin', 'project_auditor'] as const;

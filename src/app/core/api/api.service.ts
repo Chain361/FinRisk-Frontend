@@ -9,6 +9,8 @@ import {
   AssignmentAssignee,
   AnnualRisk,
   AuditAssignment,
+  AuditorFeedback,
+  AuditorFeedbackCreate,
   CreateAssignmentRequest,
   FinancialStatement,
   LoginRequest,
@@ -117,6 +119,30 @@ export class ApiService {
 
   deleteAssignment(assignmentId: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/audit/assignments/${assignmentId}`);
+  }
+
+  feedbackList(): Observable<AuditorFeedback[]> {
+    return this.http.get<AuditorFeedback[]>(`${this.baseUrl}/audit/feedback`);
+  }
+
+  projectFeedback(projectId: string | number): Observable<AuditorFeedback[]> {
+    return this.http.get<AuditorFeedback[]>(`${this.baseUrl}/audit/feedback/${projectId}`);
+  }
+
+  createFeedback(body: AuditorFeedbackCreate): Observable<AuditorFeedback> {
+    return this.http.post<AuditorFeedback>(`${this.baseUrl}/audit/feedback`, body);
+  }
+
+  updateFeedback(feedbackId: number, body: AuditorFeedbackCreate): Observable<AuditorFeedback> {
+    return this.http.patch<AuditorFeedback>(`${this.baseUrl}/audit/feedback/${feedbackId}`, body);
+  }
+
+  deleteFeedback(feedbackId: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/audit/feedback/${feedbackId}`);
+  }
+
+  resolveFeedback(feedbackId: number): Observable<AuditorFeedback> {
+    return this.http.patch<AuditorFeedback>(`${this.baseUrl}/audit/feedback/${feedbackId}/resolve`, {});
   }
 
   private toParams(filters: ProjectFilters): HttpParams {
