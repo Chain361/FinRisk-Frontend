@@ -80,6 +80,7 @@ export const en: Record<string, string> = {
   'nav.assignmentMain': 'Assign work',
   'nav.assignmentHistory': 'Assignment history',
   'nav.assignmentReview': 'Review returned work',
+  'nav.riskAnalystFeedback': 'Project risk feedback form',
   'nav.accessLog': 'System access log',
 
   // ---- app shell ----

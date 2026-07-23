@@ -80,6 +80,7 @@ export const th: Record<string, string> = {
   'nav.assignmentMain': 'มอบหมายงานหลัก',
   'nav.assignmentHistory': 'ประวัติการมอบหมายงาน',
   'nav.assignmentReview': 'ตรวจทานงานที่ส่งกลับมา',
+  'nav.riskAnalystFeedback': 'แบบฟอร์มบันทึกความคิดเห็นด้านความเสี่ยงของโครงการ',
   'nav.accessLog': 'บันทึกการเข้าถึงระบบ',
 
   // ---- app shell (layout) ----

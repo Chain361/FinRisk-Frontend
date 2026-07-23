@@ -123,6 +123,11 @@ const NAV_GROUPS: NavGroup[] = [
           },
         ],
       },
+      {
+        code: 'F5',
+        labelKey: 'nav.riskAnalystFeedback',
+        path: '/risk-analyst-feedback',
+      },
     ],
   },
   {

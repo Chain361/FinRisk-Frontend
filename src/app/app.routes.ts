@@ -129,6 +129,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/admin/access-log.page').then((m) => m.AccessLogPageComponent),
       },
+      {
+        path: 'risk-analyst-feedback',
+        loadComponent: () =>
+          import('./features/risk-analyst-feedback/risk-analyst-feedback.page').then(
+            (m) => m.RiskAnalystFeedbackPageComponent,
+          ),
+      },
     ],
   },
   { path: '**', redirectTo: 'project-risk' },
