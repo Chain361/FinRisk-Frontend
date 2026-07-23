@@ -79,7 +79,6 @@ export const th: Record<string, string> = {
   'nav.assignment': 'มอบหมายงาน',
   'nav.assignmentMain': 'มอบหมายงานหลัก',
   'nav.assignmentHistory': 'ประวัติการมอบหมายงาน',
-  'nav.assignmentReview': 'ตรวจทานงานที่ส่งกลับมา',
   'nav.riskAnalystFeedback': 'แบบฟอร์มบันทึกความคิดเห็นด้านความเสี่ยงของโครงการ',
   'nav.group.audit': 'งานตรวจสอบ',
   'nav.auditorFeedback': 'ความเห็นผู้ตรวจสอบ',
