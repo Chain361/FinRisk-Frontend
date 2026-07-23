@@ -4,19 +4,15 @@ import { forkJoin, of } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
 import { AuthService } from '../../core/auth/auth.service';
+import { RESOLVE_ROLES } from '../../core/auth/roles';
 import {
-  activeOf,
-  FeedbackDraftInput,
-  latestOf,
-  ProjectFeedbackService,
-} from '../../core/feedback/project-feedback.service';
-import {
+  AuditorFeedback,
+  AuditorFeedbackCreate,
   CONCERN_LEVEL_OPTIONS,
   ConcernLevel,
   FeedbackStatus,
   IMPACT_OPTIONS,
   LIKELIHOOD_OPTIONS,
-  AuditorFeedback,
 } from '../../core/models/domain.models';
 import {
   Project,
@@ -30,6 +26,7 @@ import { FilterBarComponent } from '../../shared/filters/filter-bar.component';
 import { ConfirmModalComponent } from '../../shared/ui/confirm-modal.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { FeedbackStatusBadgeComponent } from '../../shared/ui/feedback-status-badge.component';
+import { activeOf, latestOf } from '../../shared/utils/feedback-utils';
 import {
   bandColor,
   formatMoney,
@@ -623,7 +620,6 @@ import {
 export class RiskAnalystFeedbackPageComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly auth = inject(AuthService);
-  private readonly feedbackService = inject(ProjectFeedbackService);
 
   protected readonly String = String;
   protected readonly concernLevelOptions = CONCERN_LEVEL_OPTIONS;
@@ -701,7 +697,7 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     return !!current && current.status !== 'draft';
   });
 
-  readonly canResolveFeedback = computed(() => this.auth.hasRole('admin', 'project_auditor'));
+  readonly canResolveFeedback = computed(() => this.auth.hasRole(...RESOLVE_ROLES));
 
   readonly auditorDisplayName = computed(() => {
     const user = this.auth.user();
@@ -787,7 +783,7 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
       subdistricts: this.api.subdistricts(),
       catalog: this.api.riskFactors(),
       allProjects: this.api.projects(),
-      feedback: this.feedbackService.all(),
+      feedback: this.api.feedbackList(),
     }).subscribe({
       next: ({ subdistricts, catalog, allProjects, feedback }) => {
         this.subdistricts.set(subdistricts);
@@ -897,13 +893,13 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
   }
 
   saveFeedbackDraft(): void {
-    const draft = this.buildDraftInput();
-    if (!draft) {
+    const payload = this.buildFeedbackPayload('draft');
+    if (!payload) {
       return;
     }
     this.feedbackValidationError.set('');
     this.feedbackSaving.set(true);
-    this.feedbackService.saveDraft(draft).subscribe({
+    this.submitFeedbackPayload(payload).subscribe({
       next: (record) => {
         this.activeFeedbackId.set(String(record.feedback_id));
         this.refreshFeedbackLists(() => {
@@ -937,12 +933,12 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
 
   confirmSubmitFeedback(): void {
     this.showSubmitConfirm.set(false);
-    const draft = this.buildDraftInput();
-    if (!draft) {
+    const payload = this.buildFeedbackPayload('submitted');
+    if (!payload) {
       return;
     }
     this.feedbackSaving.set(true);
-    this.feedbackService.submit(draft).subscribe({
+    this.submitFeedbackPayload(payload).subscribe({
       next: () => {
         this.resetFeedbackFields();
         this.refreshFeedbackLists(() => {
@@ -959,7 +955,7 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
 
   canDeleteFeedback(entry: AuditorFeedback): boolean {
     const username = this.auth.user()?.username;
-    return entry.auditor_username === username || this.auth.hasRole('admin', 'project_auditor');
+    return entry.auditor_username === username || this.auth.hasRole(...RESOLVE_ROLES);
   }
 
   editFeedback(entry: AuditorFeedback): void {
@@ -992,7 +988,7 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     if (!feedbackId) {
       return;
     }
-    this.feedbackService.delete(feedbackId).subscribe({
+    this.api.deleteFeedback(Number(feedbackId)).subscribe({
       next: () => {
         if (this.activeFeedbackId() === feedbackId) {
           this.resetFeedbackFields();
@@ -1010,7 +1006,7 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     if (!current) {
       return;
     }
-    this.feedbackService.resolve(String(current.feedback_id)).subscribe({
+    this.api.resolveFeedback(current.feedback_id).subscribe({
       next: () => {
         this.refreshFeedbackLists(() => {
           this.feedbackSuccessMessage.set('เปลี่ยนสถานะเป็น Resolved เรียบร้อยแล้ว');
@@ -1020,21 +1016,28 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     });
   }
 
-  private buildDraftInput(): FeedbackDraftInput | null {
+  private buildFeedbackPayload(status: 'draft' | 'submitted'): AuditorFeedbackCreate | null {
     const projectId = this.selectedProjectId();
     const user = this.auth.user();
     if (!projectId || !user) {
       return null;
     }
     return {
-      feedback_id: this.activeFeedbackId(),
       project_id: projectId,
       feedback_text: this.feedbackText(),
       concern_level: this.concernLevel(),
       likelihood_score: this.likelihoodScore(),
       impact_score: this.impactScore(),
-      suggestions: this.suggestions(),
+      suggestions: this.suggestions().trim() || null,
+      status,
     };
+  }
+
+  private submitFeedbackPayload(payload: AuditorFeedbackCreate) {
+    const feedbackId = this.activeFeedbackId();
+    return feedbackId
+      ? this.api.updateFeedback(Number(feedbackId), payload)
+      : this.api.createFeedback(payload);
   }
 
   private loadFeedbackForm(projectId: string): void {
@@ -1043,7 +1046,7 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     this.isEditingEntry.set(false);
     this.isComposingNewFeedback.set(false);
     this.feedbackLoading.set(true);
-    this.feedbackService.historyFor(projectId).subscribe({
+    this.api.projectFeedback(projectId).subscribe({
       next: (records) => {
         this.selectedFeedbackHistory.set(records);
         this.feedbackLoading.set(false);
@@ -1067,8 +1070,8 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
   private refreshFeedbackLists(onDone?: () => void): void {
     const projectId = this.selectedProjectId();
     forkJoin({
-      all: this.feedbackService.all(),
-      history: projectId ? this.feedbackService.historyFor(projectId) : of<AuditorFeedback[]>([]),
+      all: this.api.feedbackList(),
+      history: projectId ? this.api.projectFeedback(projectId) : of<AuditorFeedback[]>([]),
     }).subscribe({
       next: ({ all, history }) => {
         this.allFeedback.set(all);
