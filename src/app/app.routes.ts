@@ -131,6 +131,14 @@ export const routes: Routes = [
           import('./features/admin/access-log.page').then((m) => m.AccessLogPageComponent),
       },
       {
+        path: 'risk-analyst-feedback',
+        canActivate: [roleGuard(...FEEDBACK_ROLES)],
+        loadComponent: () =>
+          import('./features/risk-analyst-feedback/risk-analyst-feedback.page').then(
+            (m) => m.RiskAnalystFeedbackPageComponent,
+          ),
+      },
+      {
         path: 'auditor-feedback',
         canActivate: [roleGuard(...FEEDBACK_ROLES)],
         loadComponent: () =>

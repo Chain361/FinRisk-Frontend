@@ -39,13 +39,17 @@ type ModalMode = 'submit' | 'delete' | 'resolve' | null;
             บันทึกข้อสังเกตและข้อเสนอแนะต่อโครงการนี้ — ฉบับร่างแก้ไขได้ ส่งแล้วแก้ไขไม่ได้
           </p>
         </div>
-        <span class="rounded-[20px] border border-line bg-zebra px-3 py-1 text-xs font-bold text-slate-700">
+        <span
+          class="rounded-[20px] border border-line bg-zebra px-3 py-1 text-xs font-bold text-slate-700"
+        >
           {{ items().length }} รายการ
         </span>
       </div>
 
       @if (error()) {
-        <p class="mt-3 rounded-[4px] border-[1.5px] border-risk-high bg-red-50 px-4 py-3 text-sm text-risk-high">
+        <p
+          class="mt-3 rounded-[4px] border-[1.5px] border-risk-high bg-red-50 px-4 py-3 text-sm text-risk-high"
+        >
           {{ error() }}
         </p>
       }
@@ -71,7 +75,9 @@ type ModalMode = 'submit' | 'delete' | 'resolve' | null;
                     </p>
                     <p class="m-0 mt-0.5 text-[11.5px] text-muted">
                       อัปเดตล่าสุด {{ date(item.updated_at) }}
-                      @if (item.resolved_at) { · ปิดเรื่องเมื่อ {{ date(item.resolved_at) }} }
+                      @if (item.resolved_at) {
+                        · ปิดเรื่องเมื่อ {{ date(item.resolved_at) }}
+                      }
                     </p>
                   </div>
                   <div class="flex shrink-0 items-center gap-1.5">
@@ -79,23 +85,27 @@ type ModalMode = 'submit' | 'delete' | 'resolve' | null;
                       <span
                         class="rounded-[3px] px-2 py-1 text-[11.5px] font-extrabold text-white"
                         [style.background]="concernColor(item.concern_level)"
-                      >กังวล{{ concernLabel(item.concern_level) }}</span>
+                        >กังวล{{ concernLabel(item.concern_level) }}</span
+                      >
                     }
                     <span
                       class="rounded-[3px] px-2 py-1 text-[11.5px] font-extrabold"
                       [class]="statusChipClass(item.status)"
-                    >{{ statusLabel(item.status) }}</span>
+                      >{{ statusLabel(item.status) }}</span
+                    >
                   </div>
                 </div>
 
                 @if (item.risk_score !== null && item.risk_score !== undefined) {
                   <p class="m-0 mt-2 text-[12px] font-bold text-slate-700">
-                    โอกาส {{ item.likelihood_score }} × ผลกระทบ {{ item.impact_score }} =
-                    คะแนน {{ item.risk_score }}/25
+                    โอกาส {{ item.likelihood_score }} × ผลกระทบ {{ item.impact_score }} = คะแนน
+                    {{ item.risk_score }}/25
                   </p>
                 }
 
-                <p class="m-0 mt-2 text-[13px] leading-relaxed text-slate-800">{{ item.feedback_text }}</p>
+                <p class="m-0 mt-2 text-[15px] leading-relaxed text-slate-800">
+                  {{ item.feedback_text }}
+                </p>
                 @if (item.suggestions) {
                   <p class="m-0 mt-1.5 text-[12.5px] leading-relaxed text-muted">
                     <span class="font-bold text-slate-600">ข้อเสนอแนะ:</span> {{ item.suggestions }}
@@ -105,17 +115,27 @@ type ModalMode = 'submit' | 'delete' | 'resolve' | null;
                 @if (canEdit(item) || canResolve(item)) {
                   <div class="mt-2.5 flex gap-2 border-t border-line-soft pt-2.5">
                     @if (canEdit(item)) {
-                      <button type="button" class="gov-btn-outline text-[12.5px]" (click)="startEdit(item)">
+                      <button
+                        type="button"
+                        class="gov-btn-outline text-[12.5px]"
+                        (click)="startEdit(item)"
+                      >
                         แก้ไข
                       </button>
                       <button
                         type="button"
                         class="rounded-[3px] border-[1.5px] border-risk-high bg-white px-3 py-1.5 text-[12.5px] font-bold text-risk-high hover:bg-red-50"
                         (click)="askDelete(item)"
-                      >ลบ</button>
+                      >
+                        ลบ
+                      </button>
                     }
                     @if (canResolve(item)) {
-                      <button type="button" class="gov-btn-primary text-[12.5px]" (click)="askResolve(item)">
+                      <button
+                        type="button"
+                        class="gov-btn-primary text-[12.5px]"
+                        (click)="askResolve(item)"
+                      >
                         ปิดเรื่อง
                       </button>
                     }
@@ -125,113 +145,7 @@ type ModalMode = 'submit' | 'delete' | 'resolve' | null;
             }
           </div>
         }
-
-        <!-- ฟอร์มเขียน/แก้ไขความเห็น -->
-        <div class="mt-4 rounded-[4px] border-[1.5px] border-line bg-[#fbfcfd] p-3.5">
-          <p class="m-0 text-[13px] font-bold text-ink">
-            {{ editingId() === null ? 'เขียนความเห็นใหม่' : 'แก้ไขความเห็น (ฉบับร่าง)' }}
-          </p>
-
-          <label class="mt-2.5 block">
-            <span class="text-[12px] font-bold text-muted">ข้อสังเกตจากการตรวจสอบ *</span>
-            <textarea
-              class="gov-input mt-1 min-h-[74px] w-full"
-              [value]="formText()"
-              (input)="formText.set($any($event.target).value)"
-              placeholder="เช่น พบราคาสัญญาใกล้ราคากลางผิดปกติ ควรขอเอกสารเพิ่มเติม..."
-            ></textarea>
-          </label>
-
-          <div class="mt-2.5 grid gap-3 sm:grid-cols-3">
-            <label class="block">
-              <span class="text-[12px] font-bold text-muted">ระดับความกังวล</span>
-              <select
-                class="gov-select mt-1 w-full"
-                [value]="formConcern() ?? ''"
-                (change)="setConcern($any($event.target).value)"
-              >
-                <option value="">ไม่ระบุ</option>
-                <option value="low">ต่ำ</option>
-                <option value="medium">ปานกลาง</option>
-                <option value="high">สูง</option>
-              </select>
-            </label>
-            <label class="block">
-              <span class="text-[12px] font-bold text-muted">โอกาสเกิด (1-5)</span>
-              <select
-                class="gov-select mt-1 w-full"
-                [value]="formLikelihood() ?? ''"
-                (change)="setLikelihood($any($event.target).value)"
-              >
-                <option value="">ไม่ระบุ</option>
-                @for (n of SCORE_OPTIONS; track n) {
-                  <option [value]="n">{{ n }}</option>
-                }
-              </select>
-            </label>
-            <label class="block">
-              <span class="text-[12px] font-bold text-muted">ผลกระทบ (1-5)</span>
-              <select
-                class="gov-select mt-1 w-full"
-                [value]="formImpact() ?? ''"
-                (change)="setImpact($any($event.target).value)"
-              >
-                <option value="">ไม่ระบุ</option>
-                @for (n of SCORE_OPTIONS; track n) {
-                  <option [value]="n">{{ n }}</option>
-                }
-              </select>
-            </label>
-          </div>
-
-          @if (previewScore() !== null) {
-            <p class="m-0 mt-2 text-[12px] font-bold text-slate-700">
-              คะแนนความเสี่ยงตามความเห็น: โอกาส {{ formLikelihood() }} × ผลกระทบ {{ formImpact() }} =
-              <span class="text-navy">{{ previewScore() }}/25</span>
-            </p>
-          }
-
-          <label class="mt-2.5 block">
-            <span class="text-[12px] font-bold text-muted">ข้อเสนอแนะ (ถ้ามี)</span>
-            <textarea
-              class="gov-input mt-1 min-h-[52px] w-full"
-              [value]="formSuggestions()"
-              (input)="formSuggestions.set($any($event.target).value)"
-              placeholder="เช่น ขอเอกสารการสืบราคาเพิ่มเติมจากหน่วยงานพัสดุ..."
-            ></textarea>
-          </label>
-
-          <div class="mt-3 flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              class="gov-btn-outline"
-              [disabled]="!formValid() || saving()"
-              (click)="saveDraft()"
-            >บันทึกร่าง</button>
-            <button
-              type="button"
-              class="gov-btn-primary"
-              [disabled]="!formValid() || saving()"
-              (click)="askSubmit()"
-            >ส่งความเห็น</button>
-            @if (editingId() !== null) {
-              <button type="button" class="gov-btn-outline" (click)="cancelEdit()">ยกเลิกการแก้ไข</button>
-            }
-            @if (saving()) {
-              <span class="text-[12px] text-muted">กำลังบันทึก...</span>
-            }
-          </div>
-        </div>
       }
-
-      <app-confirm-modal
-        [open]="modalMode() !== null"
-        [title]="modalTitle()"
-        [message]="modalMessage()"
-        [confirmLabel]="modalConfirmLabel()"
-        (confirmed)="confirmModal()"
-        (cancelled)="closeModal()"
-      />
     </section>
   `,
 })
@@ -258,7 +172,9 @@ export class ProjectFeedbackPanelComponent {
   readonly modalMode = signal<ModalMode>(null);
   private readonly modalTargetId = signal<number | null>(null);
 
-  readonly previewScore = computed(() => computeRiskScore(this.formLikelihood(), this.formImpact()));
+  readonly previewScore = computed(() =>
+    computeRiskScore(this.formLikelihood(), this.formImpact()),
+  );
   readonly formValid = computed(() => this.formText().trim().length > 0);
 
   readonly concernColor = concernColor;

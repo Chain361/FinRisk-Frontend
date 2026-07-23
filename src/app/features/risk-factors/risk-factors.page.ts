@@ -47,7 +47,9 @@ import {
       <div>
         <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F3</p>
         <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">โครงการทั้งหมด</h1>
-        <p class="m-0 mt-1.5 text-sm text-muted">เปิดดูรายละเอียดโครงการ ปัจจัยเสี่ยงที่ trigger และสูตรการคำนวณ</p>
+        <p class="m-0 mt-1.5 text-sm text-muted">
+          เปิดดูรายละเอียดโครงการ ปัจจัยเสี่ยงที่ trigger และสูตรการคำนวณ
+        </p>
       </div>
 
       <app-filter-bar
@@ -71,7 +73,11 @@ import {
       />
 
       @if (error()) {
-        <p class="rounded-[4px] border-[1.5px] border-risk-high bg-red-50 px-4 py-3 text-sm text-risk-high">{{ error() }}</p>
+        <p
+          class="rounded-[4px] border-[1.5px] border-risk-high bg-red-50 px-4 py-3 text-sm text-risk-high"
+        >
+          {{ error() }}
+        </p>
       }
 
       @if (loadingProjects()) {
@@ -82,8 +88,12 @@ import {
             <div class="border-b-[1.5px] border-line px-4 py-3.5">
               <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <h2 class="m-0 text-[15px] font-bold text-ink">รายการโครงการเรียงตาม Risk Score</h2>
-                  <p class="m-0 mt-1 text-[12.5px] text-muted">คลิกโครงการเพื่อดูรายละเอียดและปัจจัยที่ทำให้เสี่ยง</p>
+                  <h2 class="m-0 text-[15px] font-bold text-ink">
+                    รายการโครงการเรียงตาม Risk Score
+                  </h2>
+                  <p class="m-0 mt-1 text-[12.5px] text-muted">
+                    คลิกโครงการเพื่อดูรายละเอียดและปัจจัยที่ทำให้เสี่ยง
+                  </p>
                 </div>
                 <label class="block w-full max-w-md">
                   <span class="sr-only">ค้นหาโครงการ</span>
@@ -115,14 +125,22 @@ import {
                   @if (!filteredProjects().length) {
                     <tr>
                       <td colspan="7" class="px-4 py-12">
-                        <app-empty-state title="ไม่พบโครงการ" message="ลองเปลี่ยนคำค้น ปี ตำบล หรือระดับความเสี่ยง" />
+                        <app-empty-state
+                          title="ไม่พบโครงการ"
+                          message="ลองเปลี่ยนคำค้น ปี ตำบล หรือระดับความเสี่ยง"
+                        />
                       </td>
                     </tr>
                   } @else {
                     @for (project of filteredProjects(); track project.project_id) {
-                      <tr class="cursor-pointer hover:bg-slate-50" (click)="selectProject(project.project_id)">
+                      <tr
+                        class="cursor-pointer hover:bg-slate-50"
+                        (click)="selectProject(project.project_id)"
+                      >
                         <td class="max-w-md px-4 py-3">
-                          <p class="line-clamp-2 font-semibold text-slate-900">{{ project.project_name }}</p>
+                          <p class="line-clamp-2 font-semibold text-slate-900">
+                            {{ project.project_name }}
+                          </p>
                           <p class="text-xs text-slate-500">ID {{ project.project_id }}</p>
                         </td>
                         <td class="px-4 py-3">{{ project.budget_year }}</td>
@@ -135,7 +153,9 @@ import {
                         </td>
                         <td class="px-4 py-3 text-right">{{ money(project.budget_amount) }}</td>
                         <td class="px-4 py-3 text-right">{{ number(project.price_ratio, 3) }}</td>
-                        <td class="px-4 py-3 text-right font-semibold">{{ number(project.risk_score, 2) }}</td>
+                        <td class="px-4 py-3 text-right font-semibold">
+                          {{ number(project.risk_score, 2) }}
+                        </td>
                         <td class="px-4 py-3"><app-risk-badge [level]="project.risk_level" /></td>
                       </tr>
                     }
@@ -145,392 +165,545 @@ import {
             </div>
           </section>
         } @else {
-        <div class="grid items-start gap-4 xl:grid-cols-[340px_1fr]">
-          <section class="panel overflow-hidden">
-            <div class="border-b-[1.5px] border-line px-4 py-3.5">
-              <div class="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <h2 class="m-0 text-[15px] font-bold text-ink">รายการโครงการ</h2>
-                  <p class="m-0 mt-1 text-[12.5px] text-muted">เลือกโครงการเพื่อดูรายละเอียด</p>
-                </div>
-                <div class="flex w-full max-w-[305px] flex-col gap-2">
-                  <button
-                    type="button"
-                    class="inline-flex h-10 items-center justify-center rounded-[3px] border-[1.5px] border-line bg-white px-3 text-[13.5px] font-bold text-slate-700 hover:bg-zebra"
-                    (click)="clearSelection()"
-                  >
-                    กลับไปรายการ
-                  </button>
-                  <label class="block">
-                    <span class="sr-only">ค้นหาโครงการ</span>
-                    <input
-                      type="search"
-                      class="gov-input"
-                      placeholder="ค้นหาชื่อโครงการ หรือ Project ID"
-                      [value]="searchQuery()"
-                      (input)="setSearch($any($event.target).value)"
-                    />
-                  </label>
+          <div class="grid items-start gap-4 xl:grid-cols-[340px_1fr]">
+            <section class="panel overflow-hidden">
+              <div class="border-b-[1.5px] border-line px-4 py-3.5">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <h2 class="m-0 text-[15px] font-bold text-ink">รายการโครงการ</h2>
+                    <p class="m-0 mt-1 text-[12.5px] text-muted">เลือกโครงการเพื่อดูรายละเอียด</p>
+                  </div>
+                  <div class="flex w-full max-w-[305px] flex-col gap-2">
+                    <button
+                      type="button"
+                      class="inline-flex h-10 items-center justify-center rounded-[3px] border-[1.5px] border-line bg-white px-3 text-[13.5px] font-bold text-slate-700 hover:bg-zebra"
+                      (click)="clearSelection()"
+                    >
+                      กลับไปรายการ
+                    </button>
+                    <label class="block">
+                      <span class="sr-only">ค้นหาโครงการ</span>
+                      <input
+                        type="search"
+                        class="gov-input"
+                        placeholder="ค้นหาชื่อโครงการ หรือ Project ID"
+                        [value]="searchQuery()"
+                        (input)="setSearch($any($event.target).value)"
+                      />
+                    </label>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div class="max-h-[620px] overflow-y-auto">
-              @for (project of filteredProjects(); track project.project_id) {
-                <button
-                  type="button"
-                  class="block w-full cursor-pointer border-b border-row-active px-4 py-3 text-left"
-                  [class]="String(project.project_id) === selectedProjectId() ? 'bg-row-active' : 'bg-white hover:bg-zebra'"
-                  (click)="selectProject(project.project_id)"
-                >
-                  <div class="flex items-start justify-between gap-2">
-                    <p class="m-0 line-clamp-2 text-[13.5px] font-bold text-ink">{{ project.project_name }}</p>
-                    <app-risk-badge [level]="project.risk_level" />
-                  </div>
-                  <p class="m-0 mt-1.5 text-xs text-muted">
-                    ปี {{ project.budget_year }} · Score {{ number(project.risk_score, 2) }} · {{ money(project.budget_amount) }} บาท
-                  </p>
-                </button>
-              }
-            </div>
-          </section>
-
-          <section class="grid gap-4">
-            @if (loadingDetail()) {
-              <div class="panel p-6 text-sm text-muted">กำลังโหลดรายละเอียดโครงการ...</div>
-            } @else if (projectDetail()) {
-              <article class="panel p-[18px]">
-                <div class="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p class="m-0 text-[12.5px] font-bold text-muted">Project ID {{ projectDetail()?.project_id }}</p>
-                    <h2 class="m-0 mt-1 text-[19px] font-extrabold text-ink">{{ projectDetail()?.project_name }}</h2>
-                    <p class="m-0 mt-1.5 text-[13px] text-muted">
-                      ปี {{ projectDetail()?.budget_year }} ·
-                      @if (projectDetail()?.project_type || projectDetail()?.purchase_method_group) {
-                        {{ projectDetail()?.project_type || projectDetail()?.purchase_method_group }}
-                      } @else {
-                        <span class="italic text-slate-400">ยังไม่มีข้อมูล</span>
-                      }
-                    </p>
-                  </div>
-                  <div class="flex flex-col items-end gap-1.5">
-                    <app-risk-badge [level]="scoreInfo().risk_level" />
-                    <span class="text-[11px] font-bold text-muted">Risk Score {{ number(scoreInfo().risk_score, 0) }}/100</span>
-                  </div>
-                </div>
-
-                @if (projectDetail()?.source_file || projectDetail()?.data_quality_note) {
-                  <div class="mt-3 rounded-[3px] border border-line-soft bg-[#fbfcfd] px-3 py-2 text-[11.5px] text-muted">
-                    @if (projectDetail()?.source_file) {
-                      <p class="m-0"><span class="font-bold text-slate-600">ที่มาข้อมูล:</span> {{ projectDetail()?.source_file }}</p>
-                    }
-                    @if (projectDetail()?.data_quality_note) {
-                      <p class="m-0 mt-0.5"><span class="font-bold text-[#8a2a1f]">ข้อจำกัดข้อมูล:</span> {{ projectDetail()?.data_quality_note }}</p>
-                    }
-                  </div>
-                }
-
-                <div class="mt-4 rounded-[4px] border-[1.5px] border-line-soft bg-[#fbfcfd] px-4 py-3.5">
-                  <div class="flex flex-wrap items-center justify-between gap-3">
-                    <div class="flex min-w-0 flex-wrap items-center gap-4">
-                      <div class="flex items-center gap-2.5">
-                        <span
-                          class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-extrabold"
-                          [class]="assignmentStatusCircleClass()"
-                        >
-                          {{ projectWorkflowIcon() }}
-                        </span>
-                        <div>
-                          <p class="m-0 text-[11.5px] font-bold text-muted">สถานะโครงการโดยรวม</p>
-                          <p class="m-0 mt-0.5 text-[13.5px] font-extrabold text-ink">{{ projectWorkflowStatusText() }}</p>
-                        </div>
-                      </div>
-
-                      <div class="min-w-[160px] border-l border-line-soft pl-4">
-                        <p class="m-0 text-[11.5px] font-bold text-muted">ผู้รับมอบหมาย</p>
-                        @if (assignmentAnalyst()) {
-                          <p class="m-0 mt-0.5 text-[13.5px] font-extrabold text-ink">{{ assignmentAnalystName() }}</p>
-                        } @else {
-                          <p class="m-0 mt-0.5 text-[13.5px] italic text-slate-400">รอมอบหมาย</p>
-                        }
-                      </div>
-
-                      <div class="min-w-[160px] border-l border-line-soft pl-4">
-                        <p class="m-0 text-[11.5px] font-bold text-muted">ผู้มอบหมาย</p>
-                        @if (latestProjectAssignment()?.assignedBy) {
-                          <p class="m-0 mt-0.5 text-[13.5px] font-extrabold text-ink">{{ latestProjectAssignment()?.assignedBy }}</p>
-                        } @else {
-                          <p class="m-0 mt-0.5 text-[13.5px] italic text-slate-400">ยังไม่มีผู้รับผิดชอบ</p>
-                        }
-                      </div>
-                    </div>
-
-                    <a
-                      routerLink="/risk-factors/status"
-                      [queryParams]="{ projectId: projectDetail()?.project_id }"
-                      class="inline-flex min-h-[38px] items-center justify-center rounded-[3px] border-[1.5px] border-line bg-white px-4 text-[13px] font-bold text-slate-700 no-underline hover:bg-zebra"
-                    >
-                      ดูสถานะเพิ่มเติม
-                    </a>
-                  </div>
-                </div>
-
-                <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
-                    <p class="m-0 text-[11.5px] font-bold text-muted">งบประมาณ</p>
-                    <p class="m-0 mt-1 text-[15px] font-extrabold text-ink">{{ money(projectDetail()?.budget_amount) }}</p>
-                  </div>
-                  <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
-                    <p class="m-0 text-[11.5px] font-bold text-muted">ราคากลาง</p>
-                    <p class="m-0 mt-1 text-[15px] font-extrabold text-ink">{{ money(projectDetail()?.reference_price) }}</p>
-                  </div>
-                  <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
-                    <p class="m-0 text-[11.5px] font-bold text-muted">ราคาสัญญา</p>
-                    <p class="m-0 mt-1 text-[15px] font-extrabold text-ink">{{ money(contractValue()) }}</p>
-                  </div>
-                  <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
-                    <p class="m-0 text-[11.5px] font-bold text-muted">Risk Score</p>
-                    <p class="m-0 mt-1 text-[15px] font-extrabold text-ink">{{ number(projectDetail()?.risk_score, 2) }}</p>
-                  </div>
-                </div>
-
-                <div class="mt-2.5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
-                    <p class="m-0 text-[11.5px] font-bold text-muted">หน่วยงาน</p>
-                    <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">{{ projectDeptName() }}</p>
-                  </div>
-                  <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
-                    <p class="m-0 text-[11.5px] font-bold text-muted">สถานะโครงการ</p>
-                    <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">{{ projectStatus() }}</p>
-                  </div>
-                  <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
-                    <p class="m-0 text-[11.5px] font-bold text-muted">เลขที่สัญญา</p>
-                    <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">{{ contractNo() }}</p>
-                  </div>
-                  <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
-                    <p class="m-0 text-[11.5px] font-bold text-muted">สถานะสัญญา</p>
-                    <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">{{ contractStatus() }}</p>
-                  </div>
-                </div>
-
-                <div class="mt-2.5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
-                    <p class="m-0 text-[11.5px] font-bold text-muted">ผู้ขาย/ผู้รับจ้าง</p>
-                    <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">{{ vendorLabel() }}</p>
-                  </div>
-                  <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
-                    <p class="m-0 text-[11.5px] font-bold text-muted">ประเภทจัดซื้อจัดจ้าง</p>
-                    <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">{{ purchaseMethodLabel() }}</p>
-                  </div>
-                  <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
-                    <p class="m-0 text-[11.5px] font-bold text-muted">สัญญาเทียบราคากลาง</p>
-                    <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">
-                      {{ comparisonLabel(contractValue(), projectDetail()?.reference_price) }}
-                    </p>
-                    <p class="m-0 mt-1 text-xs text-muted">{{ percentageLabel(contractValue(), projectDetail()?.reference_price) }}</p>
-                  </div>
-                  <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
-                    <p class="m-0 text-[11.5px] font-bold text-muted">สัญญาเทียบงบประมาณ</p>
-                    <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">
-                      {{ comparisonLabel(contractValue(), projectDetail()?.budget_amount) }}
-                    </p>
-                    <p class="m-0 mt-1 text-xs text-muted">{{ percentageLabel(contractValue(), projectDetail()?.budget_amount) }}</p>
-                  </div>
-                </div>
-
-                <div class="mt-3.5 rounded-[3px] border border-line-soft bg-[#fbfcfd] p-3.5">
-                  <div class="flex items-center gap-2">
-                    <h3 class="m-0 text-sm font-bold text-ink">สูตรที่ใช้คำนวณ</h3>
-                    <app-info-tooltip
-                      text="แสดงสูตรและการแทนค่าจากตัวเลขของโครงการที่เลือก เพื่อให้ตรวจสอบผลคำนวณย้อนกลับได้"
-                      [width]="280"
-                    />
-                  </div>
-                  <p class="m-0 mt-2 text-[12.5px] leading-relaxed text-muted">
-                    หลักการคำนวณใช้ค่าฐานเป็นตัวหาร แล้วแปลงผลต่างเป็นเปอร์เซ็นต์:
-                    <span class="font-bold text-ink">(ราคาสัญญา − ค่าฐาน) ÷ ค่าฐาน × 100</span>
-                  </p>
-
-                  <div class="mt-3 grid gap-2.5 lg:grid-cols-2">
-                    <div class="rounded-[3px] border border-line-soft bg-white p-3">
-                      <p class="m-0 text-[12px] font-extrabold text-ink">1. ราคาสัญญาเทียบราคากลาง</p>
-                      <p class="m-0 mt-1 text-[12.5px] text-muted">ค่าฐาน = ราคากลาง {{ money(projectDetail()?.reference_price) }} บาท</p>
-                      <p class="m-0 mt-2 font-mono text-[12px] leading-relaxed text-slate-700">{{ calculationFormulaLine(projectDetail()?.reference_price) }}</p>
-                      <p class="m-0 mt-1 font-mono text-[12px] leading-relaxed text-slate-700">{{ calculationDifferenceLine(projectDetail()?.reference_price) }}</p>
-                      <p class="m-0 mt-1 text-[13px] font-extrabold text-ink">{{ calculationResultLine(projectDetail()?.reference_price) }}</p>
-                    </div>
-
-                    <div class="rounded-[3px] border border-line-soft bg-white p-3">
-                      <p class="m-0 text-[12px] font-extrabold text-ink">2. ราคาสัญญาเทียบงบประมาณ</p>
-                      <p class="m-0 mt-1 text-[12.5px] text-muted">ค่าฐาน = งบประมาณ {{ money(projectDetail()?.budget_amount) }} บาท</p>
-                      <p class="m-0 mt-2 font-mono text-[12px] leading-relaxed text-slate-700">{{ calculationFormulaLine(projectDetail()?.budget_amount) }}</p>
-                      <p class="m-0 mt-1 font-mono text-[12px] leading-relaxed text-slate-700">{{ calculationDifferenceLine(projectDetail()?.budget_amount) }}</p>
-                      <p class="m-0 mt-1 text-[13px] font-extrabold text-ink">{{ calculationResultLine(projectDetail()?.budget_amount) }}</p>
-                    </div>
-                  </div>
-
-                  <p class="m-0 mt-2 text-[11.5px] leading-relaxed text-muted">
-                    ผลลัพธ์เป็นบวกหมายถึงราคาสัญญาสูงกว่าค่าฐาน ผลลัพธ์เป็นลบหมายถึงราคาสัญญาต่ำกว่าค่าฐาน
-                  </p>
-                </div>
-
-              </article>
-
-              <section class="panel p-[18px]">
-                <div class="flex items-center gap-2">
-                  <h2 class="m-0 text-[16px] font-bold text-ink">ข้อมูลประกอบการวิเคราะห์ (โอกาส × ผลกระทบ 5×5)</h2>
-                  <app-info-tooltip
-                    text="ใช้วิเคราะห์ความรุนแรงของปัจจัยตามโอกาส × ผลกระทบ (1–25) ไม่ใช่ป้ายระดับความเสี่ยงของโครงการ"
-                    [width]="300"
-                  />
-                </div>
-                <p class="m-0 mt-1 text-[12.5px] text-muted">ป้ายระดับความเสี่ยงของโครงการด้านบนอ้างอิง <span class="font-bold">Risk Score</span> และ <span class="font-bold">risk_level</span> จาก backend เท่านั้น</p>
-                <div class="mt-3.5 grid items-start gap-5 lg:grid-cols-[auto_1fr]">
-                  <app-risk-matrix [likelihood]="scoreInfo().matrix_likelihood" [impact]="scoreInfo().matrix_impact" />
-                  <div class="grid gap-2.5">
-                    <div class="grid grid-cols-3 gap-2.5">
-                      <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
-                        <p class="m-0 text-[11.5px] font-bold text-muted">โอกาสรวม</p>
-                        <p class="m-0 mt-1 text-[19px] font-extrabold text-ink">{{ number(scoreInfo().matrix_likelihood, 0) }}<span class="text-[12px] font-bold text-muted">/5</span></p>
-                      </div>
-                      <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
-                        <p class="m-0 text-[11.5px] font-bold text-muted">ผลกระทบสูงสุด</p>
-                        <p class="m-0 mt-1 text-[19px] font-extrabold text-ink">{{ number(scoreInfo().matrix_impact, 0) }}<span class="text-[12px] font-bold text-muted">/5</span></p>
-                      </div>
-                      <div class="rounded-[3px] border border-line-soft p-[11px]" [style.background]="bandColor(scoreInfo().matrix_level) + '14'">
-                        <p class="m-0 text-[11.5px] font-bold text-muted">คะแนน 5×5 (ประกอบการวิเคราะห์)</p>
-                        <p class="m-0 mt-1 text-[19px] font-extrabold" [style.color]="bandColor(scoreInfo().matrix_level)">{{ number(scoreInfo().matrix_score, 0) }} · {{ scoreInfo().matrix_level || '-' }}</p>
-                      </div>
-                    </div>
-                    <div class="rounded-[3px] border border-line-soft bg-[#fbfcfd] p-3">
-                      <p class="m-0 text-[12px] font-bold text-slate-700">การประกอบคะแนน</p>
-                      <p class="m-0 mt-1 text-[12.5px] leading-relaxed text-muted">
-                        พบสัญญาณเสี่ยง <span class="font-bold text-ink">{{ number(scoreInfo().factors_triggered, 0) }}</span> ปัจจัย
-                        @if (scoreInfo().factors_not_computable) {
-                          · ประเมินไม่ได้ <span class="font-bold text-[#8a2a1f]">{{ number(scoreInfo().factors_not_computable, 0) }}</span> ปัจจัย
-                        }
-                        · คะแนนสัดส่วน {{ number(scoreInfo().risk_score, 0) }}/100
+              <div class="max-h-[620px] overflow-y-auto">
+                @for (project of filteredProjects(); track project.project_id) {
+                  <button
+                    type="button"
+                    class="block w-full cursor-pointer border-b border-row-active px-4 py-3 text-left"
+                    [class]="
+                      String(project.project_id) === selectedProjectId()
+                        ? 'bg-row-active'
+                        : 'bg-white hover:bg-zebra'
+                    "
+                    (click)="selectProject(project.project_id)"
+                  >
+                    <div class="flex items-start justify-between gap-2">
+                      <p class="m-0 line-clamp-2 text-[13.5px] font-bold text-ink">
+                        {{ project.project_name }}
                       </p>
-                      @if (scoreInfo().summary_text) {
-                        <p class="m-0 mt-1.5 text-[12.5px] leading-relaxed text-slate-700">{{ scoreInfo().summary_text }}</p>
-                      }
-                      @if ((scoreInfo().factors_triggered ?? 0) >= 3) {
-                        <p class="m-0 mt-1.5 text-[11.5px] text-muted">* มีสัญญาณยืนยันกัน ≥3 ตัว → เพิ่มโอกาสรวม +1 (corroboration)</p>
-                      }
+                      <app-risk-badge [level]="project.risk_level" />
+                    </div>
+                    <p class="m-0 mt-1.5 text-xs text-muted">
+                      ปี {{ project.budget_year }} · Score {{ number(project.risk_score, 2) }} ·
+                      {{ money(project.budget_amount) }} บาท
+                    </p>
+                  </button>
+                }
+              </div>
+            </section>
+
+            <section class="grid gap-4">
+              @if (loadingDetail()) {
+                <div class="panel p-6 text-sm text-muted">กำลังโหลดรายละเอียดโครงการ...</div>
+              } @else if (projectDetail()) {
+                <article class="panel p-[18px]">
+                  <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p class="m-0 text-[12.5px] font-bold text-muted">
+                        Project ID {{ projectDetail()?.project_id }}
+                      </p>
+                      <h2 class="m-0 mt-1 text-[19px] font-extrabold text-ink">
+                        {{ projectDetail()?.project_name }}
+                      </h2>
+                      <p class="m-0 mt-1.5 text-[13px] text-muted">
+                        ปี {{ projectDetail()?.budget_year }} ·
+                        @if (
+                          projectDetail()?.project_type || projectDetail()?.purchase_method_group
+                        ) {
+                          {{
+                            projectDetail()?.project_type || projectDetail()?.purchase_method_group
+                          }}
+                        } @else {
+                          <span class="italic text-slate-400">ยังไม่มีข้อมูล</span>
+                        }
+                      </p>
+                    </div>
+                    <div class="flex flex-col items-start gap-1.5">
+                      <app-risk-badge [level]="scoreInfo().risk_level" />
+                      <span class="text-[11px] font-bold text-muted"
+                        >Risk Score {{ number(scoreInfo().risk_score, 0) }}/100</span
+                      >
                     </div>
                   </div>
-                </div>
-              </section>
 
-              <section class="panel p-[18px]">
-                <h2 class="m-0 mb-3.5 text-[16px] font-bold text-ink">ปัจจัยที่ทำให้เสี่ยง</h2>
+                  @if (projectDetail()?.source_file || projectDetail()?.data_quality_note) {
+                    <div
+                      class="mt-3 rounded-[3px] border border-line-soft bg-[#fbfcfd] px-3 py-2 text-[11.5px] text-muted"
+                    >
+                      @if (projectDetail()?.source_file) {
+                        <p class="m-0">
+                          <span class="font-bold text-slate-600">ที่มาข้อมูล:</span>
+                          {{ projectDetail()?.source_file }}
+                        </p>
+                      }
+                      @if (projectDetail()?.data_quality_note) {
+                        <p class="m-0 mt-0.5">
+                          <span class="font-bold text-[#8a2a1f]">ข้อจำกัดข้อมูล:</span>
+                          {{ projectDetail()?.data_quality_note }}
+                        </p>
+                      }
+                    </div>
+                  }
 
-                @if (!triggeredFactors().length) {
-                  <app-empty-state title="ไม่พบ factor ที่ trigger" message="โครงการนี้อาจไม่มีสัญญาณตามเกณฑ์ที่กำหนดไว้" />
-                } @else {
-                  <div class="grid gap-3">
-                    @for (factor of triggeredFactors(); track factor.factor_code) {
-                      <article class="rounded-[4px] border-[1.5px] border-line p-3.5">
-                        <div class="flex flex-wrap items-start justify-between gap-2">
+                  <div
+                    class="mt-4 rounded-[4px] border-[1.5px] border-line-soft bg-[#fbfcfd] px-4 py-3.5"
+                  >
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                      <div class="flex min-w-0 flex-wrap items-center gap-4">
+                        <div class="flex items-center gap-2.5">
+                          <span
+                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-extrabold"
+                            [class]="assignmentStatusCircleClass()"
+                          >
+                            {{ projectWorkflowIcon() }}
+                          </span>
                           <div>
-                            <p class="m-0 text-sm font-bold text-ink">{{ factor.name_th }}</p>
-                            <p class="m-0 mt-0.5 text-[11.5px] text-muted">{{ factor.factor_code }}</p>
-                          </div>
-                          @if (factor.risk_band) {
-                            <span
-                              class="shrink-0 rounded-[3px] px-2.5 py-1 text-[11.5px] font-extrabold text-white"
-                              [style.background]="bandColor(factor.risk_band)"
-                              [title]="matrixChip(factor)"
-                            >{{ matrixChip(factor) }} · {{ factor.risk_band }}</span>
-                          }
-                        </div>
-
-                        <!-- เทียบค่าที่วัดได้ ↔ เกณฑ์ (audit line) -->
-                        <div class="mt-2.5 grid gap-2 sm:grid-cols-2">
-                          <div class="rounded-[3px] border border-line-soft bg-zebra p-2.5">
-                            <p class="m-0 text-[11.5px] font-bold text-muted">ค่าที่วัดได้</p>
-                            <p class="m-0 mt-1 text-[15px] font-extrabold" [class]="isComputable(factor) ? 'text-ink' : 'text-[#8a2a1f]'">
-                              {{ isComputable(factor) ? value(factor.observed_value) : 'ประเมินไม่ได้' }}
+                            <p class="m-0 text-[11.5px] font-bold text-muted">สถานะโครงการโดยรวม</p>
+                            <p class="m-0 mt-0.5 text-[13.5px] font-extrabold text-ink">
+                              {{ projectWorkflowStatusText() }}
                             </p>
                           </div>
-                          <div class="rounded-[3px] border border-line-soft bg-zebra p-2.5">
-                            <p class="m-0 text-[11.5px] font-bold text-muted">เกณฑ์ที่ใช้เทียบ</p>
-                            <p class="m-0 mt-1 text-[12.5px] font-bold text-slate-700 break-words">{{ thresholdText(factor) }}</p>
-                          </div>
                         </div>
 
-                        @if (factor.evidence_text) {
-                          <p class="m-0 mt-2.5 text-[12.5px] leading-relaxed text-slate-700">{{ factor.evidence_text }}</p>
-                        }
-                        @if (catalogDescription(factor.factor_code)) {
-                          <p class="m-0 mt-1.5 text-[12.5px] leading-relaxed text-muted">{{ catalogDescription(factor.factor_code) }}</p>
-                        }
-                        @if (factor.legal_ref) {
-                          <p class="m-0 mt-2 border-t border-line-soft pt-2 text-[11.5px] leading-relaxed text-muted">
-                            <span class="font-bold text-slate-600">ฐานอ้างอิง:</span> {{ factor.legal_ref }}
-                          </p>
-                        }
-                      </article>
-                    }
-                  </div>
-                }
-
-                @if (notComputableFactors().length) {
-                  <div class="mt-3.5 rounded-[3px] border border-[#e6cfca] bg-[#fdf6f5] p-3">
-                    <p class="m-0 text-[12px] font-bold text-[#8a2a1f]">ปัจจัยที่ประเมินไม่ได้ (ข้อมูลไม่เพียงพอ — ไม่ใช่ "ผ่าน")</p>
-                    <div class="mt-1.5 grid gap-1">
-                      @for (factor of notComputableFactors(); track factor.factor_code) {
-                        <p class="m-0 text-[12px] text-slate-700">
-                          <span class="font-bold">{{ factor.factor_code }} {{ factor.name_th }}</span>
-                          @if (factor.evidence_text) { — {{ factor.evidence_text }} }
-                        </p>
-                      }
-                    </div>
-                  </div>
-                }
-              </section>
-
-              <section class="panel p-[18px]">
-                <div class="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <h2 class="m-0 text-[16px] font-bold text-ink">Risk Factor Catalog</h2>
-                    <p class="m-0 mt-1 text-[13px] text-muted">รายการ factor ทั้งหมดในระบบ เพื่อใช้อ้างอิงประกอบการตรวจสอบ</p>
-                  </div>
-                  <span class="rounded-[20px] border border-line bg-zebra px-3 py-1 text-xs font-bold text-slate-700">
-                    trigger {{ selectedProjectCatalog().length }} รายการ
-                  </span>
-                </div>
-
-                @if (!selectedProjectCatalog().length) {
-                  <div class="mt-3">
-                    <app-empty-state title="ยังไม่มีข้อมูล catalog" message="รอให้ backend ส่งรายการ risk factor" />
-                  </div>
-                } @else {
-                  <div class="mt-3.5 grid gap-2.5 md:grid-cols-2">
-                    @for (factor of selectedProjectCatalog(); track factor.factor_code) {
-                      <div class="rounded-[3px] border border-line px-3 py-2.5">
-                        <div class="flex items-start justify-between gap-1.5">
-                          <p class="m-0 text-[13px] font-bold text-ink">{{ factor.factor_code }} · {{ factor.name_th }}</p>
-                          @if (factor.severity) {
-                            <span class="shrink-0 rounded-[20px] bg-row-active px-2 py-0.5 text-[11px] font-bold text-slate-700">
-                              {{ factor.severity }}
-                            </span>
+                        <div class="min-w-[160px] border-l border-line-soft pl-4">
+                          <p class="m-0 text-[11.5px] font-bold text-muted">ผู้รับมอบหมาย</p>
+                          @if (assignmentAnalyst()) {
+                            <p class="m-0 mt-0.5 text-[13.5px] font-extrabold text-ink">
+                              {{ assignmentAnalystName() }}
+                            </p>
+                          } @else {
+                            <p class="m-0 mt-0.5 text-[13.5px] italic text-slate-400">รอมอบหมาย</p>
                           }
                         </div>
-                        <p class="m-0 mt-1 text-xs leading-relaxed text-muted">
-                          {{ factor.description_th || factor.category || 'ไม่มีคำอธิบายเพิ่มเติม' }}
+
+                        <div class="min-w-[160px] border-l border-line-soft pl-4">
+                          <p class="m-0 text-[11.5px] font-bold text-muted">ผู้มอบหมาย</p>
+                          @if (latestProjectAssignment()?.assignedBy) {
+                            <p class="m-0 mt-0.5 text-[13.5px] font-extrabold text-ink">
+                              {{ latestProjectAssignment()?.assignedBy }}
+                            </p>
+                          } @else {
+                            <p class="m-0 mt-0.5 text-[13.5px] italic text-slate-400">
+                              ยังไม่มีผู้รับผิดชอบ
+                            </p>
+                          }
+                        </div>
+                      </div>
+
+                      <a
+                        routerLink="/risk-factors/status"
+                        [queryParams]="{ projectId: projectDetail()?.project_id }"
+                        class="inline-flex min-h-[38px] items-center justify-center rounded-[3px] border-[1.5px] border-line bg-white px-4 text-[13px] font-bold text-slate-700 no-underline hover:bg-zebra"
+                      >
+                        ดูสถานะเพิ่มเติม
+                      </a>
+                    </div>
+                  </div>
+
+                  <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                      <p class="m-0 text-[11.5px] font-bold text-muted">งบประมาณ</p>
+                      <p class="m-0 mt-1 text-[15px] font-extrabold text-ink">
+                        {{ money(projectDetail()?.budget_amount) }}
+                      </p>
+                    </div>
+                    <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                      <p class="m-0 text-[11.5px] font-bold text-muted">ราคากลาง</p>
+                      <p class="m-0 mt-1 text-[15px] font-extrabold text-ink">
+                        {{ money(projectDetail()?.reference_price) }}
+                      </p>
+                    </div>
+                    <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                      <p class="m-0 text-[11.5px] font-bold text-muted">ราคาสัญญา</p>
+                      <p class="m-0 mt-1 text-[15px] font-extrabold text-ink">
+                        {{ money(contractValue()) }}
+                      </p>
+                    </div>
+                    <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                      <p class="m-0 text-[11.5px] font-bold text-muted">Risk Score</p>
+                      <p class="m-0 mt-1 text-[15px] font-extrabold text-ink">
+                        {{ number(projectDetail()?.risk_score, 2) }}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div class="mt-2.5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                      <p class="m-0 text-[11.5px] font-bold text-muted">หน่วยงาน</p>
+                      <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">
+                        {{ projectDeptName() }}
+                      </p>
+                    </div>
+                    <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                      <p class="m-0 text-[11.5px] font-bold text-muted">สถานะโครงการ</p>
+                      <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">{{ projectStatus() }}</p>
+                    </div>
+                    <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                      <p class="m-0 text-[11.5px] font-bold text-muted">เลขที่สัญญา</p>
+                      <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">{{ contractNo() }}</p>
+                    </div>
+                    <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                      <p class="m-0 text-[11.5px] font-bold text-muted">สถานะสัญญา</p>
+                      <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">
+                        {{ contractStatus() }}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div class="mt-2.5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                      <p class="m-0 text-[11.5px] font-bold text-muted">ผู้ขาย/ผู้รับจ้าง</p>
+                      <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">{{ vendorLabel() }}</p>
+                    </div>
+                    <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                      <p class="m-0 text-[11.5px] font-bold text-muted">ประเภทจัดซื้อจัดจ้าง</p>
+                      <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">
+                        {{ purchaseMethodLabel() }}
+                      </p>
+                    </div>
+                    <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                      <p class="m-0 text-[11.5px] font-bold text-muted">สัญญาเทียบราคากลาง</p>
+                      <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">
+                        {{ comparisonLabel(contractValue(), projectDetail()?.reference_price) }}
+                      </p>
+                      <p class="m-0 mt-1 text-xs text-muted">
+                        {{ percentageLabel(contractValue(), projectDetail()?.reference_price) }}
+                      </p>
+                    </div>
+                    <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                      <p class="m-0 text-[11.5px] font-bold text-muted">สัญญาเทียบงบประมาณ</p>
+                      <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">
+                        {{ comparisonLabel(contractValue(), projectDetail()?.budget_amount) }}
+                      </p>
+                      <p class="m-0 mt-1 text-xs text-muted">
+                        {{ percentageLabel(contractValue(), projectDetail()?.budget_amount) }}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div class="mt-3.5 rounded-[3px] border border-line-soft bg-[#fbfcfd] p-3.5">
+                    <div class="flex items-center gap-2">
+                      <h3 class="m-0 text-sm font-bold text-ink">สูตรที่ใช้คำนวณ</h3>
+                      <app-info-tooltip
+                        text="แสดงสูตรและการแทนค่าจากตัวเลขของโครงการที่เลือก เพื่อให้ตรวจสอบผลคำนวณย้อนกลับได้"
+                        [width]="280"
+                      />
+                    </div>
+                    <p class="m-0 mt-2 text-[12.5px] leading-relaxed text-muted">
+                      หลักการคำนวณใช้ค่าฐานเป็นตัวหาร แล้วแปลงผลต่างเป็นเปอร์เซ็นต์:
+                      <span class="font-bold text-ink">(ราคาสัญญา − ค่าฐาน) ÷ ค่าฐาน × 100</span>
+                    </p>
+
+                    <div class="mt-3 grid gap-2.5 lg:grid-cols-2">
+                      <div class="rounded-[3px] border border-line-soft bg-white p-3">
+                        <p class="m-0 text-[12px] font-extrabold text-ink">
+                          1. ราคาสัญญาเทียบราคากลาง
+                        </p>
+                        <p class="m-0 mt-1 text-[12.5px] text-muted">
+                          ค่าฐาน = ราคากลาง {{ money(projectDetail()?.reference_price) }} บาท
+                        </p>
+                        <p class="m-0 mt-2 font-mono text-[12px] leading-relaxed text-slate-700">
+                          {{ calculationFormulaLine(projectDetail()?.reference_price) }}
+                        </p>
+                        <p class="m-0 mt-1 font-mono text-[12px] leading-relaxed text-slate-700">
+                          {{ calculationDifferenceLine(projectDetail()?.reference_price) }}
+                        </p>
+                        <p class="m-0 mt-1 text-[13px] font-extrabold text-ink">
+                          {{ calculationResultLine(projectDetail()?.reference_price) }}
                         </p>
                       </div>
-                    }
+
+                      <div class="rounded-[3px] border border-line-soft bg-white p-3">
+                        <p class="m-0 text-[12px] font-extrabold text-ink">
+                          2. ราคาสัญญาเทียบงบประมาณ
+                        </p>
+                        <p class="m-0 mt-1 text-[12.5px] text-muted">
+                          ค่าฐาน = งบประมาณ {{ money(projectDetail()?.budget_amount) }} บาท
+                        </p>
+                        <p class="m-0 mt-2 font-mono text-[12px] leading-relaxed text-slate-700">
+                          {{ calculationFormulaLine(projectDetail()?.budget_amount) }}
+                        </p>
+                        <p class="m-0 mt-1 font-mono text-[12px] leading-relaxed text-slate-700">
+                          {{ calculationDifferenceLine(projectDetail()?.budget_amount) }}
+                        </p>
+                        <p class="m-0 mt-1 text-[13px] font-extrabold text-ink">
+                          {{ calculationResultLine(projectDetail()?.budget_amount) }}
+                        </p>
+                      </div>
+                    </div>
+
+                    <p class="m-0 mt-2 text-[11.5px] leading-relaxed text-muted">
+                      ผลลัพธ์เป็นบวกหมายถึงราคาสัญญาสูงกว่าค่าฐาน
+                      ผลลัพธ์เป็นลบหมายถึงราคาสัญญาต่ำกว่าค่าฐาน
+                    </p>
                   </div>
-                }
-              </section>
-            }
-          </section>
-        </div>
+                </article>
+
+                <section class="panel p-[18px]">
+                  <div class="flex items-center gap-2">
+                    <h2 class="m-0 text-[16px] font-bold text-ink">
+                      ข้อมูลประกอบการวิเคราะห์ (โอกาส × ผลกระทบ 5×5)
+                    </h2>
+                    <app-info-tooltip
+                      text="ใช้วิเคราะห์ความรุนแรงของปัจจัยตามโอกาส × ผลกระทบ (1–25) ไม่ใช่ป้ายระดับความเสี่ยงของโครงการ"
+                      [width]="300"
+                    />
+                  </div>
+                  <p class="m-0 mt-1 text-[12.5px] text-muted">
+                    ป้ายระดับความเสี่ยงของโครงการด้านบนอ้างอิง
+                    <span class="font-bold">Risk Score</span> และ
+                    <span class="font-bold">risk_level</span> จาก backend เท่านั้น
+                  </p>
+                  <div class="mt-3.5 grid items-start gap-5 lg:grid-cols-[auto_1fr]">
+                    <app-risk-matrix
+                      [likelihood]="scoreInfo().matrix_likelihood"
+                      [impact]="scoreInfo().matrix_impact"
+                    />
+                    <div class="grid gap-2.5">
+                      <div class="grid grid-cols-3 gap-2.5">
+                        <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                          <p class="m-0 text-[11.5px] font-bold text-muted">โอกาสรวม</p>
+                          <p class="m-0 mt-1 text-[19px] font-extrabold text-ink">
+                            {{ number(scoreInfo().matrix_likelihood, 0)
+                            }}<span class="text-[12px] font-bold text-muted">/5</span>
+                          </p>
+                        </div>
+                        <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
+                          <p class="m-0 text-[11.5px] font-bold text-muted">ผลกระทบสูงสุด</p>
+                          <p class="m-0 mt-1 text-[19px] font-extrabold text-ink">
+                            {{ number(scoreInfo().matrix_impact, 0)
+                            }}<span class="text-[12px] font-bold text-muted">/5</span>
+                          </p>
+                        </div>
+                        <div
+                          class="rounded-[3px] border border-line-soft p-[11px]"
+                          [style.background]="bandColor(scoreInfo().matrix_level) + '14'"
+                        >
+                          <p class="m-0 text-[11.5px] font-bold text-muted">
+                            คะแนน 5×5 (ประกอบการวิเคราะห์)
+                          </p>
+                          <p
+                            class="m-0 mt-1 text-[19px] font-extrabold"
+                            [style.color]="bandColor(scoreInfo().matrix_level)"
+                          >
+                            {{ number(scoreInfo().matrix_score, 0) }} ·
+                            {{ scoreInfo().matrix_level || '-' }}
+                          </p>
+                        </div>
+                      </div>
+                      <div class="rounded-[3px] border border-line-soft bg-[#fbfcfd] p-3">
+                        <p class="m-0 text-[12px] font-bold text-slate-700">การประกอบคะแนน</p>
+                        <p class="m-0 mt-1 text-[12.5px] leading-relaxed text-muted">
+                          พบสัญญาณเสี่ยง
+                          <span class="font-bold text-ink">{{
+                            number(scoreInfo().factors_triggered, 0)
+                          }}</span>
+                          ปัจจัย
+                          @if (scoreInfo().factors_not_computable) {
+                            · ประเมินไม่ได้
+                            <span class="font-bold text-[#8a2a1f]">{{
+                              number(scoreInfo().factors_not_computable, 0)
+                            }}</span>
+                            ปัจจัย
+                          }
+                          · คะแนนสัดส่วน {{ number(scoreInfo().risk_score, 0) }}/100
+                        </p>
+                        @if (scoreInfo().summary_text) {
+                          <p class="m-0 mt-1.5 text-[12.5px] leading-relaxed text-slate-700">
+                            {{ scoreInfo().summary_text }}
+                          </p>
+                        }
+                        @if ((scoreInfo().factors_triggered ?? 0) >= 3) {
+                          <p class="m-0 mt-1.5 text-[11.5px] text-muted">
+                            * มีสัญญาณยืนยันกัน ≥3 ตัว → เพิ่มโอกาสรวม +1 (corroboration)
+                          </p>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="panel p-[18px]">
+                  <h2 class="m-0 mb-3.5 text-[16px] font-bold text-ink">ปัจจัยที่ทำให้เสี่ยง</h2>
+
+                  @if (!triggeredFactors().length) {
+                    <app-empty-state
+                      title="ไม่พบ factor ที่ trigger"
+                      message="โครงการนี้อาจไม่มีสัญญาณตามเกณฑ์ที่กำหนดไว้"
+                    />
+                  } @else {
+                    <div class="grid gap-3">
+                      @for (factor of triggeredFactors(); track factor.factor_code) {
+                        <article class="rounded-[4px] border-[1.5px] border-line p-3.5">
+                          <div class="flex flex-wrap items-start justify-between gap-2">
+                            <div>
+                              <p class="m-0 text-sm font-bold text-ink">{{ factor.name_th }}</p>
+                              <p class="m-0 mt-0.5 text-[11.5px] text-muted">
+                                {{ factor.factor_code }}
+                              </p>
+                            </div>
+                            @if (factor.risk_band) {
+                              <span
+                                class="shrink-0 rounded-[3px] px-2.5 py-1 text-[11.5px] font-extrabold text-white"
+                                [style.background]="bandColor(factor.risk_band)"
+                                [title]="matrixChip(factor)"
+                                >{{ matrixChip(factor) }} · {{ factor.risk_band }}</span
+                              >
+                            }
+                          </div>
+
+                          <!-- เทียบค่าที่วัดได้ ↔ เกณฑ์ (audit line) -->
+                          <div class="mt-2.5 grid gap-2 sm:grid-cols-2">
+                            <div class="rounded-[3px] border border-line-soft bg-zebra p-2.5">
+                              <p class="m-0 text-[11.5px] font-bold text-muted">ค่าที่วัดได้</p>
+                              <p
+                                class="m-0 mt-1 text-[15px] font-extrabold"
+                                [class]="isComputable(factor) ? 'text-ink' : 'text-[#8a2a1f]'"
+                              >
+                                {{
+                                  isComputable(factor)
+                                    ? value(factor.observed_value)
+                                    : 'ประเมินไม่ได้'
+                                }}
+                              </p>
+                            </div>
+                            <div class="rounded-[3px] border border-line-soft bg-zebra p-2.5">
+                              <p class="m-0 text-[11.5px] font-bold text-muted">เกณฑ์ที่ใช้เทียบ</p>
+                              <p
+                                class="m-0 mt-1 text-[12.5px] font-bold text-slate-700 break-words"
+                              >
+                                {{ thresholdText(factor) }}
+                              </p>
+                            </div>
+                          </div>
+
+                          @if (factor.evidence_text) {
+                            <p class="m-0 mt-2.5 text-[12.5px] leading-relaxed text-slate-700">
+                              {{ factor.evidence_text }}
+                            </p>
+                          }
+                          @if (catalogDescription(factor.factor_code)) {
+                            <p class="m-0 mt-1.5 text-[12.5px] leading-relaxed text-muted">
+                              {{ catalogDescription(factor.factor_code) }}
+                            </p>
+                          }
+                          @if (factor.legal_ref) {
+                            <p
+                              class="m-0 mt-2 border-t border-line-soft pt-2 text-[11.5px] leading-relaxed text-muted"
+                            >
+                              <span class="font-bold text-slate-600">ฐานอ้างอิง:</span>
+                              {{ factor.legal_ref }}
+                            </p>
+                          }
+                        </article>
+                      }
+                    </div>
+                  }
+
+                  @if (notComputableFactors().length) {
+                    <div class="mt-3.5 rounded-[3px] border border-[#e6cfca] bg-[#fdf6f5] p-3">
+                      <p class="m-0 text-[12px] font-bold text-[#8a2a1f]">
+                        ปัจจัยที่ประเมินไม่ได้ (ข้อมูลไม่เพียงพอ — ไม่ใช่ "ผ่าน")
+                      </p>
+                      <div class="mt-1.5 grid gap-1">
+                        @for (factor of notComputableFactors(); track factor.factor_code) {
+                          <p class="m-0 text-[12px] text-slate-700">
+                            <span class="font-bold"
+                              >{{ factor.factor_code }} {{ factor.name_th }}</span
+                            >
+                            @if (factor.evidence_text) {
+                              — {{ factor.evidence_text }}
+                            }
+                          </p>
+                        }
+                      </div>
+                    </div>
+                  }
+                </section>
+
+                <section class="panel p-[18px]">
+                  <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h2 class="m-0 text-[16px] font-bold text-ink">Risk Factor Catalog</h2>
+                      <p class="m-0 mt-1 text-[13px] text-muted">
+                        รายการ factor ทั้งหมดในระบบ เพื่อใช้อ้างอิงประกอบการตรวจสอบ
+                      </p>
+                    </div>
+                    <span
+                      class="rounded-[20px] border border-line bg-zebra px-3 py-1 text-xs font-bold text-slate-700"
+                    >
+                      trigger {{ selectedProjectCatalog().length }} รายการ
+                    </span>
+                  </div>
+
+                  @if (!selectedProjectCatalog().length) {
+                    <div class="mt-3">
+                      <app-empty-state
+                        title="ยังไม่มีข้อมูล catalog"
+                        message="รอให้ backend ส่งรายการ risk factor"
+                      />
+                    </div>
+                  } @else {
+                    <div class="mt-3.5 grid gap-2.5 md:grid-cols-2">
+                      @for (factor of selectedProjectCatalog(); track factor.factor_code) {
+                        <div class="rounded-[3px] border border-line px-3 py-2.5">
+                          <div class="flex items-start justify-between gap-1.5">
+                            <p class="m-0 text-[13px] font-bold text-ink">
+                              {{ factor.factor_code }} · {{ factor.name_th }}
+                            </p>
+                            @if (factor.severity) {
+                              <span
+                                class="shrink-0 rounded-[20px] bg-row-active px-2 py-0.5 text-[11px] font-bold text-slate-700"
+                              >
+                                {{ factor.severity }}
+                              </span>
+                            }
+                          </div>
+                          <p class="m-0 mt-1 text-xs leading-relaxed text-muted">
+                            {{
+                              factor.description_th || factor.category || 'ไม่มีคำอธิบายเพิ่มเติม'
+                            }}
+                          </p>
+                        </div>
+                      }
+                    </div>
+                  }
+                </section>
+              }
+            </section>
+          </div>
         }
       }
-
     </section>
   `,
 })
@@ -578,14 +751,19 @@ export class RiskFactorsPageComponent implements OnInit {
     const maxBudget = toNumber(this.budgetAmountMax());
     const projects = this.sortedProjects();
     if (!query) {
-      return projects.filter((project) => this.projectMatchesFilters(project, selectedType, minBudget, maxBudget));
+      return projects.filter((project) =>
+        this.projectMatchesFilters(project, selectedType, minBudget, maxBudget),
+      );
     }
     return projects.filter((project) => {
       const idText = String(project.project_id).toLowerCase();
       const nameText = String(project.project_name ?? '').toLowerCase();
       const typeText = this.projectType(project).toLowerCase();
-      const matchesQuery = idText.includes(query) || nameText.includes(query) || typeText.includes(query);
-      return matchesQuery && this.projectMatchesFilters(project, selectedType, minBudget, maxBudget);
+      const matchesQuery =
+        idText.includes(query) || nameText.includes(query) || typeText.includes(query);
+      return (
+        matchesQuery && this.projectMatchesFilters(project, selectedType, minBudget, maxBudget)
+      );
     });
   });
 
@@ -745,7 +923,13 @@ export class RiskFactorsPageComponent implements OnInit {
 
   contractValue(): number | string | null | undefined {
     const detail = this.projectDetail();
-    return detail?.contract_value ?? detail?.contract_price ?? detail?.contract_amount ?? detail?.winning_price ?? null;
+    return (
+      detail?.contract_value ??
+      detail?.contract_price ??
+      detail?.contract_amount ??
+      detail?.winning_price ??
+      null
+    );
   }
 
   projectStatus(): string {
@@ -804,7 +988,9 @@ export class RiskFactorsPageComponent implements OnInit {
       detail.contractor_name ||
       detail.supplier_name ||
       detail.bidder_name ||
-      (detail.vendor_id !== null && detail.vendor_id !== undefined ? `Vendor #${detail.vendor_id}` : '-')
+      (detail.vendor_id !== null && detail.vendor_id !== undefined
+        ? `Vendor #${detail.vendor_id}`
+        : '-')
     );
   }
 
@@ -813,7 +999,10 @@ export class RiskFactorsPageComponent implements OnInit {
     return detail?.purchase_method || detail?.purchase_method_group || '-';
   }
 
-  comparisonLabel(left: number | string | null | undefined, right: number | string | null | undefined): string {
+  comparisonLabel(
+    left: number | string | null | undefined,
+    right: number | string | null | undefined,
+  ): string {
     const diff = this.percentageDifference(left, right);
     if (diff === null) {
       return '-';
@@ -821,10 +1010,15 @@ export class RiskFactorsPageComponent implements OnInit {
     if (diff === 0) {
       return 'เท่ากัน';
     }
-    return diff > 0 ? `สูงกว่า ${Math.abs(diff).toFixed(2)}%` : `ต่ำกว่า ${Math.abs(diff).toFixed(2)}%`;
+    return diff > 0
+      ? `สูงกว่า ${Math.abs(diff).toFixed(2)}%`
+      : `ต่ำกว่า ${Math.abs(diff).toFixed(2)}%`;
   }
 
-  percentageLabel(left: number | string | null | undefined, right: number | string | null | undefined): string {
+  percentageLabel(
+    left: number | string | null | undefined,
+    right: number | string | null | undefined,
+  ): string {
     const diff = this.percentageDifference(left, right);
     if (diff === null) {
       return 'คำนวณไม่ได้';
@@ -870,7 +1064,7 @@ export class RiskFactorsPageComponent implements OnInit {
     const d = this.projectDetail() as (ProjectDetail & Record<string, unknown>) | null;
     return {
       matrix_level: (d?.['matrix_level'] as string) ?? null,
-      matrix_likelihood: toNumber(d?.['matrix_likelihood'] as number) ,
+      matrix_likelihood: toNumber(d?.['matrix_likelihood'] as number),
       matrix_impact: toNumber(d?.['matrix_impact'] as number),
       matrix_score: toNumber(d?.['matrix_score'] as number),
       risk_score: toNumber(d?.risk_score),
@@ -995,7 +1189,10 @@ export class RiskFactorsPageComponent implements OnInit {
     return matchesType && matchesMin && matchesMax;
   }
 
-  private percentageDifference(left: number | string | null | undefined, right: number | string | null | undefined): number | null {
+  private percentageDifference(
+    left: number | string | null | undefined,
+    right: number | string | null | undefined,
+  ): number | null {
     const leftValue = toNumber(left);
     const rightValue = toNumber(right);
     if (leftValue === null || rightValue === null || rightValue === 0) {
@@ -1005,9 +1202,12 @@ export class RiskFactorsPageComponent implements OnInit {
   }
 
   private reloadAssignments(): void {
-    this.api.assignments().pipe(catchError(() => of<AuditAssignment[]>([]))).subscribe((assignments) => {
-      this.assignments.set(assignments.map((assignment) => this.toSavedAssignment(assignment)));
-    });
+    this.api
+      .assignments()
+      .pipe(catchError(() => of<AuditAssignment[]>([])))
+      .subscribe((assignments) => {
+        this.assignments.set(assignments.map((assignment) => this.toSavedAssignment(assignment)));
+      });
   }
 
   private toSavedAssignment(assignment: AuditAssignment): SavedAssignment {
@@ -1023,7 +1223,8 @@ export class RiskFactorsPageComponent implements OnInit {
       budgetHours: assignment.budget_hours ?? undefined,
       auditSteps: assignment.audit_steps,
       workflowStatus: assignment.status,
-      assignedBy: assignment.assigned_by_display_name || assignment.assigned_by_username || undefined,
+      assignedBy:
+        assignment.assigned_by_display_name || assignment.assigned_by_username || undefined,
     };
   }
 
@@ -1042,4 +1243,3 @@ export class RiskFactorsPageComponent implements OnInit {
     return Number.isNaN(date.getTime()) ? 0 : date.getTime();
   }
 }
-

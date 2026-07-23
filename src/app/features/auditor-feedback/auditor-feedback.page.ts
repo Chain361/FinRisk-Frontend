@@ -102,7 +102,7 @@ import {
                     <th class="px-4 py-3">โครงการ / ความเห็น</th>
                     <th class="px-4 py-3">ผู้ให้ความเห็น</th>
                     <th class="px-4 py-3">ความกังวล</th>
-                    <th class="px-4 py-3 text-right">คะแนน</th>
+                    <th class="px-4 py-3">คะแนน</th>
                     <th class="px-4 py-3">สถานะ</th>
                     <th class="px-4 py-3">อัปเดตล่าสุด</th>
                   </tr>
@@ -133,7 +133,7 @@ import {
                           <span class="text-muted">-</span>
                         }
                       </td>
-                      <td class="px-4 py-3 text-right font-semibold">
+                      <td class="px-4 py-3 text-left font-semibold">
                         {{ item.risk_score ?? '-' }}
                       </td>
                       <td class="px-4 py-3">

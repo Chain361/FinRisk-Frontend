@@ -121,17 +121,17 @@ const NAV_GROUPS: NavGroup[] = [
           },
         ],
       },
-    ],
-  },
-  {
-    id: 'admin',
-    label: 'ผู้ดูแลระบบ',
-    items: [
       {
-        code: 'A1',
-        label: 'บันทึกการเข้าถึงระบบ',
-        path: '/admin/access-log',
-        roles: ['admin'], // เห็นเฉพาะ admin — ตรงกับ roleGuard('admin') ที่ route
+        code: 'F5',
+        label: 'แบบฟอร์มบันทึกความคิดเห็น',
+        path: '/risk-analyst-feedback',
+        roles: [
+          'admin',
+          'regional_supervisor',
+          'local_executive',
+          'project_auditor',
+          'risk_analyst',
+        ],
       },
     ],
   },
@@ -144,7 +144,25 @@ const NAV_GROUPS: NavGroup[] = [
         label: 'ความเห็นผู้ตรวจสอบ',
         path: '/auditor-feedback',
         // mirror FEEDBACK_ROLES (core/auth/roles.ts) — ซ่อนจาก public_user
-        roles: ['admin', 'regional_supervisor', 'local_executive', 'project_auditor', 'risk_analyst'],
+        roles: [
+          'admin',
+          'regional_supervisor',
+          'local_executive',
+          'project_auditor',
+          'risk_analyst',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'admin',
+    label: 'ผู้ดูแลระบบ',
+    items: [
+      {
+        code: 'A1',
+        label: 'บันทึกการเข้าถึงระบบ',
+        path: '/admin/access-log',
+        roles: ['admin'], // เห็นเฉพาะ admin — ตรงกับ roleGuard('admin') ที่ route
       },
     ],
   },
@@ -228,7 +246,9 @@ const NAV_GROUPS: NavGroup[] = [
           <p class="m-0 text-xs text-[#9fb0c8]">ข้อมูลจากระบบ FinRisk Backend</p>
           <p class="m-0 mt-1 text-xs text-[#9fb0c8]">ข้อมูล ณ วันที่: {{ dataAsOf() }}</p>
           @if (fiscalYearRange()) {
-            <p class="m-0 mt-1 text-xs text-[#9fb0c8]">ครอบคลุมปีงบประมาณ {{ fiscalYearRange() }}</p>
+            <p class="m-0 mt-1 text-xs text-[#9fb0c8]">
+              ครอบคลุมปีงบประมาณ {{ fiscalYearRange() }}
+            </p>
           }
         </div>
       </aside>
