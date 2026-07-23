@@ -77,7 +77,7 @@ import {
                 <input
                   type="search"
                   class="gov-input mt-1 w-24"
-                  placeholder="ค้นหาProject ID ผู้ให้ความเห็น หรือข้อความ"
+                  placeholder="ค้นหา Project ID ผู้ให้ความเห็น หรือข้อความ"
                   [value]="searchQuery()"
                   (input)="searchQuery.set($any($event.target).value)"
                 />
