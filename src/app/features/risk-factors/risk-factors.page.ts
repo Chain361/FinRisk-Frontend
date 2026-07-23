@@ -1,11 +1,16 @@
 ﻿import { Component, computed, inject, OnInit, signal } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { catchError, forkJoin, of } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { FEEDBACK_ROLES } from '../../core/auth/roles';
 import {
+  SavedAssignment,
+  projectWorkflowStatusLabel,
+} from '../assignment-project-auditor/assignment-project-auditor.models';
+import {
+  AuditAssignment,
   Project,
   ProjectDetail,
   ProjectFilters,
@@ -37,6 +42,7 @@ import { ProjectFeedbackPanelComponent } from './project-feedback-panel.componen
     FilterBarComponent,
     InfoTooltipComponent,
     ProjectFeedbackPanelComponent,
+    RouterLink,
     RiskBadgeComponent,
     RiskMatrixComponent,
   ],
@@ -44,7 +50,7 @@ import { ProjectFeedbackPanelComponent } from './project-feedback-panel.componen
     <section class="page-shell">
       <div>
         <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F3</p>
-        <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">วิเคราะห์ปัจจัยความเสี่ยง</h1>
+        <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">โครงการทั้งหมด</h1>
         <p class="m-0 mt-1.5 text-sm text-muted">เปิดดูรายละเอียดโครงการ ปัจจัยเสี่ยงที่ trigger และสูตรการคำนวณ</p>
       </div>
 
@@ -124,7 +130,13 @@ import { ProjectFeedbackPanelComponent } from './project-feedback-panel.componen
                           <p class="text-xs text-slate-500">ID {{ project.project_id }}</p>
                         </td>
                         <td class="px-4 py-3">{{ project.budget_year }}</td>
-                        <td class="px-4 py-3">{{ project.project_type || project.purchase_method_group || '-' }}</td>
+                        <td class="px-4 py-3">
+                          @if (project.project_type || project.purchase_method_group) {
+                            {{ project.project_type || project.purchase_method_group }}
+                          } @else {
+                            <span class="italic text-slate-400">ยังไม่มีข้อมูล</span>
+                          }
+                        </td>
                         <td class="px-4 py-3 text-right">{{ money(project.budget_amount) }}</td>
                         <td class="px-4 py-3 text-right">{{ number(project.price_ratio, 3) }}</td>
                         <td class="px-4 py-3 text-right font-semibold">{{ number(project.risk_score, 2) }}</td>
@@ -198,7 +210,11 @@ import { ProjectFeedbackPanelComponent } from './project-feedback-panel.componen
                     <h2 class="m-0 mt-1 text-[19px] font-extrabold text-ink">{{ projectDetail()?.project_name }}</h2>
                     <p class="m-0 mt-1.5 text-[13px] text-muted">
                       ปี {{ projectDetail()?.budget_year }} ·
-                      {{ projectDetail()?.project_type || projectDetail()?.purchase_method_group || '-' }}
+                      @if (projectDetail()?.project_type || projectDetail()?.purchase_method_group) {
+                        {{ projectDetail()?.project_type || projectDetail()?.purchase_method_group }}
+                      } @else {
+                        <span class="italic text-slate-400">ยังไม่มีข้อมูล</span>
+                      }
                     </p>
                   </div>
                   <div class="flex flex-col items-end gap-1.5">
@@ -217,6 +233,51 @@ import { ProjectFeedbackPanelComponent } from './project-feedback-panel.componen
                     }
                   </div>
                 }
+
+                <div class="mt-4 rounded-[4px] border-[1.5px] border-line-soft bg-[#fbfcfd] px-4 py-3.5">
+                  <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex min-w-0 flex-wrap items-center gap-4">
+                      <div class="flex items-center gap-2.5">
+                        <span
+                          class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-extrabold"
+                          [class]="assignmentStatusCircleClass()"
+                        >
+                          {{ projectWorkflowIcon() }}
+                        </span>
+                        <div>
+                          <p class="m-0 text-[11.5px] font-bold text-muted">สถานะโครงการโดยรวม</p>
+                          <p class="m-0 mt-0.5 text-[13.5px] font-extrabold text-ink">{{ projectWorkflowStatusText() }}</p>
+                        </div>
+                      </div>
+
+                      <div class="min-w-[160px] border-l border-line-soft pl-4">
+                        <p class="m-0 text-[11.5px] font-bold text-muted">ผู้รับมอบหมาย</p>
+                        @if (assignmentAnalyst()) {
+                          <p class="m-0 mt-0.5 text-[13.5px] font-extrabold text-ink">{{ assignmentAnalystName() }}</p>
+                        } @else {
+                          <p class="m-0 mt-0.5 text-[13.5px] italic text-slate-400">รอมอบหมาย</p>
+                        }
+                      </div>
+
+                      <div class="min-w-[160px] border-l border-line-soft pl-4">
+                        <p class="m-0 text-[11.5px] font-bold text-muted">ผู้มอบหมาย</p>
+                        @if (latestProjectAssignment()?.assignedBy) {
+                          <p class="m-0 mt-0.5 text-[13.5px] font-extrabold text-ink">{{ latestProjectAssignment()?.assignedBy }}</p>
+                        } @else {
+                          <p class="m-0 mt-0.5 text-[13.5px] italic text-slate-400">ยังไม่มีผู้รับผิดชอบ</p>
+                        }
+                      </div>
+                    </div>
+
+                    <a
+                      routerLink="/risk-factors/status"
+                      [queryParams]="{ projectId: projectDetail()?.project_id }"
+                      class="inline-flex min-h-[38px] items-center justify-center rounded-[3px] border-[1.5px] border-line bg-white px-4 text-[13px] font-bold text-slate-700 no-underline hover:bg-zebra"
+                    >
+                      ดูสถานะเพิ่มเติม
+                    </a>
+                  </div>
+                </div>
 
                 <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
@@ -285,12 +346,36 @@ import { ProjectFeedbackPanelComponent } from './project-feedback-panel.componen
                   <div class="flex items-center gap-2">
                     <h3 class="m-0 text-sm font-bold text-ink">สูตรที่ใช้คำนวณ</h3>
                     <app-info-tooltip
-                      text="อ้างอิงตามหนังสือซักซ้อมแนวทางการคำนวณราคากลางและการเปรียบเทียบราคาสัญญา กรมส่งเสริมการปกครองท้องถิ่น"
+                      text="แสดงสูตรและการแทนค่าจากตัวเลขของโครงการที่เลือก เพื่อให้ตรวจสอบผลคำนวณย้อนกลับได้"
                       [width]="280"
                     />
                   </div>
-                  <p class="m-0 mt-2 text-[13px] text-slate-700">ราคาสัญญาเทียบราคากลาง = (ราคาสัญญา − ราคากลาง) ÷ ราคากลาง × 100</p>
-                  <p class="m-0 mt-1 text-[13px] text-slate-700">ราคาสัญญาเทียบงบประมาณ = (ราคาสัญญา − งบประมาณ) ÷ งบประมาณ × 100</p>
+                  <p class="m-0 mt-2 text-[12.5px] leading-relaxed text-muted">
+                    หลักการคำนวณใช้ค่าฐานเป็นตัวหาร แล้วแปลงผลต่างเป็นเปอร์เซ็นต์:
+                    <span class="font-bold text-ink">(ราคาสัญญา − ค่าฐาน) ÷ ค่าฐาน × 100</span>
+                  </p>
+
+                  <div class="mt-3 grid gap-2.5 lg:grid-cols-2">
+                    <div class="rounded-[3px] border border-line-soft bg-white p-3">
+                      <p class="m-0 text-[12px] font-extrabold text-ink">1. ราคาสัญญาเทียบราคากลาง</p>
+                      <p class="m-0 mt-1 text-[12.5px] text-muted">ค่าฐาน = ราคากลาง {{ money(projectDetail()?.reference_price) }} บาท</p>
+                      <p class="m-0 mt-2 font-mono text-[12px] leading-relaxed text-slate-700">{{ calculationFormulaLine(projectDetail()?.reference_price) }}</p>
+                      <p class="m-0 mt-1 font-mono text-[12px] leading-relaxed text-slate-700">{{ calculationDifferenceLine(projectDetail()?.reference_price) }}</p>
+                      <p class="m-0 mt-1 text-[13px] font-extrabold text-ink">{{ calculationResultLine(projectDetail()?.reference_price) }}</p>
+                    </div>
+
+                    <div class="rounded-[3px] border border-line-soft bg-white p-3">
+                      <p class="m-0 text-[12px] font-extrabold text-ink">2. ราคาสัญญาเทียบงบประมาณ</p>
+                      <p class="m-0 mt-1 text-[12.5px] text-muted">ค่าฐาน = งบประมาณ {{ money(projectDetail()?.budget_amount) }} บาท</p>
+                      <p class="m-0 mt-2 font-mono text-[12px] leading-relaxed text-slate-700">{{ calculationFormulaLine(projectDetail()?.budget_amount) }}</p>
+                      <p class="m-0 mt-1 font-mono text-[12px] leading-relaxed text-slate-700">{{ calculationDifferenceLine(projectDetail()?.budget_amount) }}</p>
+                      <p class="m-0 mt-1 text-[13px] font-extrabold text-ink">{{ calculationResultLine(projectDetail()?.budget_amount) }}</p>
+                    </div>
+                  </div>
+
+                  <p class="m-0 mt-2 text-[11.5px] leading-relaxed text-muted">
+                    ผลลัพธ์เป็นบวกหมายถึงราคาสัญญาสูงกว่าค่าฐาน ผลลัพธ์เป็นลบหมายถึงราคาสัญญาต่ำกว่าค่าฐาน
+                  </p>
                 </div>
 
               </article>
@@ -409,6 +494,10 @@ import { ProjectFeedbackPanelComponent } from './project-feedback-panel.componen
                 }
               </section>
 
+              @if (canSeeFeedback()) {
+                <app-project-feedback-panel [projectId]="String(selectedProjectId())" />
+              }
+
               <section class="panel p-[18px]">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                   <div>
@@ -444,10 +533,6 @@ import { ProjectFeedbackPanelComponent } from './project-feedback-panel.componen
                   </div>
                 }
               </section>
-
-              @if (canSeeFeedback()) {
-                <app-project-feedback-panel [projectId]="String(selectedProjectId())" />
-              }
             }
           </section>
         </div>
@@ -463,7 +548,6 @@ export class RiskFactorsPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
-  /** แผงความเห็นผู้ตรวจสอบ (F5) — ซ่อนจาก public_user ตาม FEEDBACK_ROLES ฝั่ง backend */
   readonly canSeeFeedback = computed(() => this.auth.hasRole(...FEEDBACK_ROLES));
 
   protected readonly String = String;
@@ -475,6 +559,7 @@ export class RiskFactorsPageComponent implements OnInit {
   readonly projects = signal<Project[]>([]);
   readonly catalog = signal<RiskFactorCatalog[]>([]);
   readonly projectDetail = signal<ProjectDetail | null>(null);
+  readonly assignments = signal<SavedAssignment[]>([]);
   readonly searchQuery = signal('');
 
   readonly selectedSubdistrictId = signal<number | null>(null);
@@ -484,6 +569,7 @@ export class RiskFactorsPageComponent implements OnInit {
   readonly budgetAmountMin = signal('');
   readonly budgetAmountMax = signal('');
   readonly selectedProjectId = signal<string | null>(null);
+  readonly routeProjectId = signal<string | null>(null);
 
   readonly sortedProjects = computed(() => sortProjectsByRisk(this.projects()));
   readonly projectTypes = computed(() => {
@@ -542,29 +628,53 @@ export class RiskFactorsPageComponent implements OnInit {
       });
   });
 
+  readonly latestProjectAssignment = computed(() => {
+    const detail = this.projectDetail();
+    if (!detail) {
+      return null;
+    }
+    const projectId = String(detail.project_id);
+    return (
+      this.assignments()
+        .filter((assignment) => assignment.projectId === projectId)
+        .sort((a, b) => this.dateValue(b.assignedAt) - this.dateValue(a.assignedAt))[0] ?? null
+    );
+  });
+
+  readonly assignmentAnalyst = computed(() => {
+    const assignment = this.latestProjectAssignment();
+    if (!assignment) {
+      return null;
+    }
+    return {
+      id: assignment.analystId,
+      name: assignment.analystName || assignment.analystId,
+      team: assignment.analystTeam || 'นักวิเคราะห์ความเสี่ยง',
+      activeCases: 0,
+      specialties: [],
+    };
+  });
+
   ngOnInit(): void {
     this.loadingProjects.set(true);
+    this.applyRouteProject();
 
     forkJoin({
       subdistricts: this.api.subdistricts(),
       catalog: this.api.riskFactors(),
       allProjects: this.api.projects(),
+      assignments: this.api.assignments().pipe(catchError(() => of<AuditAssignment[]>([]))),
     }).subscribe({
-      next: ({ subdistricts, catalog, allProjects }) => {
+      next: ({ subdistricts, catalog, allProjects, assignments }) => {
         this.subdistricts.set(subdistricts);
         this.catalog.set(catalog);
         this.allProjects.set(allProjects);
+        this.assignments.set(assignments.map((assignment) => this.toSavedAssignment(assignment)));
       },
       error: () => this.error.set('โหลด catalog หรือรายชื่อตำบลไม่สำเร็จ'),
     });
 
     this.loadProjects();
-
-    // deep-link จากหน้า F6: /risk-factors?projectId=... → เปิดรายละเอียดโครงการนั้นทันที
-    const projectId = this.route.snapshot.queryParamMap.get('projectId');
-    if (projectId) {
-      this.selectProject(projectId);
-    }
   }
 
   setSubdistrict(value: number | null): void {
@@ -611,6 +721,7 @@ export class RiskFactorsPageComponent implements OnInit {
 
   selectProject(projectId: string | number): void {
     this.selectedProjectId.set(String(projectId));
+    this.reloadAssignments();
     this.loadProjectDetail(projectId);
     this.syncProjectIdQueryParam(String(projectId));
   }
@@ -622,7 +733,6 @@ export class RiskFactorsPageComponent implements OnInit {
     this.syncProjectIdQueryParam(null);
   }
 
-  /** sync ?projectId= ใน URL ให้ share/refresh แล้วเปิดโครงการเดิมได้ (ไม่เพิ่ม history entry) */
   private syncProjectIdQueryParam(projectId: string | null): void {
     this.router.navigate([], {
       relativeTo: this.route,
@@ -667,6 +777,34 @@ export class RiskFactorsPageComponent implements OnInit {
     return this.projectDetail()?.contract_status || '-';
   }
 
+  assignmentAnalystName(): string {
+    return this.assignmentAnalyst()?.name || 'รอมอบหมาย';
+  }
+
+  assignmentAnalystTeam(): string {
+    return this.assignmentAnalyst()?.team || 'ยังไม่มีผู้รับผิดชอบ';
+  }
+
+  assignmentAssignedAtText(): string {
+    const assignedAt = this.latestProjectAssignment()?.assignedAt;
+    return assignedAt ? this.formatAssignmentDate(assignedAt) : 'รอดำเนินการ';
+  }
+
+  projectWorkflowStatusText(): string {
+    return projectWorkflowStatusLabel(this.latestProjectAssignment()?.workflowStatus ?? null);
+  }
+
+  projectWorkflowIcon(): string {
+    const status = this.latestProjectAssignment()?.workflowStatus;
+    return status === 'completed' ? '✓' : this.latestProjectAssignment() ? '…' : '!';
+  }
+
+  assignmentStatusCircleClass(): string {
+    const status = this.latestProjectAssignment()?.workflowStatus;
+    if (!status) return 'bg-risk-medium text-white';
+    return status === 'completed' ? 'bg-risk-low text-white' : 'bg-navy text-white';
+  }
+
   vendorLabel(): string {
     const detail = this.projectDetail();
     if (!detail) {
@@ -704,6 +842,34 @@ export class RiskFactorsPageComponent implements OnInit {
     }
     const sign = diff > 0 ? '+' : '';
     return `(${sign}${diff.toFixed(2)}%) เทียบจากค่าฐาน`;
+  }
+
+  calculationFormulaLine(base: number | string | null | undefined): string {
+    const contract = toNumber(this.contractValue());
+    const baseValue = toNumber(base);
+    if (contract === null || baseValue === null || baseValue === 0) {
+      return 'แทนค่าไม่ได้ เพราะราคาสัญญาหรือค่าฐานไม่ครบ';
+    }
+    return `(${this.money(contract)} - ${this.money(baseValue)}) / ${this.money(baseValue)} x 100`;
+  }
+
+  calculationDifferenceLine(base: number | string | null | undefined): string {
+    const contract = toNumber(this.contractValue());
+    const baseValue = toNumber(base);
+    if (contract === null || baseValue === null || baseValue === 0) {
+      return 'ผลต่างและเปอร์เซ็นต์: คำนวณไม่ได้';
+    }
+    const difference = contract - baseValue;
+    return `ผลต่าง = ${this.money(difference)} บาท`;
+  }
+
+  calculationResultLine(base: number | string | null | undefined): string {
+    const diff = this.percentageDifference(this.contractValue(), base);
+    if (diff === null) {
+      return 'ผลลัพธ์: คำนวณไม่ได้';
+    }
+    const sign = diff > 0 ? '+' : '';
+    return `ผลลัพธ์ = ${sign}${diff.toFixed(2)}%`;
   }
 
   isComputable(factor: ProjectRiskFactor): boolean {
@@ -757,7 +923,6 @@ export class RiskFactorsPageComponent implements OnInit {
     return parts.length ? parts.join(', ') : '-';
   }
 
-  /** ป้ายกำกับ โอกาส×ผลกระทบ ต่อ factor */
   readonly matrixChip = matrixChip;
 
   catalogDescription(code: string): string {
@@ -768,13 +933,16 @@ export class RiskFactorsPageComponent implements OnInit {
   private loadProjects(): void {
     this.loadingProjects.set(true);
     this.error.set('');
-    this.selectedProjectId.set(null);
-    this.projectDetail.set(null);
+    if (!this.routeProjectId()) {
+      this.selectedProjectId.set(null);
+      this.projectDetail.set(null);
+    }
 
     this.api.projects(this.filters()).subscribe({
       next: (projects) => {
         this.projects.set(projects);
         this.loadingProjects.set(false);
+        this.openRouteProjectIfNeeded();
       },
       error: () => {
         this.error.set('โหลดรายชื่อโครงการไม่สำเร็จ');
@@ -805,6 +973,22 @@ export class RiskFactorsPageComponent implements OnInit {
     };
   }
 
+  private applyRouteProject(): void {
+    const projectId = this.route.snapshot.queryParamMap.get('projectId');
+    this.routeProjectId.set(projectId);
+    if (projectId) {
+      this.searchQuery.set(projectId);
+    }
+  }
+
+  private openRouteProjectIfNeeded(): void {
+    const projectId = this.routeProjectId();
+    if (!projectId || this.selectedProjectId() === projectId) {
+      return;
+    }
+    this.selectProject(projectId);
+  }
+
   private projectType(project: Project): string {
     return project.project_type || project.purchase_method_group || 'ไม่ระบุประเภท';
   }
@@ -829,6 +1013,44 @@ export class RiskFactorsPageComponent implements OnInit {
       return null;
     }
     return ((leftValue - rightValue) / rightValue) * 100;
+  }
+
+  private reloadAssignments(): void {
+    this.api.assignments().pipe(catchError(() => of<AuditAssignment[]>([]))).subscribe((assignments) => {
+      this.assignments.set(assignments.map((assignment) => this.toSavedAssignment(assignment)));
+    });
+  }
+
+  private toSavedAssignment(assignment: AuditAssignment): SavedAssignment {
+    return {
+      assignmentId: assignment.assignment_id,
+      projectId: assignment.project_id,
+      analystId: String(assignment.assigned_to),
+      analystName: assignment.assignee_display_name || assignment.assignee_username || undefined,
+      assignedAt: assignment.created_at,
+      priority: assignment.priority,
+      note: assignment.note,
+      dueDate: assignment.due_date ?? undefined,
+      budgetHours: assignment.budget_hours ?? undefined,
+      auditSteps: assignment.audit_steps,
+      workflowStatus: assignment.status,
+      assignedBy: assignment.assigned_by_display_name || assignment.assigned_by_username || undefined,
+    };
+  }
+
+  private formatAssignmentDate(value: string): string {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+      ? '-'
+      : new Intl.DateTimeFormat('th-TH', {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        }).format(date);
+  }
+
+  private dateValue(value: string): number {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? 0 : date.getTime();
   }
 }
 

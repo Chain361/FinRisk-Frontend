@@ -175,13 +175,92 @@ export interface ProjectFilters {
   risk_level?: string | null;
 }
 
-/** สถานะความเห็นผู้ตรวจสอบ (F5) — draft แก้ได้, submitted แก้ไม่ได้, resolved ปิดเรื่องแล้ว */
-export type FeedbackStatus = 'draft' | 'submitted' | 'resolved';
+/** 1 แถวใน access log (บันทึกการเข้าถึงของผู้ใช้ — backend: GET /audit/access-log) */
+export interface AccessLogEntry {
+  log_id: number;
+  username: string | null;
+  role: string | null;
+  action: string;
+  method: string;
+  path: string;
+  resource_type?: string | null;
+  resource_id?: string | null;
+  status_code?: number | null;
+  ip?: string | null;
+  user_agent?: string | null;
+  created_at: string;
+}
 
-/** ระดับความกังวลที่ API รับ (DB เผื่อ 'critical' ไว้แต่ API จำกัดเฉพาะ 3 ระดับนี้) */
+export interface AccessLogPage {
+  items: AccessLogEntry[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface AccessLogFilters {
+  username?: string | null;
+  action?: string | null;
+  resource_type?: string | null;
+  date_from?: string | null;
+  date_to?: string | null;
+  limit?: number | null;
+  offset?: number | null;
+}
+
+export type AssignmentPriority = 'low' | 'normal' | 'high';
+export type AssignmentStatus =
+  | 'waiting_acceptance'
+  | 'accepted'
+  | 'in_progress'
+  | 'clarification_needed'
+  | 'ready_for_review'
+  | 'under_review'
+  | 'revision_requested'
+  | 'completed';
+
+export interface AuditAssignment {
+  assignment_id: number;
+  project_id: string;
+  assigned_to: number;
+  assigned_by: number;
+  priority: AssignmentPriority;
+  note: string;
+  due_date?: string | null;
+  budget_hours?: number | null;
+  audit_steps: string;
+  status: AssignmentStatus;
+  created_at: string;
+  updated_at: string;
+  project_name?: string | null;
+  subdistrict_id?: number | null;
+  assignee_username?: string | null;
+  assignee_display_name?: string | null;
+  assigned_by_username?: string | null;
+  assigned_by_display_name?: string | null;
+}
+
+export interface AssignmentAssignee {
+  user_id: number;
+  username: string;
+  display_name?: string | null;
+  subdistrict_id: number;
+  active_cases: number;
+}
+
+export interface CreateAssignmentRequest {
+  project_id: string;
+  assignee_id: number;
+  priority?: AssignmentPriority;
+  note: string;
+  due_date?: string;
+  budget_hours?: number;
+  audit_steps?: string;
+}
+
+export type FeedbackStatus = 'draft' | 'submitted' | 'resolved';
 export type ConcernLevel = 'low' | 'medium' | 'high';
 
-/** ความเห็นผู้ตรวจสอบ — mirror ของ AuditorFeedbackOut (FinRisk-Backend/src/schemas.py) */
 export interface AuditorFeedback {
   feedback_id: number;
   project_id: string;
@@ -191,7 +270,6 @@ export interface AuditorFeedback {
   concern_level?: ConcernLevel | string | null;
   likelihood_score?: number | null;
   impact_score?: number | null;
-  /** คำนวณฝั่ง backend = likelihood × impact (null ถ้าขาดค่าใดค่าหนึ่ง) */
   risk_score?: number | null;
   suggestions?: string | null;
   status: FeedbackStatus | string;
@@ -201,7 +279,6 @@ export interface AuditorFeedback {
   resolved_at?: string | null;
 }
 
-/** payload สร้าง/แก้ไขความเห็น — mirror ของ AuditorFeedbackIn */
 export interface AuditorFeedbackCreate {
   project_id: string;
   feedback_text: string;

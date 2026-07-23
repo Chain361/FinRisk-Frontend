@@ -14,6 +14,7 @@ interface NavItem {
   label: string;
   path: string;
   children?: NavItem[];
+  exact?: boolean;
   /** จำกัดเมนูเฉพาะบาง role (ตาม roles.md) — ไม่ระบุ = ทุก role เห็น */
   roles?: string[];
 }
@@ -28,7 +29,25 @@ const NAV_GROUPS: NavGroup[] = [
   {
     id: 'overview',
     label: 'ภาพรวมความเสี่ยง',
-    items: [{ code: 'F1', label: 'แดชบอร์ดความเสี่ยงโครงการ', path: '/project-risk' }],
+    items: [
+      {
+        code: 'F1',
+        label: 'แดชบอร์ดความเสี่ยงโครงการ',
+        path: '/project-risk',
+        children: [
+          {
+            code: 'F1.1',
+            label: 'ภาพรวมสุขภาพความเสี่ยงโครงการ',
+            path: '/project-risk/overview',
+          },
+          {
+            code: 'F1.2',
+            label: 'วิเคราะห์ข้อมูลโครงการเชิงลึก',
+            path: '/project-risk/insights',
+          },
+        ],
+      },
+    ],
   },
   {
     id: 'finance',
@@ -61,7 +80,59 @@ const NAV_GROUPS: NavGroup[] = [
           },
         ],
       },
-      { code: 'F3', label: 'วิเคราะห์ปัจจัยความเสี่ยง', path: '/risk-factors' },
+      {
+        code: 'F3',
+        label: 'โครงการทั้งหมด',
+        path: '/risk-factors',
+        children: [
+          {
+            code: 'F3.1',
+            label: 'รายละเอียดโครงการ',
+            path: '/risk-factors',
+            exact: true,
+          },
+          {
+            code: 'F3.2',
+            label: 'สถานะโครงการ',
+            path: '/risk-factors/status',
+          },
+        ],
+      },
+      {
+        code: 'F4',
+        label: 'มอบหมายงาน',
+        path: '/assignment-project-auditor',
+        children: [
+          {
+            code: 'F4.1',
+            label: 'มอบหมายงานหลัก',
+            path: '/assignment-project-auditor',
+            exact: true,
+          },
+          {
+            code: 'F4.2',
+            label: 'ประวัติการมอบหมายงาน',
+            path: '/assignment-project-auditor/history',
+          },
+          {
+            code: 'F4.3',
+            label: 'ตรวจทานงานที่ส่งกลับมา',
+            path: '/assignment-project-auditor/review',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'admin',
+    label: 'ผู้ดูแลระบบ',
+    items: [
+      {
+        code: 'A1',
+        label: 'บันทึกการเข้าถึงระบบ',
+        path: '/admin/access-log',
+        roles: ['admin'], // เห็นเฉพาะ admin — ตรงกับ roleGuard('admin') ที่ route
+      },
     ],
   },
   {
@@ -122,7 +193,7 @@ const NAV_GROUPS: NavGroup[] = [
                             [routerLink]="child.path"
                             class="flex items-center gap-2 border-l-2 px-4 py-2 text-[13px] no-underline hover:bg-white/[.08]"
                             [class]="
-                              isActive(child.path)
+                              isActive(child.path, child.exact)
                                 ? 'border-gold text-white bg-white/10'
                                 : 'border-transparent text-[#c9d4e3]'
                             "
@@ -182,7 +253,9 @@ const NAV_GROUPS: NavGroup[] = [
               </p>
               <p class="m-0 mt-0.5 text-[11px] text-muted">
                 {{ auth.roleLabel() }} ·
-                <span [class]="auth.isScopedRole() ? 'font-bold text-[#8a2a1f]' : 'font-bold text-navy'">
+                <span
+                  [class]="auth.isScopedRole() ? 'font-bold text-[#8a2a1f]' : 'font-bold text-navy'"
+                >
                   {{ auth.isScopedRole() ? 'ขอบเขต: ตำบลของตน' : 'ขอบเขต: ทุกตำบล' }}
                 </span>
               </p>
@@ -245,7 +318,9 @@ export class AppShellComponent {
       ...group,
       items: group.items
         .filter(canSee)
-        .map((item) => (item.children ? { ...item, children: item.children.filter(canSee) } : item)),
+        .map((item) =>
+          item.children ? { ...item, children: item.children.filter(canSee) } : item,
+        ),
     })).filter((group) => group.items.length > 0);
   });
 
@@ -260,15 +335,26 @@ export class AppShellComponent {
   readonly currentPageLabel = computed(() => {
     const url = this.currentUrl();
     for (const group of NAV_GROUPS) {
-      const item = group.items.find((navItem) => url.startsWith(navItem.path));
-      if (item) {
-        return item.label;
+      for (const item of group.items) {
+        const child = item.children?.find((navItem) =>
+          this.matchesUrl(url, navItem.path, navItem.exact),
+        );
+        if (child) {
+          return child.label;
+        }
+        if (this.matchesUrl(url, item.path, item.exact)) {
+          return item.label;
+        }
       }
     }
     return 'Project Risk Dashboard';
   });
 
-  isActive(path: string): boolean {
-    return this.currentUrl().startsWith(path);
+  isActive(path: string, exact = false): boolean {
+    return this.matchesUrl(this.currentUrl(), path, exact);
+  }
+
+  private matchesUrl(url: string, path: string, exact = false): boolean {
+    return exact ? url === path : url.startsWith(path);
   }
 }

@@ -18,17 +18,27 @@ export const routes: Routes = [
       { path: '', pathMatch: 'full', redirectTo: 'project-risk' },
       {
         path: 'project-risk',
-        loadComponent: () =>
-          import('./features/project-risk/project-risk.page').then(
-            (m) => m.ProjectRiskOverviewPageComponent,
-          ),
-      },
-      {
-        path: 'project-risk/analysis',
-        loadComponent: () =>
-          import('./features/project-risk/project-risk.page.analysis').then(
-            (m) => m.ProjectRiskAnalysisPageComponent,
-          ),
+        children: [
+          {
+            path: 'overview',
+            loadComponent: () =>
+              import('./features/project-risk/overview/overview.page').then(
+                (m) => m.OverviewPageComponent,
+              ),
+          },
+          {
+            path: 'insights',
+            loadComponent: () =>
+              import('./features/project-risk/insights/insights.page').then(
+                (m) => m.InsightsPageComponent,
+              ),
+          },
+          {
+            path: '',
+            redirectTo: 'overview',
+            pathMatch: 'full',
+          },
+        ],
       },
       {
         path: 'financial-health',
@@ -69,6 +79,13 @@ export const routes: Routes = [
         ],
       },
       {
+        path: 'risk-factors/status',
+        loadComponent: () =>
+          import('./features/assignment-project-auditor/assignment-project-auditor-status.page').then(
+            (m) => m.AssignmentProjectAuditorStatusPageComponent,
+          ),
+      },
+      {
         path: 'risk-factors',
         loadComponent: () =>
           import('./features/risk-factors/risk-factors.page').then(
@@ -76,12 +93,44 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'assignment-project-auditor',
+        children: [
+          {
+            path: '',
+            loadComponent: () =>
+              import('./features/assignment-project-auditor/assignment-project-auditor.page').then(
+                (m) => m.AssignmentProjectAuditorPageComponent,
+              ),
+          },
+          {
+            path: 'history',
+            loadComponent: () =>
+              import('./features/assignment-project-auditor/assignment-project-auditor-history.page').then(
+                (m) => m.AssignmentProjectAuditorHistoryPageComponent,
+              ),
+          },
+          {
+            path: 'review',
+            loadComponent: () =>
+              import('./features/assignment-project-auditor/assignment-project-auditor-review.page').then(
+                (m) => m.AssignmentProjectAuditorReviewPageComponent,
+              ),
+          },
+        ],
+      },
+      {
         path: 'trends',
         loadComponent: () =>
           import('./features/trends/trends.page').then((m) => m.TrendsPageComponent),
       },
       {
-        // F6 — จำกัดตาม FEEDBACK_ROLES (public_user เข้าไม่ได้; backend บังคับซ้ำอีกชั้น)
+        // บันทึกการเข้าถึงระบบ — เฉพาะ admin (backend บังคับสิทธิ์ซ้ำด้วย require_roles("admin"))
+        path: 'admin/access-log',
+        canActivate: [roleGuard('admin')],
+        loadComponent: () =>
+          import('./features/admin/access-log.page').then((m) => m.AccessLogPageComponent),
+      },
+      {
         path: 'auditor-feedback',
         canActivate: [roleGuard(...FEEDBACK_ROLES)],
         loadComponent: () =>
