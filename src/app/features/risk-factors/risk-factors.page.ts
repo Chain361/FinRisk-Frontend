@@ -1,15 +1,14 @@
 ﻿import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { catchError, forkJoin, of } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
 import {
-  ANALYSTS,
-  ASSIGNMENT_STORAGE_KEY,
   SavedAssignment,
   projectWorkflowStatusLabel,
 } from '../assignment-project-auditor/assignment-project-auditor.models';
 import {
+  AuditAssignment,
   Project,
   ProjectDetail,
   ProjectFilters,
@@ -625,23 +624,33 @@ export class RiskFactorsPageComponent implements OnInit {
 
   readonly assignmentAnalyst = computed(() => {
     const assignment = this.latestProjectAssignment();
-    return assignment ? ANALYSTS.find((analyst) => analyst.id === assignment.analystId) ?? null : null;
+    if (!assignment) {
+      return null;
+    }
+    return {
+      id: assignment.analystId,
+      name: assignment.analystName || assignment.analystId,
+      team: assignment.analystTeam || 'นักวิเคราะห์ความเสี่ยง',
+      activeCases: 0,
+      specialties: [],
+    };
   });
 
   ngOnInit(): void {
     this.loadingProjects.set(true);
     this.applyRouteProject();
-    this.assignments.set(this.readAssignments());
 
     forkJoin({
       subdistricts: this.api.subdistricts(),
       catalog: this.api.riskFactors(),
       allProjects: this.api.projects(),
+      assignments: this.api.assignments().pipe(catchError(() => of<AuditAssignment[]>([]))),
     }).subscribe({
-      next: ({ subdistricts, catalog, allProjects }) => {
+      next: ({ subdistricts, catalog, allProjects, assignments }) => {
         this.subdistricts.set(subdistricts);
         this.catalog.set(catalog);
         this.allProjects.set(allProjects);
+        this.assignments.set(assignments.map((assignment) => this.toSavedAssignment(assignment)));
       },
       error: () => this.error.set('โหลด catalog หรือรายชื่อตำบลไม่สำเร็จ'),
     });
@@ -693,7 +702,7 @@ export class RiskFactorsPageComponent implements OnInit {
 
   selectProject(projectId: string | number): void {
     this.selectedProjectId.set(String(projectId));
-    this.assignments.set(this.readAssignments());
+    this.reloadAssignments();
     this.loadProjectDetail(projectId);
   }
 
@@ -957,13 +966,27 @@ export class RiskFactorsPageComponent implements OnInit {
     return ((leftValue - rightValue) / rightValue) * 100;
   }
 
-  private readAssignments(): SavedAssignment[] {
-    try {
-      const parsed: unknown = JSON.parse(localStorage.getItem(ASSIGNMENT_STORAGE_KEY) ?? '[]');
-      return Array.isArray(parsed) ? (parsed as SavedAssignment[]) : [];
-    } catch {
-      return [];
-    }
+  private reloadAssignments(): void {
+    this.api.assignments().pipe(catchError(() => of<AuditAssignment[]>([]))).subscribe((assignments) => {
+      this.assignments.set(assignments.map((assignment) => this.toSavedAssignment(assignment)));
+    });
+  }
+
+  private toSavedAssignment(assignment: AuditAssignment): SavedAssignment {
+    return {
+      assignmentId: assignment.assignment_id,
+      projectId: assignment.project_id,
+      analystId: String(assignment.assigned_to),
+      analystName: assignment.assignee_display_name || assignment.assignee_username || undefined,
+      assignedAt: assignment.created_at,
+      priority: assignment.priority,
+      note: assignment.note,
+      dueDate: assignment.due_date ?? undefined,
+      budgetHours: assignment.budget_hours ?? undefined,
+      auditSteps: assignment.audit_steps,
+      workflowStatus: assignment.status,
+      assignedBy: assignment.assigned_by_display_name || assignment.assigned_by_username || undefined,
+    };
   }
 
   private formatAssignmentDate(value: string): string {

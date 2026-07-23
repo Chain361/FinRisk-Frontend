@@ -42,8 +42,11 @@ export interface Analyst {
 }
 
 export interface SavedAssignment {
+  assignmentId?: number;
   projectId: string;
   analystId: string;
+  analystName?: string;
+  analystTeam?: string;
   assignedAt: string;
   priority?: AssignmentPriority;
   note: string;
