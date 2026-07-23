@@ -207,3 +207,53 @@ export interface AccessLogFilters {
   limit?: number | null;
   offset?: number | null;
 }
+
+export type AssignmentPriority = 'low' | 'normal' | 'high';
+export type AssignmentStatus =
+  | 'waiting_acceptance'
+  | 'accepted'
+  | 'in_progress'
+  | 'clarification_needed'
+  | 'ready_for_review'
+  | 'under_review'
+  | 'revision_requested'
+  | 'completed';
+
+export interface AuditAssignment {
+  assignment_id: number;
+  project_id: string;
+  assigned_to: number;
+  assigned_by: number;
+  priority: AssignmentPriority;
+  note: string;
+  due_date?: string | null;
+  budget_hours?: number | null;
+  audit_steps: string;
+  status: AssignmentStatus;
+  created_at: string;
+  updated_at: string;
+  project_name?: string | null;
+  subdistrict_id?: number | null;
+  assignee_username?: string | null;
+  assignee_display_name?: string | null;
+  assigned_by_username?: string | null;
+  assigned_by_display_name?: string | null;
+}
+
+export interface AssignmentAssignee {
+  user_id: number;
+  username: string;
+  display_name?: string | null;
+  subdistrict_id: number;
+  active_cases: number;
+}
+
+export interface CreateAssignmentRequest {
+  project_id: string;
+  assignee_id: number;
+  priority?: AssignmentPriority;
+  note: string;
+  due_date?: string;
+  budget_hours?: number;
+  audit_steps: string;
+}

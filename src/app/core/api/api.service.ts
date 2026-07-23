@@ -6,7 +6,10 @@ import { environment } from '../../../environments/environment';
 import {
   AccessLogFilters,
   AccessLogPage,
+  AssignmentAssignee,
   AnnualRisk,
+  AuditAssignment,
+  CreateAssignmentRequest,
   FinancialStatement,
   LoginRequest,
   LoginResponse,
@@ -98,6 +101,18 @@ export class ApiService {
       }
     });
     return this.http.get<AccessLogPage>(`${this.baseUrl}/audit/access-log`, { params });
+  }
+
+  assignmentAssignees(): Observable<AssignmentAssignee[]> {
+    return this.http.get<AssignmentAssignee[]>(`${this.baseUrl}/audit/assignments/assignees`);
+  }
+
+  assignments(): Observable<AuditAssignment[]> {
+    return this.http.get<AuditAssignment[]>(`${this.baseUrl}/audit/assignments`);
+  }
+
+  createAssignment(body: CreateAssignmentRequest): Observable<AuditAssignment> {
+    return this.http.post<AuditAssignment>(`${this.baseUrl}/audit/assignments`, body);
   }
 
   private toParams(filters: ProjectFilters): HttpParams {

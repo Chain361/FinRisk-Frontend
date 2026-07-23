@@ -3,15 +3,12 @@ import { FormsModule } from '@angular/forms';
 import { catchError, forkJoin, of } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
-import { AuthService } from '../../core/auth/auth.service';
-import { Project, Subdistrict } from '../../core/models/domain.models';
+import { AssignmentAssignee, AuditAssignment, Project, Subdistrict } from '../../core/models/domain.models';
 import { ConfirmModalComponent } from '../../shared/ui/confirm-modal.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { formatMoney, normalizeRiskLevel, subdistrictLabel } from '../../shared/utils/risk-utils';
 import {
-  ANALYSTS,
-  ASSIGNMENT_STORAGE_KEY,
-  DEFAULT_ASSIGNMENT_WORKFLOW_STATUS,
+  Analyst,
   SavedAssignment,
   projectWorkflowStatusLabel,
 } from './assignment-project-auditor.models';
@@ -274,12 +271,11 @@ import {
 })
 export class AssignmentProjectAuditorPageComponent implements OnInit {
   private readonly api = inject(ApiService);
-  private readonly auth = inject(AuthService);
-
   readonly loading = signal(true);
   readonly error = signal('');
   readonly projects = signal<Project[]>([]);
   readonly subdistricts = signal<Subdistrict[]>([]);
+  readonly analysts = signal<Analyst[]>([]);
   readonly assignments = signal<SavedAssignment[]>([]);
   readonly projectSearch = signal('');
   readonly riskFilter = signal('high');
@@ -329,14 +325,14 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
 
   readonly filteredAnalysts = computed(() => {
     const search = this.analystSearch().trim().toLocaleLowerCase('th');
-    return ANALYSTS.filter((analyst) =>
+    return this.analysts().filter((analyst) =>
       !search || `${analyst.name} ${analyst.team} ${analyst.specialties.join(' ')}`.toLocaleLowerCase('th').includes(search),
     );
   });
 
   readonly confirmationMessage = computed(() => {
     const project = this.selectedProject();
-    const analyst = ANALYSTS.find((item) => item.id === this.selectedAnalystId());
+    const analyst = this.analysts().find((item) => item.id === this.selectedAnalystId());
     const assignmentScope =
       this.dueDate() && this.budgetHours()
         ? ` Due date ${this.dueDate()} · Budget ${this.budgetHours()} ชม.`
@@ -347,14 +343,17 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.assignments.set(this.readAssignments());
     forkJoin({
       projects: this.api.projects().pipe(catchError(() => of<Project[]>([]))),
       subdistricts: this.api.subdistricts().pipe(catchError(() => of<Subdistrict[]>([]))),
+      assignments: this.api.assignments().pipe(catchError(() => of<AuditAssignment[]>([]))),
+      analysts: this.api.assignmentAssignees().pipe(catchError(() => of<AssignmentAssignee[]>([]))),
     }).subscribe({
-      next: ({ projects, subdistricts }) => {
+      next: ({ projects, subdistricts, assignments, analysts }) => {
         this.projects.set(projects);
         this.subdistricts.set(subdistricts);
+        this.assignments.set(assignments.map((assignment) => this.toSavedAssignment(assignment)));
+        this.analysts.set(analysts.map((analyst) => this.toAnalyst(analyst)));
         this.selectedProjectId.set(this.filteredProjects()[0] ? this.projectId(this.filteredProjects()[0]) : null);
         this.loading.set(false);
         if (!projects.length) this.error.set('ไม่สามารถโหลดรายการโครงการได้ กรุณาตรวจสอบการเชื่อมต่อ FinRisk Backend');
@@ -416,38 +415,28 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
     const project = this.selectedProject();
     const analystId = this.selectedAnalystId();
     if (!project || !analystId) return;
-    const stored = this.readAssignments();
-    if (stored.some((assignment) => assignment.projectId === this.projectId(project))) {
-      this.assignments.set(stored);
-      this.formError.set('โครงการนี้มีผู้รับมอบหมายแล้ว ไม่สามารถมอบหมายซ้ำได้');
-      this.confirmOpen.set(false);
-      return;
-    }
-
-    const entry: SavedAssignment = {
-      projectId: this.projectId(project),
-      analystId,
+    this.api.createAssignment({
+      project_id: this.projectId(project),
+      assignee_id: Number(analystId),
       note: this.assignmentNote().trim(),
-      dueDate: this.dueDate(),
-      budgetHours: Number(this.budgetHours()),
-      auditSteps: this.auditSteps().trim(),
-      workflowStatus: DEFAULT_ASSIGNMENT_WORKFLOW_STATUS,
-      assignedAt: new Date().toISOString(),
-      assignedBy:
-        this.auth.user()?.display_name ??
-        this.auth.user()?.full_name ??
-        this.auth.user()?.username ??
-        this.auth.token() ??
-        undefined,
-    };
-    localStorage.setItem(ASSIGNMENT_STORAGE_KEY, JSON.stringify([entry, ...stored]));
-    this.assignments.set([entry, ...stored]);
-    this.dueDate.set('');
-    this.budgetHours.set(null);
-    this.auditSteps.set('');
-    this.assignmentNote.set('');
-    this.confirmOpen.set(false);
-    this.successOpen.set(true);
+      due_date: this.dueDate(),
+      budget_hours: Number(this.budgetHours()),
+      audit_steps: this.auditSteps().trim(),
+    }).subscribe({
+      next: () => {
+        this.reloadAssignments();
+        this.dueDate.set('');
+        this.budgetHours.set(null);
+        this.auditSteps.set('');
+        this.assignmentNote.set('');
+        this.confirmOpen.set(false);
+        this.successOpen.set(true);
+      },
+      error: (response: { error?: { detail?: string } }) => {
+        this.confirmOpen.set(false);
+        this.formError.set(response.error?.detail ?? 'บันทึกการมอบหมายงานไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+      },
+    });
   }
 
   projectId(project: Project): string {
@@ -463,7 +452,7 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
   }
 
   assignmentAnalystName(assignment: SavedAssignment): string {
-    return ANALYSTS.find((item) => item.id === assignment.analystId)?.name ?? assignment.analystId;
+    return this.analysts().find((item) => item.id === assignment.analystId)?.name ?? assignment.analystId;
   }
 
   assignmentProjectStatus(assignment: SavedAssignment): string {
@@ -500,12 +489,35 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
     return Number.isNaN(date.getTime()) ? 0 : date.getTime();
   }
 
-  private readAssignments(): SavedAssignment[] {
-    try {
-      const parsed: unknown = JSON.parse(localStorage.getItem(ASSIGNMENT_STORAGE_KEY) ?? '[]');
-      return Array.isArray(parsed) ? (parsed as SavedAssignment[]) : [];
-    } catch {
-      return [];
-    }
+  private reloadAssignments(): void {
+    this.api.assignments().subscribe({
+      next: (assignments) => this.assignments.set(assignments.map((assignment) => this.toSavedAssignment(assignment))),
+      error: () => this.formError.set('โหลดรายการงานล่าสุดไม่สำเร็จ กรุณารีเฟรชหน้าอีกครั้ง'),
+    });
+  }
+
+  private toAnalyst(analyst: AssignmentAssignee): Analyst {
+    return {
+      id: String(analyst.user_id),
+      name: analyst.display_name || analyst.username,
+      team: 'นักวิเคราะห์ความเสี่ยง',
+      activeCases: analyst.active_cases,
+      specialties: [],
+    };
+  }
+
+  private toSavedAssignment(assignment: AuditAssignment): SavedAssignment {
+    return {
+      projectId: assignment.project_id,
+      analystId: String(assignment.assigned_to),
+      assignedAt: assignment.created_at,
+      priority: assignment.priority === 'normal' ? 'normal' : assignment.priority,
+      note: assignment.note,
+      dueDate: assignment.due_date ?? undefined,
+      budgetHours: assignment.budget_hours ?? undefined,
+      auditSteps: assignment.audit_steps,
+      workflowStatus: assignment.status,
+      assignedBy: assignment.assigned_by_display_name || assignment.assigned_by_username || undefined,
+    };
   }
 }
