@@ -331,7 +331,9 @@ import {
                       </p>
                     </div>
                     <div class="flex flex-col items-start gap-1.5">
-                      <app-feedback-status-badge [status]="asFeedbackStatus(currentFeedback()?.status)" />
+                      <app-feedback-status-badge
+                        [status]="asFeedbackStatus(currentFeedback()?.status)"
+                      />
                       <span class="text-[11.5px] text-muted"
                         >ผู้ตรวจสอบ: {{ auditorDisplayName() }}</span
                       >
@@ -559,7 +561,9 @@ import {
                                 {{ entry.risk_score ?? '-' }}
                               </td>
                               <td class="px-3 py-2.5 text-right">
-                                <app-feedback-status-badge [status]="asFeedbackStatus(entry.status)" />
+                                <app-feedback-status-badge
+                                  [status]="asFeedbackStatus(entry.status)"
+                                />
                               </td>
                               <td class="px-3 py-2.5 text-right">
                                 @if (canDeleteFeedback(entry)) {

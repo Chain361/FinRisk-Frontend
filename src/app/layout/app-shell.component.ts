@@ -178,6 +178,9 @@ const NAV_GROUPS: NavGroup[] = [
             <p class="m-0 mt-1 text-xs text-[#9fb0c8]">
               ครอบคลุมปีงบประมาณ {{ fiscalYearRange() }}
             </p>
+            <p class="m-0 mt-1 text-xs text-[#9fb0c8]">
+              ครอบคลุมปีงบประมาณ {{ fiscalYearRange() }}
+            </p>
           }
         </div>
       </aside>
@@ -202,6 +205,9 @@ const NAV_GROUPS: NavGroup[] = [
               </p>
               <p class="m-0 mt-0.5 text-[11px] text-muted">
                 {{ auth.roleLabel() }} ·
+                <span
+                  [class]="auth.isScopedRole() ? 'font-bold text-[#8a2a1f]' : 'font-bold text-navy'"
+                >
                 <span
                   [class]="auth.isScopedRole() ? 'font-bold text-[#8a2a1f]' : 'font-bold text-navy'"
                 >
@@ -267,6 +273,9 @@ export class AppShellComponent {
       ...group,
       items: group.items
         .filter(canSee)
+        .map((item) =>
+          item.children ? { ...item, children: item.children.filter(canSee) } : item,
+        ),
         .map((item) =>
           item.children ? { ...item, children: item.children.filter(canSee) } : item,
         ),
