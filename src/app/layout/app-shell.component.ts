@@ -62,6 +62,18 @@ const NAV_GROUPS: NavGroup[] = [
         ],
       },
       { code: 'F3', label: 'วิเคราะห์ปัจจัยความเสี่ยง', path: '/risk-factors' },
+      {
+        code: 'F5',
+        label: 'แบบฟอร์มบันทึกความคิดเห็นด้านความเสี่ยงของโครงการ',
+        path: '/risk-analyst-feedback',
+        roles: [
+          'admin',
+          'regional_supervisor',
+          'local_executive',
+          'project_auditor',
+          'risk_analyst',
+        ],
+      },
     ],
   },
   {
@@ -73,7 +85,13 @@ const NAV_GROUPS: NavGroup[] = [
         label: 'ความเห็นผู้ตรวจสอบ',
         path: '/auditor-feedback',
         // mirror FEEDBACK_ROLES (core/auth/roles.ts) — ซ่อนจาก public_user
-        roles: ['admin', 'regional_supervisor', 'local_executive', 'project_auditor', 'risk_analyst'],
+        roles: [
+          'admin',
+          'regional_supervisor',
+          'local_executive',
+          'project_auditor',
+          'risk_analyst',
+        ],
       },
     ],
   },
@@ -157,7 +175,9 @@ const NAV_GROUPS: NavGroup[] = [
           <p class="m-0 text-xs text-[#9fb0c8]">ข้อมูลจากระบบ FinRisk Backend</p>
           <p class="m-0 mt-1 text-xs text-[#9fb0c8]">ข้อมูล ณ วันที่: {{ dataAsOf() }}</p>
           @if (fiscalYearRange()) {
-            <p class="m-0 mt-1 text-xs text-[#9fb0c8]">ครอบคลุมปีงบประมาณ {{ fiscalYearRange() }}</p>
+            <p class="m-0 mt-1 text-xs text-[#9fb0c8]">
+              ครอบคลุมปีงบประมาณ {{ fiscalYearRange() }}
+            </p>
           }
         </div>
       </aside>
@@ -182,7 +202,9 @@ const NAV_GROUPS: NavGroup[] = [
               </p>
               <p class="m-0 mt-0.5 text-[11px] text-muted">
                 {{ auth.roleLabel() }} ·
-                <span [class]="auth.isScopedRole() ? 'font-bold text-[#8a2a1f]' : 'font-bold text-navy'">
+                <span
+                  [class]="auth.isScopedRole() ? 'font-bold text-[#8a2a1f]' : 'font-bold text-navy'"
+                >
                   {{ auth.isScopedRole() ? 'ขอบเขต: ตำบลของตน' : 'ขอบเขต: ทุกตำบล' }}
                 </span>
               </p>
@@ -245,7 +267,9 @@ export class AppShellComponent {
       ...group,
       items: group.items
         .filter(canSee)
-        .map((item) => (item.children ? { ...item, children: item.children.filter(canSee) } : item)),
+        .map((item) =>
+          item.children ? { ...item, children: item.children.filter(canSee) } : item,
+        ),
     })).filter((group) => group.items.length > 0);
   });
 
