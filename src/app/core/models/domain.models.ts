@@ -255,5 +255,5 @@ export interface CreateAssignmentRequest {
   note: string;
   due_date?: string;
   budget_hours?: number;
-  audit_steps: string;
+  audit_steps?: string;
 }

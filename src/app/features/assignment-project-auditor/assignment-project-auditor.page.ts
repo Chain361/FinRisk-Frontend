@@ -174,10 +174,10 @@ import {
           </div>
 
           <div class="mt-4 rounded-[4px] border border-line-soft bg-[#f8fafc] px-3 py-2.5 text-xs leading-5 text-muted">
-            ระบบจะบันทึกผู้มอบหมาย ผู้รับมอบหมาย เวลา Due date, Budget hours, Audit steps และคำแนะนำเพื่อรองรับ audit trail
+            ระบบจะบันทึกผู้มอบหมาย ผู้รับมอบหมาย เวลา Due date และคำแนะนำเพื่อรองรับ audit trail
           </div>
 
-          <div class="mt-4 grid gap-4 sm:grid-cols-2">
+          <div class="mt-4">
             <label>
               <span class="mb-1.5 block text-sm font-bold text-ink">Due date <span class="text-risk-high">*</span></span>
               <input
@@ -187,29 +187,7 @@ import {
                 (ngModelChange)="dueDate.set($event)"
               />
             </label>
-            <label>
-              <span class="mb-1.5 block text-sm font-bold text-ink">Budget hours <span class="text-risk-high">*</span></span>
-              <input
-                class="gov-input"
-                type="number"
-                min="0.5"
-                step="0.5"
-                placeholder="เช่น 16"
-                [ngModel]="budgetHours()"
-                (ngModelChange)="setBudgetHours($event)"
-              />
-            </label>
           </div>
-
-          <label class="mt-4 block">
-            <span class="mb-1.5 block text-sm font-bold text-ink">Audit steps <span class="text-risk-high">*</span></span>
-            <textarea
-              class="min-h-[104px] w-full rounded-[3px] border-[1.5px] border-line bg-white p-2.5 text-sm"
-              placeholder="ระบุขั้นตอนการตรวจ เช่น ตรวจเอกสารสัญญา, ตรวจพื้นที่, สรุปประเด็นความเสี่ยง"
-              [ngModel]="auditSteps()"
-              (ngModelChange)="auditSteps.set($event)"
-            ></textarea>
-          </label>
 
           <label class="mt-4 block">
             <span class="mb-1.5 block text-sm font-bold text-ink">คำแนะนำหรือรายละเอียดการตรวจสอบ <span class="text-risk-high">*</span></span>
@@ -283,8 +261,6 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
   readonly selectedProjectId = signal<string | null>(null);
   readonly selectedAnalystId = signal<string | null>(null);
   readonly dueDate = signal('');
-  readonly budgetHours = signal<number | null>(null);
-  readonly auditSteps = signal('');
   readonly assignmentNote = signal('');
   readonly formError = signal('');
   readonly confirmOpen = signal(false);
@@ -333,10 +309,7 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
   readonly confirmationMessage = computed(() => {
     const project = this.selectedProject();
     const analyst = this.analysts().find((item) => item.id === this.selectedAnalystId());
-    const assignmentScope =
-      this.dueDate() && this.budgetHours()
-        ? ` Due date ${this.dueDate()} · Budget ${this.budgetHours()} ชม.`
-        : '';
+    const assignmentScope = this.dueDate() ? ` Due date ${this.dueDate()}.` : '';
     return project && analyst
       ? `ต้องการมอบหมาย “${project.project_name}” ให้ ${analyst.name} ใช่หรือไม่?${assignmentScope} ระบบจะบันทึกการมอบหมายและแจ้งผลสำเร็จทันที`
       : 'กรุณาตรวจสอบข้อมูลการมอบหมายอีกครั้ง';
@@ -370,14 +343,6 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
     this.formError.set('');
   }
 
-  setBudgetHours(value: string | number | null): void {
-    if (value === '' || value === null) {
-      this.budgetHours.set(null);
-      return;
-    }
-    this.budgetHours.set(Number(value));
-  }
-
   requestConfirmation(): void {
     this.formError.set('');
     if (!this.selectedProject()) {
@@ -396,14 +361,6 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
       this.formError.set('กรุณาระบุ Due date');
       return;
     }
-    if (!this.budgetHours() || !Number.isFinite(this.budgetHours()) || Number(this.budgetHours()) <= 0) {
-      this.formError.set('กรุณาระบุ Budget hours มากกว่า 0');
-      return;
-    }
-    if (!this.auditSteps().trim()) {
-      this.formError.set('กรุณาระบุ Audit steps');
-      return;
-    }
     if (!this.assignmentNote().trim()) {
       this.formError.set('กรุณาระบุคำแนะนำหรือรายละเอียดการตรวจสอบ');
       return;
@@ -420,14 +377,10 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
       assignee_id: Number(analystId),
       note: this.assignmentNote().trim(),
       due_date: this.dueDate(),
-      budget_hours: Number(this.budgetHours()),
-      audit_steps: this.auditSteps().trim(),
     }).subscribe({
       next: () => {
         this.reloadAssignments();
         this.dueDate.set('');
-        this.budgetHours.set(null);
-        this.auditSteps.set('');
         this.assignmentNote.set('');
         this.confirmOpen.set(false);
         this.successOpen.set(true);
