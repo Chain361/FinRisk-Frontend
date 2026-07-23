@@ -19,6 +19,7 @@ import {
   bandColor,
   formatMoney,
   formatNumber,
+  matrixChip,
   sortProjectsByRisk,
   toBool,
   toNumber,
@@ -735,15 +736,7 @@ export class RiskFactorsPageComponent implements OnInit {
   }
 
   /** ป้ายกำกับ โอกาส×ผลกระทบ ต่อ factor */
-  matrixChip(factor: ProjectRiskFactor): string {
-    const l = toNumber(factor.likelihood);
-    const i = toNumber(factor.impact);
-    const s = toNumber(factor.matrix_score);
-    if (l === null || i === null || s === null) {
-      return '-';
-    }
-    return `โอกาส ${l} × ผลกระทบ ${i} = ${s}`;
-  }
+  readonly matrixChip = matrixChip;
 
   catalogDescription(code: string): string {
     const factor = this.catalog().find((item) => item.factor_code === code);
