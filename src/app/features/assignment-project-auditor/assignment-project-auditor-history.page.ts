@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { catchError, forkJoin, of } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
+import { AuthService } from '../../core/auth/auth.service';
 import { AssignmentAssignee, AuditAssignment, Project, Subdistrict } from '../../core/models/domain.models';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { formatMoney, normalizeRiskLevel, subdistrictLabel } from '../../shared/utils/risk-utils';
@@ -105,7 +106,7 @@ interface AssignmentHistoryRow {
           </div>
         } @else {
           <div class="overflow-x-auto">
-            <table class="gov-table min-w-[1040px]">
+            <table class="gov-table min-w-[1120px]">
               <thead>
                 <tr>
                   <th>วันที่มอบหมาย</th>
@@ -113,6 +114,9 @@ interface AssignmentHistoryRow {
                   <th>ผู้รับมอบหมาย</th>
                   <th>ความเสี่ยง</th>
                   <th>คำแนะนำ</th>
+                  @if (canDeleteHistory()) {
+                    <th class="text-right">จัดการ</th>
+                  }
                 </tr>
               </thead>
               <tbody>
@@ -183,6 +187,22 @@ interface AssignmentHistoryRow {
                         </div>
                       }
                     </td>
+                    @if (canDeleteHistory()) {
+                      <td class="align-top text-right">
+                        <button
+                          type="button"
+                          class="gov-btn-outline border-risk-high px-3 py-2 text-xs text-risk-high disabled:cursor-not-allowed disabled:opacity-60"
+                          [disabled]="deletingAssignmentId() === row.assignment.assignmentId"
+                          (click)="deleteHistory(row)"
+                        >
+                          @if (deletingAssignmentId() === row.assignment.assignmentId) {
+                            กำลังลบ...
+                          } @else {
+                            ลบ
+                          }
+                        </button>
+                      </td>
+                    }
                   </tr>
                 }
               </tbody>
@@ -196,6 +216,7 @@ interface AssignmentHistoryRow {
 })
 export class AssignmentProjectAuditorHistoryPageComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly auth = inject(AuthService);
 
   readonly analysts = signal<Analyst[]>([]);
   readonly loading = signal(true);
@@ -205,6 +226,8 @@ export class AssignmentProjectAuditorHistoryPageComponent implements OnInit {
   readonly subdistricts = signal<Subdistrict[]>([]);
   readonly search = signal('');
   readonly analystFilter = signal('all');
+  readonly deletingAssignmentId = signal<number | null>(null);
+  readonly canDeleteHistory = computed(() => this.auth.hasRole('admin'));
 
   readonly historyRows = computed<AssignmentHistoryRow[]>(() =>
     this.assignments()
@@ -249,6 +272,30 @@ export class AssignmentProjectAuditorHistoryPageComponent implements OnInit {
     this.api.assignments().subscribe({
       next: (assignments) => this.assignments.set(assignments.map((assignment) => this.toSavedAssignment(assignment))),
       error: () => this.error.set('โหลดประวัติการมอบหมายงานจากระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'),
+    });
+  }
+
+  deleteHistory(row: AssignmentHistoryRow): void {
+    const assignmentId = row.assignment.assignmentId;
+    if (!assignmentId) {
+      this.error.set('ไม่พบรหัสรายการประวัติที่จะลบ กรุณารีเฟรชหน้าแล้วลองใหม่');
+      return;
+    }
+    const confirmed = window.confirm(`ต้องการลบประวัติการมอบหมายงานของโครงการ "${row.projectName}" ใช่หรือไม่?`);
+    if (!confirmed) {
+      return;
+    }
+    this.error.set('');
+    this.deletingAssignmentId.set(assignmentId);
+    this.api.deleteAssignment(assignmentId).subscribe({
+      next: () => {
+        this.deletingAssignmentId.set(null);
+        this.reloadAssignments();
+      },
+      error: () => {
+        this.deletingAssignmentId.set(null);
+        this.error.set('ลบประวัติจากระบบไม่สำเร็จ กรุณาตรวจสิทธิ์หรือโหลดข้อมูลใหม่อีกครั้ง');
+      },
     });
   }
 
@@ -340,6 +387,7 @@ export class AssignmentProjectAuditorHistoryPageComponent implements OnInit {
 
   private toSavedAssignment(assignment: AuditAssignment): SavedAssignment {
     return {
+      assignmentId: assignment.assignment_id,
       projectId: assignment.project_id,
       analystId: String(assignment.assigned_to),
       assignedAt: assignment.created_at,

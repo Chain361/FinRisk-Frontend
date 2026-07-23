@@ -115,6 +115,10 @@ export class ApiService {
     return this.http.post<AuditAssignment>(`${this.baseUrl}/audit/assignments`, body);
   }
 
+  deleteAssignment(assignmentId: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/audit/assignments/${assignmentId}`);
+  }
+
   private toParams(filters: ProjectFilters): HttpParams {
     let params = new HttpParams();
     const entries: Array<[string, string | number | null | undefined]> = [
