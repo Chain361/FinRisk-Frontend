@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme {
   --font-sans: 'Sarabun', 'TH Sarabun New', ui-sans-serif, system-ui, sans-serif;
@@ -131,7 +131,7 @@ aside a:focus-visible {
   font-size: 13.5px;
 }
 
-.gov-table th {
+.gov-table thead th {
   background: #0b3164;
   color: #ffffff;
   border: 1px solid #0b3164;
@@ -140,9 +140,18 @@ aside a:focus-visible {
   text-align: left;
 }
 
-.gov-table td {
+.gov-table td,
+.gov-table tbody th {
   border: 1px solid #b9c2cc;
   padding: 8px 12px;
+}
+
+/* th[scope="row"] ในตัว body — คงหน้าตาเหมือน td เดิม (ไม่ใช่สไตล์หัวตาราง) */
+.gov-table tbody th {
+  background: transparent;
+  color: inherit;
+  font-weight: 700;
+  text-align: left;
 }
 
 .gov-table tbody tr:nth-child(even) {
