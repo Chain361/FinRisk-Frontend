@@ -32,7 +32,7 @@ import {
         </div>
         <div class="flex gap-2">
           <button type="button" class="gov-btn-outline" (click)="reloadData()">รีเฟรชข้อมูล</button>
-          <a routerLink="/risk-analyst/my-tasks" class="gov-btn-outline">กลับหน้างานของฉัน</a>
+          <a routerLink="/risk-analyst/my-tasks" class="gov-btn-outline">กลับหน้างานที่ได้รับมอบหมาย</a>
         </div>
       </div>
 

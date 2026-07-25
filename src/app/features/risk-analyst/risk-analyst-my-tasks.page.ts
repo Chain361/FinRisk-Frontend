@@ -42,7 +42,7 @@ interface MyTaskRow {
       <!-- Header -->
       <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 class="m-0 text-[26px] font-extrabold text-ink">งานของฉัน</h1>
+          <h1 class="m-0 text-[26px] font-extrabold text-ink">งานที่ได้รับมอบหมาย</h1>
           <p class="m-0 mt-1.5 text-sm text-muted">
             รายการโครงการที่ถูกมอบหมายให้คุณตรวจสอบ — ดูรายละเอียดและสถานะงาน
           </p>

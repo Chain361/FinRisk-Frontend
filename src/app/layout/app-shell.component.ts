@@ -122,7 +122,7 @@ const NAV_GROUPS: NavGroup[] = [
           },
           {
             code: 'F4.4',
-            label: 'งานของฉัน',
+            label: 'งานที่ได้รับมอบหมาย',
             path: '/risk-analyst/my-tasks',
             roles: [...ASSIGNMENT_ROLES],
           },

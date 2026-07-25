@@ -153,7 +153,7 @@ export const routes: Routes = [
           ),
       },
       {
-        // งานของฉัน (Risk Analyst) — เฉพาะ role ที่ backend อนุญาตบน GET /audit/assignments
+        // งานที่ได้รับมอบหมาย (Risk Analyst) — เฉพาะ role ที่ backend อนุญาตบน GET /audit/assignments
         path: 'risk-analyst',
         canActivate: [roleGuard(...ASSIGNMENT_ROLES)],
         children: [
