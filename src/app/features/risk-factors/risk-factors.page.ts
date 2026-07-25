@@ -45,7 +45,7 @@ import {
   template: `
     <section class="page-shell">
       <div>
-        <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F3</p>
+        <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F3.1</p>
         <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">โครงการทั้งหมด</h1>
         <p class="m-0 mt-1.5 text-sm text-muted">
           เปิดดูรายละเอียดโครงการ ปัจจัยเสี่ยงที่ trigger และสูตรการคำนวณ
@@ -179,7 +179,7 @@ import {
                       class="inline-flex h-10 items-center justify-center rounded-[3px] border-[1.5px] border-line bg-white px-3 text-[13.5px] font-bold text-slate-700 hover:bg-zebra"
                       (click)="clearSelection()"
                     >
-                      กลับไปรายการ
+                      {{ returnUrl() ? 'กลับไปหน้าก่อนหน้า' : 'กลับไปรายการ' }}
                     </button>
                     <label class="block">
                       <span class="sr-only">ค้นหาโครงการ</span>
@@ -732,6 +732,7 @@ export class RiskFactorsPageComponent implements OnInit {
   readonly budgetAmountMax = signal('');
   readonly selectedProjectId = signal<string | null>(null);
   readonly routeProjectId = signal<string | null>(null);
+  readonly returnUrl = signal<string | null>(null);
 
   readonly sortedProjects = computed(() => sortProjectsByRisk(this.projects()));
   readonly projectTypes = computed(() => {
@@ -894,6 +895,11 @@ export class RiskFactorsPageComponent implements OnInit {
   }
 
   clearSelection(): void {
+    const returnUrl = this.returnUrl();
+    if (returnUrl) {
+      this.router.navigateByUrl(returnUrl);
+      return;
+    }
     this.selectedProjectId.set(null);
     this.projectDetail.set(null);
     this.loadingDetail.set(false);
@@ -1162,6 +1168,7 @@ export class RiskFactorsPageComponent implements OnInit {
     if (projectId) {
       this.searchQuery.set(projectId);
     }
+    this.returnUrl.set(this.route.snapshot.queryParamMap.get('from'));
   }
 
   private openRouteProjectIfNeeded(): void {

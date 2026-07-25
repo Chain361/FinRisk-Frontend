@@ -137,7 +137,10 @@ interface AssignmentHistoryRow {
                     <td class="align-top">
                       <a
                         routerLink="/risk-factors"
-                        [queryParams]="{ projectId: row.assignment.projectId }"
+                        [queryParams]="{
+                          projectId: row.assignment.projectId,
+                          from: '/assignment-project-auditor/history',
+                        }"
                         class="line-clamp-3 max-w-[380px] font-extrabold leading-6 text-ink no-underline hover:text-navy hover:underline"
                         [title]="row.projectName"
                       >
