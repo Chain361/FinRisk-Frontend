@@ -5,6 +5,7 @@ import { catchError, filter, map, of } from 'rxjs';
 
 import { ApiService } from '../core/api/api.service';
 import { AuthService } from '../core/auth/auth.service';
+import { ASSIGNMENT_ROLES } from '../core/auth/roles';
 import { SystemMeta } from '../core/models/domain.models';
 import { GuardrailBannerComponent } from '../shared/ui/guardrail-banner.component';
 import { PrototypeBannerComponent } from '../shared/ui/prototype-banner.component';
@@ -119,6 +120,12 @@ const NAV_GROUPS: NavGroup[] = [
             label: 'ตรวจทานงานที่ส่งกลับมา',
             path: '/assignment-project-auditor/review',
           },
+          {
+            code: 'F4.4',
+            label: 'งานของฉัน',
+            path: '/risk-analyst/my-tasks',
+            roles: [...ASSIGNMENT_ROLES],
+          },
         ],
       },
     ],
@@ -145,6 +152,22 @@ const NAV_GROUPS: NavGroup[] = [
         path: '/auditor-feedback',
         // mirror FEEDBACK_ROLES (core/auth/roles.ts) — ซ่อนจาก public_user
         roles: ['admin', 'regional_supervisor', 'local_executive', 'project_auditor', 'risk_analyst'],
+      },
+    ],
+  },
+  {
+    id: 'transparency',
+    label: 'ความโปร่งใส & ติดต่อ',
+    items: [
+      {
+        code: 'T1',
+        label: 'ที่มาของข้อมูล',
+        path: '/data-sources',
+      },
+      {
+        code: 'T2',
+        label: 'ติดต่อ / แจ้งข้อมูลไม่ถูกต้อง',
+        path: '/contact',
       },
     ],
   },
@@ -230,6 +253,14 @@ const NAV_GROUPS: NavGroup[] = [
           @if (fiscalYearRange()) {
             <p class="m-0 mt-1 text-xs text-[#9fb0c8]">ครอบคลุมปีงบประมาณ {{ fiscalYearRange() }}</p>
           }
+          <div class="mt-2.5 flex flex-col gap-1 border-t border-white/10 pt-2.5">
+            <a routerLink="/data-sources" class="text-xs text-[#c9d4e3] no-underline hover:text-white hover:underline">
+              ที่มาของข้อมูล
+            </a>
+            <a routerLink="/contact" class="text-xs text-[#c9d4e3] no-underline hover:text-white hover:underline">
+              ติดต่อ / แจ้งข้อมูลไม่ถูกต้อง
+            </a>
+          </div>
         </div>
       </aside>
 
