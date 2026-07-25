@@ -14,6 +14,7 @@ import { catchError, filter, map, of } from 'rxjs';
 
 import { ApiService } from '../core/api/api.service';
 import { AuthService } from '../core/auth/auth.service';
+import { ASSIGNMENT_ROLES } from '../core/auth/roles';
 import { SystemMeta } from '../core/models/domain.models';
 import { GuardrailBannerComponent } from '../shared/ui/guardrail-banner.component';
 import { PrototypeBannerComponent } from '../shared/ui/prototype-banner.component';
@@ -123,6 +124,17 @@ const NAV_GROUPS: NavGroup[] = [
             label: 'ประวัติการมอบหมายงาน',
             path: '/assignment-project-auditor/history',
           },
+          {
+            code: 'F4.3',
+            label: 'ตรวจทานงานที่ส่งกลับมา',
+            path: '/assignment-project-auditor/review',
+          },
+          {
+            code: 'F4.4',
+            label: 'งานที่ได้รับมอบหมาย',
+            path: '/risk-analyst/my-tasks',
+            roles: [...ASSIGNMENT_ROLES],
+          },
         ],
       },
       {
@@ -148,13 +160,7 @@ const NAV_GROUPS: NavGroup[] = [
         label: 'ความเห็นผู้ตรวจสอบ',
         path: '/auditor-feedback',
         // mirror FEEDBACK_ROLES (core/auth/roles.ts) — ซ่อนจาก public_user
-        roles: [
-          'admin',
-          'regional_supervisor',
-          'local_executive',
-          'project_auditor',
-          'risk_analyst',
-        ],
+        roles: ['admin', 'regional_supervisor', 'local_executive', 'project_auditor', 'risk_analyst'],
       },
     ],
   },
@@ -167,6 +173,22 @@ const NAV_GROUPS: NavGroup[] = [
         label: 'บันทึกการเข้าถึงระบบ',
         path: '/admin/access-log',
         roles: ['admin'], // เห็นเฉพาะ admin — ตรงกับ roleGuard('admin') ที่ route
+      },
+    ],
+  },
+  {
+    id: 'transparency',
+    label: 'ความโปร่งใส & ติดต่อ',
+    items: [
+      {
+        code: 'T1',
+        label: 'ที่มาของข้อมูล',
+        path: '/data-sources',
+      },
+      {
+        code: 'T2',
+        label: 'ติดต่อ / แจ้งข้อมูลไม่ถูกต้อง',
+        path: '/contact',
       },
     ],
   },
@@ -310,6 +332,14 @@ const NAV_GROUPS: NavGroup[] = [
               ครอบคลุมปีงบประมาณ {{ fiscalYearRange() }}
             </p>
           }
+          <div class="mt-2.5 flex flex-col gap-1 border-t border-white/10 pt-2.5">
+            <a routerLink="/data-sources" class="text-xs text-[#c9d4e3] no-underline hover:text-white hover:underline">
+              ที่มาของข้อมูล
+            </a>
+            <a routerLink="/contact" class="text-xs text-[#c9d4e3] no-underline hover:text-white hover:underline">
+              ติดต่อ / แจ้งข้อมูลไม่ถูกต้อง
+            </a>
+          </div>
         </div>
       </aside>
 

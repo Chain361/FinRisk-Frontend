@@ -36,3 +36,11 @@ export const ROLE_LABELS: Record<string, string> = {
   risk_analyst: 'นักวิเคราะห์ความเสี่ยง',
   public_user: 'ผู้ใช้ทั่วไป',
 };
+
+/** role ที่ดู audit assignment ได้ — mirror ของ require_roles บน GET /audit/assignments (audit.py) */
+export const ASSIGNMENT_ROLES = [
+  'admin',
+  'regional_supervisor',
+  'project_auditor',
+  'risk_analyst',
+] as const;
