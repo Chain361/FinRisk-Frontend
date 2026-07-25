@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, HostListener, ElementRef, inject, i
 
 import { I18nService } from '../../core/i18n/i18n.service';
 
+let tooltipSeq = 0;
+
 @Component({
   selector: 'app-info-tooltip',
   standalone: true,
@@ -13,11 +15,15 @@ import { I18nService } from '../../core/i18n/i18n.service';
         class="size-5 cursor-pointer rounded-full border-[1.5px] border-navy bg-white text-xs font-extrabold leading-none text-navy"
         (click)="open.set(!open())"
         [attr.aria-label]="t('common.moreInfo')"
+        [attr.aria-expanded]="open()"
+        [attr.aria-controls]="panelId"
       >
         ?
       </button>
       @if (open()) {
         <div
+          [id]="panelId"
+          role="tooltip"
           class="absolute left-0 top-[26px] z-20 rounded-[4px] bg-ink px-3 py-2.5 text-xs leading-relaxed text-white"
           [style.width.px]="width()"
         >
@@ -35,6 +41,7 @@ export class InfoTooltipComponent {
   readonly width = input<number>(260);
 
   readonly open = signal(false);
+  protected readonly panelId = `tooltip-${++tooltipSeq}`;
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {

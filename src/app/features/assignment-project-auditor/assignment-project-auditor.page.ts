@@ -3,7 +3,12 @@ import { FormsModule } from '@angular/forms';
 import { catchError, forkJoin, of } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
-import { AssignmentAssignee, AuditAssignment, Project, Subdistrict } from '../../core/models/domain.models';
+import {
+  AssignmentAssignee,
+  AuditAssignment,
+  Project,
+  Subdistrict,
+} from '../../core/models/domain.models';
 import { ConfirmModalComponent } from '../../shared/ui/confirm-modal.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { formatMoney, normalizeRiskLevel, subdistrictLabel } from '../../shared/utils/risk-utils';
@@ -21,7 +26,7 @@ import {
     <section class="page-shell">
       <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F4</p>
+          <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F4.1</p>
           <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">มอบหมายงาน</h1>
           <p class="m-0 mt-1.5 text-sm text-muted">
             ส่งต่อโครงการที่มีความเสี่ยงให้นักวิเคราะห์ภายในตรวจสอบเชิงลึก
@@ -29,12 +34,17 @@ import {
         </div>
       </div>
 
-      <div class="rounded-[4px] border-l-4 border-gold bg-gold-bg px-4 py-3 text-sm leading-6 text-[#66511b]">
-        เลือกโครงการ เลือกผู้รับผิดชอบ และระบุคำแนะนำก่อนยืนยันการมอบหมาย ระบบจะบันทึกการมอบหมายไว้ในเครื่องในระยะแรก
+      <div
+        class="rounded-[4px] border-l-4 border-gold bg-gold-bg px-4 py-3 text-sm leading-6 text-[#66511b]"
+      >
+        เลือกโครงการ เลือกผู้รับผิดชอบ และระบุคำแนะนำก่อนยืนยันการมอบหมาย
+        ระบบจะบันทึกการมอบหมายไว้ในเครื่องในระยะแรก
       </div>
 
       @if (error()) {
-        <div class="rounded-[4px] border-[1.5px] border-risk-high bg-red-50 px-4 py-3 text-sm text-risk-high">
+        <div
+          class="rounded-[4px] border-[1.5px] border-risk-high bg-red-50 px-4 py-3 text-sm text-risk-high"
+        >
           {{ error() }}
         </div>
       }
@@ -44,10 +54,14 @@ import {
           <div class="border-b border-line-soft px-[18px] py-4">
             <div class="flex flex-wrap items-end justify-between gap-3">
               <div>
-                <h2 class="m-0 text-[17px] font-extrabold text-ink">เลือกโครงการที่ต้องการมอบหมาย</h2>
+                <h2 class="m-0 text-[17px] font-extrabold text-ink">
+                  เลือกโครงการที่ต้องการมอบหมาย
+                </h2>
                 <p class="m-0 mt-1 text-[13px] text-muted">แสดงโครงการเรียงตามระดับความเสี่ยง</p>
               </div>
-              <span class="rounded-full bg-navy px-2.5 py-1 text-xs font-bold text-white">{{ filteredProjects().length }} โครงการ</span>
+              <span class="rounded-full bg-navy px-2.5 py-1 text-xs font-bold text-white"
+                >{{ filteredProjects().length }} โครงการ</span
+              >
             </div>
             <div class="mt-3 grid gap-2 md:grid-cols-[1fr_180px]">
               <label>
@@ -62,7 +76,11 @@ import {
               </label>
               <label>
                 <span class="sr-only">กรองระดับความเสี่ยง</span>
-                <select class="gov-select" [ngModel]="riskFilter()" (ngModelChange)="riskFilter.set($event)">
+                <select
+                  class="gov-select"
+                  [ngModel]="riskFilter()"
+                  (ngModelChange)="riskFilter.set($event)"
+                >
                   <option value="all">ทุกระดับความเสี่ยง</option>
                   <option value="high">ความเสี่ยงสูง</option>
                   <option value="medium">ความเสี่ยงปานกลาง</option>
@@ -75,19 +93,34 @@ import {
           @if (loading()) {
             <p class="px-[18px] py-8 text-center text-sm text-muted">กำลังโหลดรายการโครงการ…</p>
           } @else if (!filteredProjects().length) {
-            <div class="p-[18px]"><app-empty-state title="ไม่พบโครงการ" message="ลองปรับคำค้นหาหรือตัวกรองระดับความเสี่ยง" /></div>
+            <div class="p-[18px]">
+              <app-empty-state
+                title="ไม่พบโครงการ"
+                message="ลองปรับคำค้นหาหรือตัวกรองระดับความเสี่ยง"
+              />
+            </div>
           } @else {
             <div class="max-h-[580px] overflow-y-auto p-2.5">
               @for (project of filteredProjects(); track project.project_id) {
                 <button
                   type="button"
                   class="mb-2 w-full cursor-pointer rounded-[4px] border p-3 text-left transition hover:border-navy hover:bg-[#f8fafc]"
-                  [class]="selectedProjectId() === projectId(project) ? 'border-navy bg-[#edf4fb] ring-1 ring-navy' : 'border-line-soft bg-white'"
+                  [class]="
+                    selectedProjectId() === projectId(project)
+                      ? 'border-navy bg-[#edf4fb] ring-1 ring-navy'
+                      : 'border-line-soft bg-white'
+                  "
                   (click)="selectProject(project)"
                 >
                   <div class="flex items-start justify-between gap-3">
-                    <p class="m-0 text-sm font-extrabold leading-6 text-ink">{{ project.project_name || 'ไม่ระบุชื่อโครงการ' }}</p>
-                    <span class="shrink-0 rounded-full px-2.5 py-1 text-xs font-bold" [class]="riskBadgeClass(project)">{{ riskLabel(project) }}</span>
+                    <p class="m-0 text-sm font-extrabold leading-6 text-ink">
+                      {{ project.project_name || 'ไม่ระบุชื่อโครงการ' }}
+                    </p>
+                    <span
+                      class="shrink-0 rounded-full px-2.5 py-1 text-xs font-bold"
+                      [class]="riskBadgeClass(project)"
+                      >{{ riskLabel(project) }}</span
+                    >
                   </div>
                   <div class="mt-2 grid gap-1 text-[13px] text-muted sm:grid-cols-2">
                     <span>
@@ -110,11 +143,19 @@ import {
                     </span>
                   </div>
                   <div class="mt-2 flex flex-wrap gap-1.5">
-                    <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">รหัส {{ projectId(project) }}</span>
+                    <span
+                      class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700"
+                      >รหัส {{ projectId(project) }}</span
+                    >
                   </div>
                   @if (projectAssignment(project)) {
-                    <div class="mt-2 rounded-[4px] border border-green-100 bg-green-50 px-3 py-2 text-xs leading-5 text-risk-low">
-                      มอบหมายแล้วให้ <span class="font-extrabold">{{ assignmentAnalystName(projectAssignment(project)!) }}</span>
+                    <div
+                      class="mt-2 rounded-[4px] border border-green-100 bg-green-50 px-3 py-2 text-xs leading-5 text-risk-low"
+                    >
+                      มอบหมายแล้วให้
+                      <span class="font-extrabold">{{
+                        assignmentAnalystName(projectAssignment(project)!)
+                      }}</span>
                       · {{ assignmentProjectStatus(projectAssignment(project)!) }}
                     </div>
                   }
@@ -131,12 +172,21 @@ import {
           <div class="mt-4 rounded-[4px] border border-line-soft bg-zebra p-3">
             <p class="m-0 text-xs font-bold text-muted">โครงการที่เลือก</p>
             @if (selectedProject()) {
-              <p class="m-0 mt-1 text-sm font-extrabold leading-6 text-ink">{{ selectedProject()!.project_name }}</p>
-              <p class="m-0 mt-1 text-[13px] text-muted">{{ projectSubdistrict(selectedProject()!) }} · ปีงบประมาณ {{ selectedProject()!.budget_year }}</p>
+              <p class="m-0 mt-1 text-sm font-extrabold leading-6 text-ink">
+                {{ selectedProject()!.project_name }}
+              </p>
+              <p class="m-0 mt-1 text-[13px] text-muted">
+                {{ projectSubdistrict(selectedProject()!) }} · ปีงบประมาณ
+                {{ selectedProject()!.budget_year }}
+              </p>
               @if (selectedProjectAssignment()) {
-                <div class="mt-2 rounded-[4px] border border-green-100 bg-green-50 px-3 py-2 text-xs leading-5 text-risk-low">
+                <div
+                  class="mt-2 rounded-[4px] border border-green-100 bg-green-50 px-3 py-2 text-xs leading-5 text-risk-low"
+                >
                   โครงการนี้ถูกมอบหมายแล้วให้
-                  <span class="font-extrabold">{{ assignmentAnalystName(selectedProjectAssignment()!) }}</span>
+                  <span class="font-extrabold">{{
+                    assignmentAnalystName(selectedProjectAssignment()!)
+                  }}</span>
                   · {{ assignmentProjectStatus(selectedProjectAssignment()!) }}
                 </div>
               }
@@ -161,28 +211,40 @@ import {
               <button
                 type="button"
                 class="w-full cursor-pointer rounded-[4px] border p-3 text-left hover:border-navy"
-                [class]="selectedAnalystId() === analyst.id ? 'border-navy bg-[#edf4fb] ring-1 ring-navy' : 'border-line-soft bg-white'"
+                [class]="
+                  selectedAnalystId() === analyst.id
+                    ? 'border-navy bg-[#edf4fb] ring-1 ring-navy'
+                    : 'border-line-soft bg-white'
+                "
                 (click)="selectedAnalystId.set(analyst.id)"
               >
                 <div class="flex items-start justify-between gap-2">
                   <span class="text-sm font-extrabold text-ink">{{ analyst.name }}</span>
-                  <span class="shrink-0 text-xs font-bold text-muted">งานคงค้าง {{ analyst.activeCases }}</span>
+                  <span class="shrink-0 text-xs font-bold text-muted"
+                    >งานคงค้าง {{ analyst.activeCases }}</span
+                  >
                 </div>
                 <p class="m-0 mt-1 text-xs text-muted">{{ analyst.team }}</p>
                 <p class="m-0 mt-1.5 text-xs text-navy">{{ analyst.specialties.join(' · ') }}</p>
               </button>
             } @empty {
-              <p class="rounded-[4px] bg-zebra px-3 py-4 text-center text-sm text-muted">ไม่พบนักวิเคราะห์ที่ตรงกับคำค้นหา</p>
+              <p class="rounded-[4px] bg-zebra px-3 py-4 text-center text-sm text-muted">
+                ไม่พบนักวิเคราะห์ที่ตรงกับคำค้นหา
+              </p>
             }
           </div>
 
-          <div class="mt-4 rounded-[4px] border border-line-soft bg-[#f8fafc] px-3 py-2.5 text-xs leading-5 text-muted">
+          <div
+            class="mt-4 rounded-[4px] border border-line-soft bg-[#f8fafc] px-3 py-2.5 text-xs leading-5 text-muted"
+          >
             ระบบจะบันทึกผู้มอบหมาย ผู้รับมอบหมาย เวลา Due date และคำแนะนำเพื่อรองรับ audit trail
           </div>
 
           <div class="mt-4">
             <label>
-              <span class="mb-1.5 block text-sm font-bold text-ink">Due date <span class="text-risk-high">*</span></span>
+              <span class="mb-1.5 block text-sm font-bold text-ink"
+                >Due date <span class="text-risk-high">*</span></span
+              >
               <input
                 class="gov-input"
                 type="date"
@@ -193,7 +255,9 @@ import {
           </div>
 
           <label class="mt-4 block">
-            <span class="mb-1.5 block text-sm font-bold text-ink">คำแนะนำหรือรายละเอียดการตรวจสอบ <span class="text-risk-high">*</span></span>
+            <span class="mb-1.5 block text-sm font-bold text-ink"
+              >คำแนะนำหรือรายละเอียดการตรวจสอบ <span class="text-risk-high">*</span></span
+            >
             <textarea
               class="min-h-[112px] w-full rounded-[3px] border-[1.5px] border-line bg-white p-2.5 text-sm"
               placeholder="ระบุประเด็นที่ต้องการให้นักวิเคราะห์ตรวจสอบ…"
@@ -241,10 +305,25 @@ import {
           aria-labelledby="assignment-success-title"
           (click)="$event.stopPropagation()"
         >
-          <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-2xl font-extrabold text-risk-low" aria-hidden="true">✓</div>
-          <h3 id="assignment-success-title" class="m-0 mt-4 text-xl font-extrabold text-navy">มอบหมายงานเสร็จสิ้น</h3>
-          <p class="m-0 mt-2 text-sm leading-6 text-slate-700">ระบบบันทึกการมอบหมายงานเรียบร้อยแล้ว</p>
-          <button type="button" class="gov-btn-primary mt-6 min-w-28" (click)="successOpen.set(false)">ตกลง</button>
+          <div
+            class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-2xl font-extrabold text-risk-low"
+            aria-hidden="true"
+          >
+            ✓
+          </div>
+          <h3 id="assignment-success-title" class="m-0 mt-4 text-xl font-extrabold text-navy">
+            มอบหมายงานเสร็จสิ้น
+          </h3>
+          <p class="m-0 mt-2 text-sm leading-6 text-slate-700">
+            ระบบบันทึกการมอบหมายงานเรียบร้อยแล้ว
+          </p>
+          <button
+            type="button"
+            class="gov-btn-primary mt-6 min-w-28"
+            (click)="successOpen.set(false)"
+          >
+            ตกลง
+          </button>
         </div>
       </div>
     }
@@ -274,14 +353,26 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
     const risk = this.riskFilter();
     return this.projects()
       .filter((project) => {
-        const text = `${project.project_name ?? ''} ${project.dept_name ?? ''} ${project.project_type ?? ''}`.toLocaleLowerCase('th');
-        return (!search || text.includes(search)) && (risk === 'all' || normalizeRiskLevel(project.risk_level) === risk);
+        const text =
+          `${project.project_name ?? ''} ${project.dept_name ?? ''} ${project.project_type ?? ''}`.toLocaleLowerCase(
+            'th',
+          );
+        return (
+          (!search || text.includes(search)) &&
+          (risk === 'all' || normalizeRiskLevel(project.risk_level) === risk)
+        );
       })
-      .sort((a, b) => this.riskRank(b) - this.riskRank(a) || Number(b.risk_score ?? 0) - Number(a.risk_score ?? 0));
+      .sort(
+        (a, b) =>
+          this.riskRank(b) - this.riskRank(a) ||
+          Number(b.risk_score ?? 0) - Number(a.risk_score ?? 0),
+      );
   });
 
-  readonly selectedProject = computed(() =>
-    this.projects().find((project) => this.projectId(project) === this.selectedProjectId()) ?? null,
+  readonly selectedProject = computed(
+    () =>
+      this.projects().find((project) => this.projectId(project) === this.selectedProjectId()) ??
+      null,
   );
 
   readonly assignmentsByProject = computed(() => {
@@ -299,13 +390,17 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
 
   readonly selectedProjectAssignment = computed(() => {
     const project = this.selectedProject();
-    return project ? this.assignmentsByProject().get(this.projectId(project)) ?? null : null;
+    return project ? (this.assignmentsByProject().get(this.projectId(project)) ?? null) : null;
   });
 
   readonly filteredAnalysts = computed(() => {
     const search = this.analystSearch().trim().toLocaleLowerCase('th');
-    return this.analysts().filter((analyst) =>
-      !search || `${analyst.name} ${analyst.team} ${analyst.specialties.join(' ')}`.toLocaleLowerCase('th').includes(search),
+    return this.analysts().filter(
+      (analyst) =>
+        !search ||
+        `${analyst.name} ${analyst.team} ${analyst.specialties.join(' ')}`
+          .toLocaleLowerCase('th')
+          .includes(search),
     );
   });
 
@@ -330,9 +425,12 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
         this.subdistricts.set(subdistricts);
         this.assignments.set(assignments.map((assignment) => this.toSavedAssignment(assignment)));
         this.analysts.set(analysts.map((analyst) => this.toAnalyst(analyst)));
-        this.selectedProjectId.set(this.filteredProjects()[0] ? this.projectId(this.filteredProjects()[0]) : null);
+        this.selectedProjectId.set(
+          this.filteredProjects()[0] ? this.projectId(this.filteredProjects()[0]) : null,
+        );
         this.loading.set(false);
-        if (!projects.length) this.error.set('ไม่สามารถโหลดรายการโครงการได้ กรุณาตรวจสอบการเชื่อมต่อ FinRisk Backend');
+        if (!projects.length)
+          this.error.set('ไม่สามารถโหลดรายการโครงการได้ กรุณาตรวจสอบการเชื่อมต่อ FinRisk Backend');
       },
       error: () => {
         this.error.set('ไม่สามารถโหลดข้อมูลการมอบหมายได้ กรุณาลองใหม่อีกครั้ง');
@@ -375,24 +473,28 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
     const project = this.selectedProject();
     const analystId = this.selectedAnalystId();
     if (!project || !analystId) return;
-    this.api.createAssignment({
-      project_id: this.projectId(project),
-      assignee_id: Number(analystId),
-      note: this.assignmentNote().trim(),
-      due_date: this.dueDate(),
-    }).subscribe({
-      next: () => {
-        this.reloadAssignments();
-        this.dueDate.set('');
-        this.assignmentNote.set('');
-        this.confirmOpen.set(false);
-        this.successOpen.set(true);
-      },
-      error: (response: { error?: { detail?: string } }) => {
-        this.confirmOpen.set(false);
-        this.formError.set(response.error?.detail ?? 'บันทึกการมอบหมายงานไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
-      },
-    });
+    this.api
+      .createAssignment({
+        project_id: this.projectId(project),
+        assignee_id: Number(analystId),
+        note: this.assignmentNote().trim(),
+        due_date: this.dueDate(),
+      })
+      .subscribe({
+        next: () => {
+          this.reloadAssignments();
+          this.dueDate.set('');
+          this.assignmentNote.set('');
+          this.confirmOpen.set(false);
+          this.successOpen.set(true);
+        },
+        error: (response: { error?: { detail?: string } }) => {
+          this.confirmOpen.set(false);
+          this.formError.set(
+            response.error?.detail ?? 'บันทึกการมอบหมายงานไม่สำเร็จ กรุณาลองใหม่อีกครั้ง',
+          );
+        },
+      });
   }
 
   projectId(project: Project): string {
@@ -400,7 +502,9 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
   }
 
   projectSubdistrict(project: Project): string {
-    return subdistrictLabel(this.subdistricts().find((item) => item.subdistrict_id === project.subdistrict_id));
+    return subdistrictLabel(
+      this.subdistricts().find((item) => item.subdistrict_id === project.subdistrict_id),
+    );
   }
 
   projectAssignment(project: Project): SavedAssignment | null {
@@ -408,7 +512,9 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
   }
 
   assignmentAnalystName(assignment: SavedAssignment): string {
-    return this.analysts().find((item) => item.id === assignment.analystId)?.name ?? assignment.analystId;
+    return (
+      this.analysts().find((item) => item.id === assignment.analystId)?.name ?? assignment.analystId
+    );
   }
 
   assignmentProjectStatus(assignment: SavedAssignment): string {
@@ -421,7 +527,13 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
 
   riskLabel(project: Project): string {
     const risk = normalizeRiskLevel(project.risk_level);
-    return risk === 'high' ? 'ความเสี่ยงสูง' : risk === 'medium' ? 'ความเสี่ยงปานกลาง' : risk === 'low' ? 'ความเสี่ยงต่ำ' : 'ไม่ระบุระดับ';
+    return risk === 'high'
+      ? 'ความเสี่ยงสูง'
+      : risk === 'medium'
+        ? 'ความเสี่ยงปานกลาง'
+        : risk === 'low'
+          ? 'ความเสี่ยงต่ำ'
+          : 'ไม่ระบุระดับ';
   }
 
   riskBadgeClass(project: Project): string {
@@ -447,7 +559,8 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
 
   private reloadAssignments(): void {
     this.api.assignments().subscribe({
-      next: (assignments) => this.assignments.set(assignments.map((assignment) => this.toSavedAssignment(assignment))),
+      next: (assignments) =>
+        this.assignments.set(assignments.map((assignment) => this.toSavedAssignment(assignment))),
       error: () => this.formError.set('โหลดรายการงานล่าสุดไม่สำเร็จ กรุณารีเฟรชหน้าอีกครั้ง'),
     });
   }
@@ -473,7 +586,8 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
       budgetHours: assignment.budget_hours ?? undefined,
       auditSteps: assignment.audit_steps,
       workflowStatus: assignment.status,
-      assignedBy: assignment.assigned_by_display_name || assignment.assigned_by_username || undefined,
+      assignedBy:
+        assignment.assigned_by_display_name || assignment.assigned_by_username || undefined,
     };
   }
 }

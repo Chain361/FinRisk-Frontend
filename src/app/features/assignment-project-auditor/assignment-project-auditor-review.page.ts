@@ -117,12 +117,12 @@ interface ReviewRow {
             <table class="gov-table min-w-[1120px]">
               <thead>
                 <tr>
-                  <th>สถานะโครงการโดยรวม</th>
-                  <th>โครงการ</th>
-                  <th>ผู้รับมอบหมาย</th>
-                  <th>ขอบเขตงาน</th>
-                  <th>ผลตรวจทานล่าสุด</th>
-                  <th>การดำเนินการ</th>
+                  <th scope="col">สถานะโครงการโดยรวม</th>
+                  <th scope="col">โครงการ</th>
+                  <th scope="col">ผู้รับมอบหมาย</th>
+                  <th scope="col">ขอบเขตงาน</th>
+                  <th scope="col">ผลตรวจทานล่าสุด</th>
+                  <th scope="col">การดำเนินการ</th>
                 </tr>
               </thead>
               <tbody>

@@ -133,7 +133,7 @@ import { FISCAL_YEARS, subdistrictLabel } from '../utils/risk-utils';
           class="inline-flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-[3px] border-[1.5px] border-line bg-white px-3 text-[13.5px] font-bold text-slate-700 hover:bg-zebra"
           (click)="reset.emit()"
         >
-          ↺ {{ t('filter.reset') }}
+          <span aria-hidden="true">↺</span> {{ t('filter.reset') }}
         </button>
       </div>
     </div>

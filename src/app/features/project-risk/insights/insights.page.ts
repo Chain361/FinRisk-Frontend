@@ -115,12 +115,12 @@ interface RepeatedEntity {
             <table class="gov-table min-w-[900px]">
               <thead>
                 <tr>
-                  <th>อันดับ</th>
-                  <th>ผู้รับจ้าง</th>
-                  <th class="text-right!">จำนวนโครงการ</th>
-                  <th class="text-right!">จำนวนครั้งที่ชนะ</th>
-                  <th class="text-right!">มูลค่าสัญญารวม</th>
-                  <th>รายชื่อโครงการตัวอย่าง</th>
+                  <th scope="col">อันดับ</th>
+                  <th scope="col">ผู้รับจ้าง</th>
+                  <th scope="col" class="text-right!">จำนวนโครงการ</th>
+                  <th scope="col" class="text-right!">จำนวนครั้งที่ชนะ</th>
+                  <th scope="col" class="text-right!">มูลค่าสัญญารวม</th>
+                  <th scope="col">รายชื่อโครงการตัวอย่าง</th>
                 </tr>
               </thead>
               <tbody>
@@ -184,10 +184,10 @@ interface RepeatedEntity {
             <table class="gov-table">
               <thead>
                 <tr>
-                  <th>รายการ</th>
-                  <th>ปีที่พบ</th>
-                  <th class="text-right!">จำนวน</th>
-                  <th class="text-right!">งบรวม (บาท)</th>
+                  <th scope="col">รายการ</th>
+                  <th scope="col">ปีที่พบ</th>
+                  <th scope="col" class="text-right!">จำนวน</th>
+                  <th scope="col" class="text-right!">งบรวม (บาท)</th>
                 </tr>
               </thead>
               <tbody>

@@ -25,7 +25,7 @@ interface ViewSegment extends CompositionSegment {
         <p class="mt-0.5 mb-3.5 text-[13px] text-muted">{{ subtitle() }}</p>
       }
       @if (total() > 0) {
-        <div class="flex h-[34px] overflow-hidden rounded-[3px] border border-line">
+        <div class="flex h-[34px] overflow-hidden rounded-[3px] border border-line" aria-hidden="true">
           @for (segment of viewSegments(); track segment.label) {
             @if (segment.pct > 0) {
               <div
@@ -42,11 +42,12 @@ interface ViewSegment extends CompositionSegment {
         <p class="text-[13px] text-muted">{{ t('common.noData') }}</p>
       }
       <table class="gov-table mt-3.5 text-[13px]">
+        <caption class="sr-only">{{ t('a11y.chartTableCaption', { title: title() }) }}</caption>
         <tbody>
           @for (segment of viewSegments(); track segment.label) {
             <tr>
               <td>
-                <span class="mr-2 inline-block size-2.5 rounded-[2px] align-middle" [style.background]="segment.color"></span>
+                <span class="mr-2 inline-block size-2.5 rounded-[2px] align-middle" [style.background]="segment.color" aria-hidden="true"></span>
                 {{ segment.label }}
               </td>
               <td class="text-right font-bold">{{ segment.valueText }}</td>

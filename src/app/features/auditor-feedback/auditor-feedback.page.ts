@@ -99,12 +99,12 @@ import {
               <table class="min-w-full divide-y divide-slate-200 text-sm">
                 <thead class="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500">
                   <tr>
-                    <th class="px-4 py-3">โครงการ / ความเห็น</th>
-                    <th class="px-4 py-3">ผู้ให้ความเห็น</th>
-                    <th class="px-4 py-3">ความกังวล</th>
-                    <th class="px-4 py-3">คะแนน</th>
-                    <th class="px-4 py-3">สถานะ</th>
-                    <th class="px-4 py-3">อัปเดตล่าสุด</th>
+                    <th scope="col" class="px-4 py-3">โครงการ / ความเห็น</th>
+                    <th scope="col" class="px-4 py-3">ผู้ให้ความเห็น</th>
+                    <th scope="col" class="px-4 py-3">ความกังวล</th>
+                    <th scope="col" class="px-4 py-3">คะแนน</th>
+                    <th scope="col" class="px-4 py-3">สถานะ</th>
+                    <th scope="col" class="px-4 py-3">อัปเดตล่าสุด</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 bg-white">

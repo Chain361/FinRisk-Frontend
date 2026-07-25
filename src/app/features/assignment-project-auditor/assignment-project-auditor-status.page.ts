@@ -41,11 +41,15 @@ interface ProjectStatusRow {
             ติดตามสถานะการมอบหมายงานของแต่ละโครงการ พร้อมผู้รับมอบหมายล่าสุดและระดับความเสี่ยง
           </p>
         </div>
-        <button type="button" class="gov-btn-outline" (click)="reloadAssignments()">รีเฟรชสถานะ</button>
+        <button type="button" class="gov-btn-outline" (click)="reloadAssignments()">
+          รีเฟรชสถานะ
+        </button>
       </div>
 
       @if (error()) {
-        <div class="rounded-[4px] border-[1.5px] border-risk-high bg-red-50 px-4 py-3 text-sm text-risk-high">
+        <div
+          class="rounded-[4px] border-[1.5px] border-risk-high bg-red-50 px-4 py-3 text-sm text-risk-high"
+        >
           {{ error() }}
         </div>
       }
@@ -61,11 +65,15 @@ interface ProjectStatusRow {
         </div>
         <div class="panel p-4">
           <p class="m-0 text-xs font-bold text-muted">ยังไม่มอบหมาย</p>
-          <p class="m-0 mt-1 text-[26px] font-extrabold text-risk-medium">{{ unassignedCount() }}</p>
+          <p class="m-0 mt-1 text-[26px] font-extrabold text-risk-medium">
+            {{ unassignedCount() }}
+          </p>
         </div>
         <div class="panel p-4">
           <p class="m-0 text-xs font-bold text-muted">เสี่ยงสูงที่ยังไม่มอบหมาย</p>
-          <p class="m-0 mt-1 text-[26px] font-extrabold text-risk-high">{{ highRiskUnassignedCount() }}</p>
+          <p class="m-0 mt-1 text-[26px] font-extrabold text-risk-high">
+            {{ highRiskUnassignedCount() }}
+          </p>
         </div>
       </div>
 
@@ -74,9 +82,13 @@ interface ProjectStatusRow {
           <div class="flex flex-wrap items-end justify-between gap-3">
             <div>
               <h2 class="m-0 text-[17px] font-extrabold text-ink">รายการสถานะโครงการ</h2>
-              <p class="m-0 mt-1 text-[13px] text-muted">กรองโครงการตามสถานะการมอบหมาย ผู้รับผิดชอบ และระดับความเสี่ยง</p>
+              <p class="m-0 mt-1 text-[13px] text-muted">
+                กรองโครงการตามสถานะการมอบหมาย ผู้รับผิดชอบ และระดับความเสี่ยง
+              </p>
             </div>
-            <span class="rounded-full bg-navy px-2.5 py-1 text-xs font-bold text-white">{{ filteredRows().length }} โครงการ</span>
+            <span class="rounded-full bg-navy px-2.5 py-1 text-xs font-bold text-white"
+              >{{ filteredRows().length }} โครงการ</span
+            >
           </div>
 
           <div class="mt-3 grid gap-2 xl:grid-cols-[1fr_170px_170px_220px]">
@@ -92,7 +104,11 @@ interface ProjectStatusRow {
             </label>
             <label>
               <span class="sr-only">กรองสถานะโครงการโดยรวม</span>
-              <select class="gov-select" [ngModel]="projectWorkflowFilter()" (ngModelChange)="projectWorkflowFilter.set($event)">
+              <select
+                class="gov-select"
+                [ngModel]="projectWorkflowFilter()"
+                (ngModelChange)="projectWorkflowFilter.set($event)"
+              >
                 <option value="all">ทุกสถานะโครงการ</option>
                 <option value="unassigned">ยังไม่มอบหมาย</option>
                 <option value="waiting_acceptance">รอผู้รับงานตอบรับ</option>
@@ -107,7 +123,11 @@ interface ProjectStatusRow {
             </label>
             <label>
               <span class="sr-only">กรองระดับความเสี่ยง</span>
-              <select class="gov-select" [ngModel]="riskFilter()" (ngModelChange)="riskFilter.set($event)">
+              <select
+                class="gov-select"
+                [ngModel]="riskFilter()"
+                (ngModelChange)="riskFilter.set($event)"
+              >
                 <option value="all">ทุกระดับความเสี่ยง</option>
                 <option value="high">ความเสี่ยงสูง</option>
                 <option value="medium">ความเสี่ยงปานกลาง</option>
@@ -116,7 +136,11 @@ interface ProjectStatusRow {
             </label>
             <label>
               <span class="sr-only">กรองผู้รับมอบหมาย</span>
-              <select class="gov-select" [ngModel]="analystFilter()" (ngModelChange)="analystFilter.set($event)">
+              <select
+                class="gov-select"
+                [ngModel]="analystFilter()"
+                (ngModelChange)="analystFilter.set($event)"
+              >
                 <option value="all">ทุกผู้รับมอบหมาย</option>
                 @for (analyst of analysts(); track analyst.id) {
                   <option [value]="analyst.id">{{ analyst.name }}</option>
@@ -140,28 +164,36 @@ interface ProjectStatusRow {
             <table class="gov-table min-w-[980px]">
               <thead>
                 <tr>
-                  <th>สถานะโครงการโดยรวม</th>
-                  <th>โครงการ</th>
-                  <th>ผู้รับมอบหมายล่าสุด</th>
-                  <th>ความเสี่ยง</th>
-                  <th>มอบหมายล่าสุด</th>
+                  <th scope="col">สถานะโครงการโดยรวม</th>
+                  <th scope="col">โครงการ</th>
+                  <th scope="col">ผู้รับมอบหมายล่าสุด</th>
+                  <th scope="col">ความเสี่ยง</th>
+                  <th scope="col">มอบหมายล่าสุด</th>
                 </tr>
               </thead>
               <tbody>
                 @for (row of filteredRows(); track row.project.project_id) {
                   <tr>
                     <td class="align-top">
-                      <span class="rounded-full px-2.5 py-1 text-xs font-bold" [class]="projectWorkflowBadgeClass(row.latestAssignment)">
+                      <span
+                        class="rounded-full px-2.5 py-1 text-xs font-bold"
+                        [class]="projectWorkflowBadgeClass(row.latestAssignment)"
+                      >
                         {{ projectWorkflowLabel(row.latestAssignment) }}
                       </span>
                       @if (hasBackendProjectStatus(row.project)) {
-                        <p class="m-0 mt-2 text-xs text-muted">ข้อมูลโครงการ: {{ backendProjectStatusLabel(row.project) }}</p>
+                        <p class="m-0 mt-2 text-xs text-muted">
+                          ข้อมูลโครงการ: {{ backendProjectStatusLabel(row.project) }}
+                        </p>
                       }
                     </td>
                     <td class="align-top">
                       <a
                         routerLink="/risk-factors"
-                        [queryParams]="{ projectId: row.project.project_id }"
+                        [queryParams]="{
+                          projectId: row.project.project_id,
+                          from: '/risk-factors/status',
+                        }"
                         class="font-extrabold leading-6 text-ink no-underline hover:text-navy hover:underline"
                       >
                         @if (row.project.project_name) {
@@ -171,8 +203,13 @@ interface ProjectStatusRow {
                         }
                       </a>
                       <div class="mt-2 flex flex-wrap gap-1.5">
-                        <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">{{ row.subdistrictName }}</span>
-                        <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
+                        <span
+                          class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700"
+                          >{{ row.subdistrictName }}</span
+                        >
+                        <span
+                          class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700"
+                        >
                           ปีงบ
                           @if (row.project.budget_year) {
                             {{ row.project.budget_year }}
@@ -180,9 +217,15 @@ interface ProjectStatusRow {
                             <span class="font-normal italic text-slate-400">ยังไม่มีข้อมูล</span>
                           }
                         </span>
-                        <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">รหัส {{ row.project.project_id }}</span>
+                        <span
+                          class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700"
+                          >รหัส {{ row.project.project_id }}</span
+                        >
                         @if (row.project.project_type) {
-                          <span class="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-bold text-navy">{{ row.project.project_type }}</span>
+                          <span
+                            class="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-bold text-navy"
+                            >{{ row.project.project_type }}</span
+                          >
                         }
                       </div>
                     </td>
@@ -195,12 +238,17 @@ interface ProjectStatusRow {
                       }
                     </td>
                     <td class="align-top">
-                      <span class="rounded-full px-2.5 py-1 text-xs font-bold" [class]="riskBadgeClass(row.project)">
+                      <span
+                        class="rounded-full px-2.5 py-1 text-xs font-bold"
+                        [class]="riskBadgeClass(row.project)"
+                      >
                         {{ riskLabel(row.project) }}
                       </span>
                       <p class="m-0 mt-2 text-xs text-muted">
                         คะแนน
-                        @if (row.project.risk_score !== null && row.project.risk_score !== undefined) {
+                        @if (
+                          row.project.risk_score !== null && row.project.risk_score !== undefined
+                        ) {
                           {{ row.project.risk_score }}
                         } @else {
                           <span class="italic text-slate-400">ยังไม่มีข้อมูล</span>
@@ -208,12 +256,21 @@ interface ProjectStatusRow {
                       </p>
                     </td>
                     <td class="align-top">
-                      <p class="m-0 mt-1 text-xs italic text-slate-400" [class]="row.latestAssignment ? 'text-ink' : 'italic text-slate-400'">{{ row.assignedAtText }}</p>
+                      <p
+                        class="m-0 mt-1 text-xs italic text-slate-400"
+                        [class]="row.latestAssignment ? 'text-ink' : 'italic text-slate-400'"
+                      >
+                        {{ row.assignedAtText }}
+                      </p>
                       @if (row.latestAssignment?.dueDate) {
-                        <p class="m-0 mt-1 text-xs text-muted">Due {{ row.latestAssignment!.dueDate }}</p>
+                        <p class="m-0 mt-1 text-xs text-muted">
+                          Due {{ row.latestAssignment!.dueDate }}
+                        </p>
                       }
                       @if (row.latestAssignment?.budgetHours) {
-                        <p class="m-0 mt-1 text-xs text-muted">Budget {{ row.latestAssignment!.budgetHours }} ชม.</p>
+                        <p class="m-0 mt-1 text-xs text-muted">
+                          Budget {{ row.latestAssignment!.budgetHours }} ชม.
+                        </p>
                       }
                     </td>
                   </tr>
@@ -283,7 +340,9 @@ export class AssignmentProjectAuditorStatusPageComponent implements OnInit {
         (workflowStatus === 'all' ||
           (workflowStatus === 'unassigned' && !row.latestAssignment) ||
           row.latestAssignment?.workflowStatus === workflowStatus ||
-          (!row.latestAssignment?.workflowStatus && workflowStatus === 'waiting_acceptance' && Boolean(row.latestAssignment))) &&
+          (!row.latestAssignment?.workflowStatus &&
+            workflowStatus === 'waiting_acceptance' &&
+            Boolean(row.latestAssignment))) &&
         (risk === 'all' || normalizeRiskLevel(row.project.risk_level) === risk) &&
         (analystId === 'all' || row.latestAssignment?.analystId === analystId),
     );
@@ -325,7 +384,8 @@ export class AssignmentProjectAuditorStatusPageComponent implements OnInit {
   reloadAssignments(): void {
     this.error.set('');
     this.api.assignments().subscribe({
-      next: (assignments) => this.assignments.set(assignments.map((assignment) => this.toSavedAssignment(assignment))),
+      next: (assignments) =>
+        this.assignments.set(assignments.map((assignment) => this.toSavedAssignment(assignment))),
       error: () => this.error.set('โหลดสถานะงานจากระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'),
     });
   }
@@ -379,13 +439,13 @@ export class AssignmentProjectAuditorStatusPageComponent implements OnInit {
   private toProjectStatusRow(project: Project): ProjectStatusRow {
     const projectId = String(project.project_id);
     const latestAssignment = this.latestAssignmentsByProject().get(projectId) ?? null;
-    const analyst = latestAssignment
-      ? this.analystFromAssignment(latestAssignment)
-      : null;
+    const analyst = latestAssignment ? this.analystFromAssignment(latestAssignment) : null;
     const subdistrictName = subdistrictLabel(
       this.subdistricts().find((item) => item.subdistrict_id === project.subdistrict_id),
     );
-    const assignedAtText = latestAssignment ? this.formatAssignedAt(latestAssignment.assignedAt) : 'รอดำเนินการ';
+    const assignedAtText = latestAssignment
+      ? this.formatAssignedAt(latestAssignment.assignedAt)
+      : 'รอดำเนินการ';
     const searchText = [
       project.project_name,
       project.project_id,
@@ -456,7 +516,8 @@ export class AssignmentProjectAuditorStatusPageComponent implements OnInit {
       budgetHours: assignment.budget_hours ?? undefined,
       auditSteps: assignment.audit_steps,
       workflowStatus: assignment.status,
-      assignedBy: assignment.assigned_by_display_name || assignment.assigned_by_username || undefined,
+      assignedBy:
+        assignment.assigned_by_display_name || assignment.assigned_by_username || undefined,
     };
   }
 }

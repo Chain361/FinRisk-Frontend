@@ -39,6 +39,20 @@ export const en: Record<string, string> = {
   'common.prev': 'Previous',
   'common.next': 'Next',
 
+  // ---- a11y (screen-reader labels / government web standard) ----
+  'a11y.skipToContent': 'Skip to main content',
+  'a11y.mainNav': 'Main navigation',
+  'a11y.mainContent': 'Main content',
+  'a11y.breadcrumb': 'Breadcrumb',
+  'a11y.userAccount': 'User account',
+  'a11y.closeDialog': 'Close dialog',
+  'a11y.currentPageLabel': 'Current page',
+  'a11y.chartTableCaption': 'Data table for chart: {title}',
+  'a11y.chartRegion': 'Chart: {title}',
+  'a11y.riskMatrixActive': 'Risk matrix — likelihood {likelihood}, impact {impact}, score {score}, level {band}',
+  'a11y.riskMatrixEmpty': 'Risk matrix 5 by 5 (no cell selected)',
+  'a11y.tooltipToggle': 'Show or hide additional information',
+
   // ---- risk levels ----
   'risk.level.high': 'High risk',
   'risk.level.medium': 'Medium risk',

@@ -21,8 +21,8 @@ interface Cell {
   selector: 'app-risk-matrix',
   standalone: true,
   template: `
-    <div class="inline-flex flex-col gap-1">
-      <div class="flex items-stretch gap-1">
+    <div class="inline-flex flex-col gap-1" role="img" [attr.aria-label]="matrixLabel()">
+      <div class="flex items-stretch gap-1" aria-hidden="true">
         <!-- แกน Y: ผลกระทบ (บนลงล่าง 5→1) -->
         <div class="flex flex-col justify-between pr-1 text-[10px] font-bold text-muted">
           <span class="flex flex-1 items-center">5</span>
@@ -68,6 +68,20 @@ export class RiskMatrixComponent {
   readonly likelihood = input<number | null | undefined>(null);
   readonly impact = input<number | null | undefined>(null);
   readonly cellSize = input<number>(30);
+
+  /** ป้ายกำกับสำหรับ screen reader — สรุปช่องที่ถูกเลือก (หรือแจ้งว่ายังไม่เลือก) */
+  readonly matrixLabel = computed<string>(() => {
+    const active = this.cells().find((cell) => cell.active);
+    if (!active) {
+      return this.t('a11y.riskMatrixEmpty');
+    }
+    return this.t('a11y.riskMatrixActive', {
+      likelihood: active.likelihood,
+      impact: active.impact,
+      score: active.score,
+      band: this.i18n.bandLabel(active.band),
+    });
+  });
 
   cellTitle(cell: Cell): string {
     return this.t('riskMatrix.cellTitle', {

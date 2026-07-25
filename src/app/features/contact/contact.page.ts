@@ -50,7 +50,7 @@ const CATEGORY_LABEL: Record<ReportCategory, string> = {
       </div>
 
       <div class="flex items-start gap-3 rounded-[4px] border-[1.5px] border-gold-border bg-gold-bg px-[18px] py-3.5">
-        <svg lucideMessageSquareWarning class="mt-1 size-[18px] shrink-0 text-gold-ink"></svg>
+        <svg lucideMessageSquareWarning class="mt-1 size-[18px] shrink-0 text-gold-ink" aria-hidden="true"></svg>
         <p class="m-0 text-[13.5px] leading-7 text-[#5c4a12]">
           คะแนนและสีความเสี่ยงเป็นเพียง "สัญญาณ" ให้ตรวจสอบเพิ่มเติม ไม่ใช่คำตัดสิน
           หากท่านเห็นว่าข้อมูลโครงการไม่ถูกต้องหรือไม่เห็นด้วยกับผลการประเมิน สามารถแจ้งผ่านแบบฟอร์มด้านล่างได้
@@ -62,19 +62,19 @@ const CATEGORY_LABEL: Record<ReportCategory, string> = {
           <h2 class="m-0 text-[15px] font-bold text-ink">หน่วยงานผู้รับผิดชอบ</h2>
           <div class="mt-3.5 flex flex-col gap-3 text-[13.5px] text-slate-700">
             <div class="flex items-start gap-2.5">
-              <svg lucideBuilding2 class="mt-0.5 size-4 shrink-0 text-navy"></svg>
+              <svg lucideBuilding2 class="mt-0.5 size-4 shrink-0 text-navy" aria-hidden="true"></svg>
               <span>{{ agency.name }}</span>
             </div>
             <div class="flex items-start gap-2.5">
-              <svg lucideMail class="mt-0.5 size-4 shrink-0 text-navy"></svg>
+              <svg lucideMail class="mt-0.5 size-4 shrink-0 text-navy" aria-hidden="true"></svg>
               <a class="text-navy no-underline hover:underline" [href]="'mailto:' + agency.email">{{ agency.email }}</a>
             </div>
             <div class="flex items-start gap-2.5">
-              <svg lucidePhone class="mt-0.5 size-4 shrink-0 text-navy"></svg>
+              <svg lucidePhone class="mt-0.5 size-4 shrink-0 text-navy" aria-hidden="true"></svg>
               <span>{{ agency.phone }}</span>
             </div>
             <div class="flex items-start gap-2.5">
-              <svg lucideMapPin class="mt-0.5 size-4 shrink-0 text-navy"></svg>
+              <svg lucideMapPin class="mt-0.5 size-4 shrink-0 text-navy" aria-hidden="true"></svg>
               <span>{{ agency.address }}</span>
             </div>
           </div>
@@ -153,7 +153,7 @@ const CATEGORY_LABEL: Record<ReportCategory, string> = {
 
             <div class="mt-4 flex items-center gap-2">
               <button type="button" class="gov-btn-primary inline-flex items-center gap-2" (click)="submit()">
-                <svg lucideSend class="size-4"></svg>
+                <svg lucideSend class="size-4" aria-hidden="true"></svg>
                 ส่งเรื่อง
               </button>
             </div>
