@@ -1,6 +1,15 @@
 import { Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
+import {
+  LucideClipboardList,
+  LucideFolderKanban,
+  LucideKeyRound,
+  LucideLandmark,
+  LucideLayoutDashboard,
+  LucideMessageSquareText,
+  LucideShieldCheck,
+} from '@lucide/angular';
 import { catchError, filter, map, of } from 'rxjs';
 
 import { ApiService } from '../core/api/api.service';
@@ -166,7 +175,19 @@ const NAV_GROUPS: NavGroup[] = [
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, GuardrailBannerComponent, PrototypeBannerComponent],
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    GuardrailBannerComponent,
+    PrototypeBannerComponent,
+    LucideLayoutDashboard,
+    LucideLandmark,
+    LucideFolderKanban,
+    LucideClipboardList,
+    LucideMessageSquareText,
+    LucideShieldCheck,
+    LucideKeyRound,
+  ],
   template: `
     <app-prototype-banner />
     <div class="flex min-h-screen bg-page text-ink">
@@ -196,7 +217,29 @@ const NAV_GROUPS: NavGroup[] = [
                             : 'border-transparent text-[#e6ecf5]'
                         "
                       >
-                        <span class="text-[12.5px] opacity-85">{{ item.code }}</span>
+                        @switch (item.code) {
+                          @case ('F1') {
+                            <svg lucideLayoutDashboard class="size-[18px] shrink-0"></svg>
+                          }
+                          @case ('F2') {
+                            <svg lucideLandmark class="size-[18px] shrink-0"></svg>
+                          }
+                          @case ('F3') {
+                            <svg lucideFolderKanban class="size-[18px] shrink-0"></svg>
+                          }
+                          @case ('F4') {
+                            <svg lucideClipboardList class="size-[18px] shrink-0"></svg>
+                          }
+                          @case ('F5') {
+                            <svg lucideMessageSquareText class="size-[18px] shrink-0"></svg>
+                          }
+                          @case ('F6') {
+                            <svg lucideShieldCheck class="size-[18px] shrink-0"></svg>
+                          }
+                          @case ('A1') {
+                            <svg lucideKeyRound class="size-[18px] shrink-0"></svg>
+                          }
+                        }
                         <span>{{ item.label }}</span>
                       </a>
 
@@ -227,7 +270,29 @@ const NAV_GROUPS: NavGroup[] = [
                           : 'border-transparent text-[#e6ecf5]'
                       "
                     >
-                      <span class="text-[12.5px] opacity-85">{{ item.code }}</span>
+                      @switch (item.code) {
+                        @case ('F1') {
+                          <svg lucideLayoutDashboard class="size-[18px] shrink-0"></svg>
+                        }
+                        @case ('F2') {
+                          <svg lucideLandmark class="size-[18px] shrink-0"></svg>
+                        }
+                        @case ('F3') {
+                          <svg lucideFolderKanban class="size-[18px] shrink-0"></svg>
+                        }
+                        @case ('F4') {
+                          <svg lucideClipboardList class="size-[18px] shrink-0"></svg>
+                        }
+                        @case ('F5') {
+                          <svg lucideMessageSquareText class="size-[18px] shrink-0"></svg>
+                        }
+                        @case ('F6') {
+                          <svg lucideShieldCheck class="size-[18px] shrink-0"></svg>
+                        }
+                        @case ('A1') {
+                          <svg lucideKeyRound class="size-[18px] shrink-0"></svg>
+                        }
+                      }
                       <span>{{ item.label }}</span>
                     </a>
                   }

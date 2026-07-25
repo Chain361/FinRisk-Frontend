@@ -49,8 +49,7 @@ import {
   template: `
     <section class="page-shell">
       <div>
-        <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F5</p>
-        <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">
+        <h1 class="m-0 text-[26px] font-extrabold text-ink">
           แบบฟอร์มบันทึกความคิดเห็นด้านความเสี่ยงของโครงการ
         </h1>
         <p class="m-0 mt-1.5 text-sm text-muted">
@@ -695,7 +694,26 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     return user?.display_name || user?.full_name || user?.name || user?.username || 'ไม่ระบุ';
   });
 
-  readonly sortedProjects = computed(() => sortProjectsByRisk(this.projects()));
+  /** เรียงตามวันที่แก้ไขความคิดเห็นล่าสุดก่อน (ใหม่สุดอยู่บนสุด) โครงการที่ยังไม่มีความคิดเห็นคงลำดับตามคะแนนความเสี่ยงเดิมไว้ท้ายรายการ */
+  readonly sortedProjects = computed(() => {
+    const feedback = this.allFeedback();
+    const latestUpdate = (project: Project) =>
+      latestOf(feedback, project.project_id)?.updated_at ?? '';
+    return [...sortProjectsByRisk(this.projects())].sort((a, b) => {
+      const aDate = latestUpdate(a);
+      const bDate = latestUpdate(b);
+      if (aDate && bDate) {
+        return bDate.localeCompare(aDate);
+      }
+      if (aDate) {
+        return -1;
+      }
+      if (bDate) {
+        return 1;
+      }
+      return 0;
+    });
+  });
   readonly projectTypes = computed(() => {
     const types = new Set<string>();
     this.allProjects().forEach((project) => {
