@@ -35,3 +35,11 @@ export const FEEDBACK_ROLES = [
 
 /** role ที่ปิดเรื่อง (resolve) และจัดการความเห็นของคนอื่นได้ — mirror ของ RESOLVE_ROLES ฝั่ง backend */
 export const RESOLVE_ROLES = ['admin', 'project_auditor'] as const;
+
+/** role ที่ดู audit assignment ได้ — mirror ของ require_roles บน GET /audit/assignments (audit.py) */
+export const ASSIGNMENT_ROLES = [
+  'admin',
+  'regional_supervisor',
+  'project_auditor',
+  'risk_analyst',
+] as const;
