@@ -19,6 +19,7 @@ import { AuditAssignment, Project, Subdistrict } from '../../core/models/domain.
 import { ConfirmModalComponent } from '../../shared/ui/confirm-modal.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { projectWorkflowStatusBadgeClass, projectWorkflowStatusLabel } from '../assignment-project-auditor/assignment-project-auditor.models';
+import { RiskAnalystSidebarComponent } from './risk-analyst-sidebar.component';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types & Constants — เชื่อมโยงกับ AssignmentWorkflowStatus ของฝั่ง Auditor
@@ -78,9 +79,16 @@ interface MyTaskRow {
 @Component({
   selector: 'app-risk-analyst-my-tasks-page',
   standalone: true,
-  imports: [FormsModule, RouterLink, ConfirmModalComponent, EmptyStateComponent],
+  imports: [FormsModule, RouterLink, ConfirmModalComponent, EmptyStateComponent, RiskAnalystSidebarComponent],
   template: `
-    <section class="page-shell">
+    <div class="flex h-screen gap-0 bg-page">
+      <!-- Sidebar -->
+      <div class="hidden w-[300px] shrink-0 lg:flex">
+        <app-risk-analyst-sidebar [currentAssignmentId]="null" />
+      </div>
+
+      <!-- Main Content -->
+      <section class="page-shell flex-1 overflow-y-auto">
       <!-- Header -->
       <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -279,7 +287,8 @@ interface MyTaskRow {
           </div>
         }
       </section>
-    </section>
+      </section>
+    </div>
 
     <!-- Confirm Modal -->
     <app-confirm-modal

@@ -26,6 +26,7 @@ import {
   ASSIGNMENT_STORAGE_KEY,
   SavedAssignment,
 } from '../assignment-project-auditor/assignment-project-auditor.models';
+import { RiskAnalystSidebarComponent } from './risk-analyst-sidebar.component';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -55,9 +56,16 @@ type DetailAction = 'accept_task' | 'submit_for_review' | 'send_clarification';
 @Component({
   selector: 'app-risk-analyst-task-detail-page',
   standalone: true,
-  imports: [FormsModule, RouterLink, ConfirmModalComponent, EmptyStateComponent],
+  imports: [FormsModule, RouterLink, ConfirmModalComponent, EmptyStateComponent, RiskAnalystSidebarComponent],
   template: `
-    <section class="page-shell">
+    <div class="flex h-screen gap-0 bg-page">
+      <!-- Sidebar -->
+      <div class="hidden w-[300px] shrink-0 lg:flex">
+        <app-risk-analyst-sidebar [currentAssignmentId]="assignmentId()" />
+      </div>
+
+      <!-- Main Content -->
+      <section class="page-shell flex-1 overflow-y-auto">
       <!-- Header -->
       <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -355,6 +363,8 @@ export class RiskAnalystTaskDetailPageComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
+
+  readonly assignmentId = signal<number | null>(null);
   private readonly router = inject(Router);
 
   // ── State Signals ──
@@ -476,6 +486,7 @@ export class RiskAnalystTaskDetailPageComponent implements OnInit {
   ngOnInit(): void {
     const assignmentId = this.route.snapshot.paramMap.get('id');
     if (assignmentId) {
+      this.assignmentId.set(Number(assignmentId));
       this.loadData(Number(assignmentId));
     } else {
       this.error.set('ไม่พบรหัสงาน');
