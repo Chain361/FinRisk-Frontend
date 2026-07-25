@@ -241,6 +241,12 @@ import { NAV_GROUPS, NavGroup, NavItem } from './nav-groups';
             >
               ติดต่อ / แจ้งข้อมูลไม่ถูกต้อง
             </a>
+            <a
+              routerLink="/privacy-policy"
+              class="text-xs text-[#c9d4e3] no-underline hover:text-white hover:underline"
+            >
+              นโยบายความเป็นส่วนตัว
+            </a>
           </div>
         </div>
       </aside>

@@ -83,7 +83,11 @@ const CATEGORY_LABEL: Record<ReportCategory, string> = {
             <p class="m-0 text-[12.5px] font-bold text-muted">เอกสารที่เกี่ยวข้อง</p>
             <ul class="m-0 mt-2 flex list-none flex-col gap-1.5 p-0 text-[12.5px]">
               <li>เอกสารวิธีการประเมินความเสี่ยง (methodology) — จะเผยแพร่เร็วๆ นี้</li>
-              <li>นโยบายข้อมูลส่วนบุคคล (PDPA) — จะเผยแพร่เร็วๆ นี้</li>
+              <li>
+                <a routerLink="/privacy-policy" class="text-navy no-underline hover:underline">
+                  นโยบายความเป็นส่วนตัว (PDPA)
+                </a>
+              </li>
               <li>
                 <a routerLink="/data-sources" class="text-navy no-underline hover:underline">
                   ที่มาของข้อมูลระดับระบบ (Data Sources)

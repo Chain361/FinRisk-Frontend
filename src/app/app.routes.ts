@@ -147,6 +147,13 @@ export const routes: Routes = [
           import('./features/contact/contact.page').then((m) => m.ContactPageComponent),
       },
       {
+        path: 'privacy-policy',
+        loadComponent: () =>
+          import('./features/privacy-policy/privacy-policy.page').then(
+            (m) => m.PrivacyPolicyPageComponent,
+          ),
+      },
+      {
         // บันทึกการเข้าถึงระบบ — เฉพาะ admin (backend บังคับสิทธิ์ซ้ำด้วย require_roles("admin"))
         path: 'admin/access-log',
         canActivate: [roleGuard('admin')],
