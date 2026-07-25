@@ -112,13 +112,13 @@ import {
               <table class="min-w-full divide-y divide-slate-200 text-sm">
                 <thead class="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500">
                   <tr>
-                    <th class="px-4 py-3">โครงการ</th>
-                    <th class="px-4 py-3">ปี</th>
-                    <th class="px-4 py-3">ประเภท</th>
-                    <th class="px-4 py-3 text-right">งบประมาณ</th>
-                    <th class="px-4 py-3 text-right">ราคา/อ้างอิง</th>
-                    <th class="px-4 py-3 text-right">Risk Score</th>
-                    <th class="px-4 py-3">ระดับความเสี่ยง</th>
+                    <th scope="col" class="px-4 py-3">โครงการ</th>
+                    <th scope="col" class="px-4 py-3">ปี</th>
+                    <th scope="col" class="px-4 py-3">ประเภท</th>
+                    <th scope="col" class="px-4 py-3 text-right">งบประมาณ</th>
+                    <th scope="col" class="px-4 py-3 text-right">ราคา/อ้างอิง</th>
+                    <th scope="col" class="px-4 py-3 text-right">Risk Score</th>
+                    <th scope="col" class="px-4 py-3">ระดับความเสี่ยง</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 bg-white">

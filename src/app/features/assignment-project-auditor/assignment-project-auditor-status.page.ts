@@ -140,11 +140,11 @@ interface ProjectStatusRow {
             <table class="gov-table min-w-[980px]">
               <thead>
                 <tr>
-                  <th>สถานะโครงการโดยรวม</th>
-                  <th>โครงการ</th>
-                  <th>ผู้รับมอบหมายล่าสุด</th>
-                  <th>ความเสี่ยง</th>
-                  <th>มอบหมายล่าสุด</th>
+                  <th scope="col">สถานะโครงการโดยรวม</th>
+                  <th scope="col">โครงการ</th>
+                  <th scope="col">ผู้รับมอบหมายล่าสุด</th>
+                  <th scope="col">ความเสี่ยง</th>
+                  <th scope="col">มอบหมายล่าสุด</th>
                 </tr>
               </thead>
               <tbody>

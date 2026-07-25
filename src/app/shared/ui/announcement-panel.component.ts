@@ -22,7 +22,7 @@ import { I18nService } from '../../core/i18n/i18n.service';
             type="button"
             class="inline-flex h-[38px] cursor-pointer items-center gap-2 rounded-[3px] border-[1.5px] border-navy bg-white px-4 text-[13px] font-bold text-navy hover:bg-page"
           >
-            <svg lucideFileText class="size-4"></svg>
+            <svg lucideFileText class="size-4" aria-hidden="true"></svg>
             {{ t('announce.downloadManual') }}
           </button>
         </div>

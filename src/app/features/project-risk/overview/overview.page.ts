@@ -104,11 +104,11 @@ interface CrossTabRow {
           <table class="gov-table">
             <thead>
               <tr>
-                <th>ประเภทโครงการ</th>
-                <th class="text-right!">เสี่ยงสูง</th>
-                <th class="text-right!">เสี่ยงปานกลาง</th>
-                <th class="text-right!">เสี่ยงต่ำ</th>
-                <th class="text-right!">รวม</th>
+                <th scope="col">ประเภทโครงการ</th>
+                <th scope="col" class="text-right!">เสี่ยงสูง</th>
+                <th scope="col" class="text-right!">เสี่ยงปานกลาง</th>
+                <th scope="col" class="text-right!">เสี่ยงต่ำ</th>
+                <th scope="col" class="text-right!">รวม</th>
               </tr>
             </thead>
             <tbody>

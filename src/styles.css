@@ -49,11 +49,68 @@ input {
   font: inherit;
 }
 
+/* WCAG 2.1 AA — โฟกัสมองเห็นชัดสำหรับทุก interactive element (2.4.7)
+   ครอบคลุมลิงก์/ปุ่ม/ฟอร์ม/องค์ประกอบที่รับ tab (tabindex, role, summary) */
+a:focus-visible,
 select:focus-visible,
 input:focus-visible,
-button:focus-visible {
+textarea:focus-visible,
+button:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible,
+[role='button']:focus-visible,
+[role='tab']:focus-visible,
+[role='link']:focus-visible {
   outline: 2px solid #a67c27;
   outline-offset: 1px;
+  border-radius: 2px;
+}
+
+/* บนพื้นเข้ม (navy sidebar) ใช้เส้นขอบทองอ่อนให้ตัดกับพื้น */
+.bg-navy a:focus-visible,
+aside a:focus-visible {
+  outline-color: #f2c14e;
+  outline-offset: -2px;
+}
+
+/* Skip-to-content — ซ่อนจนกว่าจะโฟกัส (2.4.1 Bypass Blocks) */
+.skip-link {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  transform: translateY(-120%);
+  padding: 10px 18px;
+  background: #0b3164;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 14px;
+  border: 2px solid #f2c14e;
+  border-radius: 0 0 4px 0;
+  text-decoration: none;
+  transition: transform 0.15s ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+  outline: none;
+}
+
+/* main รับโฟกัสโปรแกรมได้ (จาก skip link) โดยไม่มีเส้นขอบรบกวน */
+[tabindex='-1']:focus {
+  outline: none;
+}
+
+/* เคารพผู้ใช้ที่ตั้งค่า ลด motion (2.3.3 / prefers-reduced-motion) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 .page-shell {

@@ -14,6 +14,7 @@ import { catchError, filter, map, of } from 'rxjs';
 
 import { ApiService } from '../core/api/api.service';
 import { AuthService } from '../core/auth/auth.service';
+import { I18nService } from '../core/i18n/i18n.service';
 import { ASSIGNMENT_ROLES } from '../core/auth/roles';
 import { SystemMeta } from '../core/models/domain.models';
 import { GuardrailBannerComponent } from '../shared/ui/guardrail-banner.component';
@@ -211,6 +212,7 @@ const NAV_GROUPS: NavGroup[] = [
     LucideKeyRound,
   ],
   template: `
+    <a class="skip-link" href="#main-content">{{ t('a11y.skipToContent') }}</a>
     <app-prototype-banner />
     <div class="flex min-h-screen bg-page text-ink">
       <aside class="hidden w-[264px] shrink-0 flex-col bg-navy text-white lg:flex">
@@ -223,7 +225,7 @@ const NAV_GROUPS: NavGroup[] = [
           </p>
         </div>
 
-        <nav class="flex flex-1 flex-col overflow-y-auto py-2.5">
+        <nav class="flex flex-1 flex-col overflow-y-auto py-2.5" [attr.aria-label]="t('a11y.mainNav')">
           @for (group of visibleNavGroups(); track group.id) {
             <div>
               <div class="flex flex-col pb-1.5">
@@ -232,6 +234,7 @@ const NAV_GROUPS: NavGroup[] = [
                     <div>
                       <a
                         [routerLink]="item.path"
+                        [attr.aria-current]="isActive(item.path) ? 'page' : null"
                         class="flex items-center gap-2.5 border-l-4 px-5 py-[11px] pl-[26px] text-sm font-semibold no-underline hover:bg-white/[.08]"
                         [class]="
                           isActiveGroup(item)
@@ -241,25 +244,25 @@ const NAV_GROUPS: NavGroup[] = [
                       >
                         @switch (item.code) {
                           @case ('F1') {
-                            <svg lucideLayoutDashboard class="size-[18px] shrink-0"></svg>
+                            <svg lucideLayoutDashboard class="size-[18px] shrink-0" aria-hidden="true"></svg>
                           }
                           @case ('F2') {
-                            <svg lucideLandmark class="size-[18px] shrink-0"></svg>
+                            <svg lucideLandmark class="size-[18px] shrink-0" aria-hidden="true"></svg>
                           }
                           @case ('F3') {
-                            <svg lucideFolderKanban class="size-[18px] shrink-0"></svg>
+                            <svg lucideFolderKanban class="size-[18px] shrink-0" aria-hidden="true"></svg>
                           }
                           @case ('F4') {
-                            <svg lucideClipboardList class="size-[18px] shrink-0"></svg>
+                            <svg lucideClipboardList class="size-[18px] shrink-0" aria-hidden="true"></svg>
                           }
                           @case ('F5') {
-                            <svg lucideMessageSquareText class="size-[18px] shrink-0"></svg>
+                            <svg lucideMessageSquareText class="size-[18px] shrink-0" aria-hidden="true"></svg>
                           }
                           @case ('F6') {
-                            <svg lucideShieldCheck class="size-[18px] shrink-0"></svg>
+                            <svg lucideShieldCheck class="size-[18px] shrink-0" aria-hidden="true"></svg>
                           }
                           @case ('A1') {
-                            <svg lucideKeyRound class="size-[18px] shrink-0"></svg>
+                            <svg lucideKeyRound class="size-[18px] shrink-0" aria-hidden="true"></svg>
                           }
                         }
                         <span>{{ item.label }}</span>
@@ -269,6 +272,7 @@ const NAV_GROUPS: NavGroup[] = [
                         @for (child of item.children; track child.path) {
                           <a
                             [routerLink]="child.path"
+                            [attr.aria-current]="isActive(child.path, child.exact) ? 'page' : null"
                             class="flex items-center gap-2 border-l-2 px-4 py-2 text-[13px] no-underline hover:bg-white/[.08]"
                             [class]="
                               isActive(child.path, child.exact)
@@ -276,7 +280,7 @@ const NAV_GROUPS: NavGroup[] = [
                                 : 'border-transparent text-[#c9d4e3]'
                             "
                           >
-                            <span>•</span>
+                            <span aria-hidden="true">•</span>
                             <span>{{ child.label }}</span>
                           </a>
                         }
@@ -285,6 +289,7 @@ const NAV_GROUPS: NavGroup[] = [
                   } @else {
                     <a
                       [routerLink]="item.path"
+                      [attr.aria-current]="isActive(item.path) ? 'page' : null"
                       class="flex items-center gap-2.5 border-l-4 px-5 py-[11px] pl-[26px] text-sm font-semibold no-underline hover:bg-white/[.08]"
                       [class]="
                         isActive(item.path)
@@ -294,25 +299,25 @@ const NAV_GROUPS: NavGroup[] = [
                     >
                       @switch (item.code) {
                         @case ('F1') {
-                          <svg lucideLayoutDashboard class="size-[18px] shrink-0"></svg>
+                          <svg lucideLayoutDashboard class="size-[18px] shrink-0" aria-hidden="true"></svg>
                         }
                         @case ('F2') {
-                          <svg lucideLandmark class="size-[18px] shrink-0"></svg>
+                          <svg lucideLandmark class="size-[18px] shrink-0" aria-hidden="true"></svg>
                         }
                         @case ('F3') {
-                          <svg lucideFolderKanban class="size-[18px] shrink-0"></svg>
+                          <svg lucideFolderKanban class="size-[18px] shrink-0" aria-hidden="true"></svg>
                         }
                         @case ('F4') {
-                          <svg lucideClipboardList class="size-[18px] shrink-0"></svg>
+                          <svg lucideClipboardList class="size-[18px] shrink-0" aria-hidden="true"></svg>
                         }
                         @case ('F5') {
-                          <svg lucideMessageSquareText class="size-[18px] shrink-0"></svg>
+                          <svg lucideMessageSquareText class="size-[18px] shrink-0" aria-hidden="true"></svg>
                         }
                         @case ('F6') {
-                          <svg lucideShieldCheck class="size-[18px] shrink-0"></svg>
+                          <svg lucideShieldCheck class="size-[18px] shrink-0" aria-hidden="true"></svg>
                         }
                         @case ('A1') {
-                          <svg lucideKeyRound class="size-[18px] shrink-0"></svg>
+                          <svg lucideKeyRound class="size-[18px] shrink-0" aria-hidden="true"></svg>
                         }
                       }
                       <span>{{ item.label }}</span>
@@ -348,9 +353,12 @@ const NAV_GROUPS: NavGroup[] = [
           class="flex flex-wrap items-center justify-between gap-4 border-b-2 border-navy bg-white px-4 py-3.5 lg:px-[30px]"
         >
           <div>
-            <p class="m-0 text-[12.5px] text-muted">
-              หน้าหลัก / <span class="font-bold text-navy">{{ currentPageLabel() }}</span>
-            </p>
+            <nav [attr.aria-label]="t('a11y.breadcrumb')">
+              <p class="m-0 text-[12.5px] text-muted">
+                หน้าหลัก /
+                <span class="font-bold text-navy" aria-current="page">{{ currentPageLabel() }}</span>
+              </p>
+            </nav>
             <p class="m-0 mt-1 text-[13px] font-semibold text-slate-700">
               แดชบอร์ดวิเคราะห์ความเสี่ยงงบประมาณท้องถิ่น
             </p>
@@ -380,7 +388,12 @@ const NAV_GROUPS: NavGroup[] = [
           </div>
         </header>
 
-        <main class="flex flex-1 flex-col gap-[22px] px-4 pb-[60px] pt-[26px] lg:px-[30px]">
+        <main
+          id="main-content"
+          tabindex="-1"
+          [attr.aria-label]="t('a11y.mainContent')"
+          class="flex flex-1 flex-col gap-[22px] px-4 pb-[60px] pt-[26px] lg:px-[30px]"
+        >
           <app-guardrail-banner />
           <router-outlet />
         </main>
@@ -390,6 +403,7 @@ const NAV_GROUPS: NavGroup[] = [
 })
 export class AppShellComponent {
   readonly auth = inject(AuthService);
+  protected readonly t = inject(I18nService).t;
   private readonly router = inject(Router);
   private readonly api = inject(ApiService);
 

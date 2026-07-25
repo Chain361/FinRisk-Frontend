@@ -43,7 +43,7 @@ interface ViewRow {
           <div class="flex flex-wrap gap-3.5">
             @for (item of legend(); track item.name) {
               <div class="flex items-center gap-1.5 text-xs text-slate-700">
-                <span class="inline-block size-3 rounded-[2px]" [style.background]="item.color"></span>
+                <span class="inline-block size-3 rounded-[2px]" [style.background]="item.color" aria-hidden="true"></span>
                 {{ item.name }}
               </div>
             }
@@ -51,7 +51,7 @@ interface ViewRow {
         }
       </div>
 
-      <div class="overflow-x-auto">
+      <div class="overflow-x-auto" aria-hidden="true">
         <div class="flex h-[200px] items-end gap-6 border-b-2 border-ink px-1" style="min-width: 100%;">
           @for (cat of viewCategories(); track cat.label) {
             <div class="flex h-full min-w-[60px] flex-1 flex-col items-center justify-end">
@@ -79,18 +79,19 @@ interface ViewRow {
 
       <div class="mt-4 overflow-x-auto">
         <table class="gov-table text-[12.5px]">
+          <caption class="sr-only">{{ t('a11y.chartTableCaption', { title: title() }) }}</caption>
           <thead>
             <tr>
-              <th>{{ rowHeader() || t('chart.rowHeaderDefault') }}</th>
+              <th scope="col">{{ rowHeader() || t('chart.rowHeaderDefault') }}</th>
               @for (header of categories(); track header) {
-                <th class="text-right!">{{ header }}</th>
+                <th scope="col" class="text-right!">{{ header }}</th>
               }
             </tr>
           </thead>
           <tbody>
             @for (row of tableRows(); track row.seriesName) {
               <tr>
-                <td class="font-bold">{{ row.seriesName }}</td>
+                <th scope="row" class="text-left! font-bold">{{ row.seriesName }}</th>
                 @for (cell of row.cells; track $index) {
                   <td class="text-right">{{ cell }}</td>
                 }

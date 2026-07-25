@@ -135,14 +135,14 @@ const PAGE_SIZE = 100;
             <table class="gov-table">
               <thead>
                 <tr>
-                  <th>เวลา</th>
-                  <th>ผู้ใช้</th>
-                  <th>บทบาท</th>
-                  <th>การกระทำ</th>
-                  <th>ประเภทข้อมูล</th>
-                  <th>เส้นทาง (endpoint)</th>
-                  <th class="text-right!">สถานะ</th>
-                  <th>IP</th>
+                  <th scope="col">เวลา</th>
+                  <th scope="col">ผู้ใช้</th>
+                  <th scope="col">บทบาท</th>
+                  <th scope="col">การกระทำ</th>
+                  <th scope="col">ประเภทข้อมูล</th>
+                  <th scope="col">เส้นทาง (endpoint)</th>
+                  <th scope="col" class="text-right!">สถานะ</th>
+                  <th scope="col">IP</th>
                 </tr>
               </thead>
               <tbody>

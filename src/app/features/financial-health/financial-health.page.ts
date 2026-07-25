@@ -293,9 +293,9 @@ interface IncomeStatementTotals {
             <table class="gov-table text-[13px]">
               <thead>
                 <tr>
-                  <th>ตัวชี้วัด</th>
-                  <th>วิธีการคำนวณ</th>
-                  <th>หน่วย</th>
+                  <th scope="col">ตัวชี้วัด</th>
+                  <th scope="col">วิธีการคำนวณ</th>
+                  <th scope="col">หน่วย</th>
                 </tr>
               </thead>
               <tbody>

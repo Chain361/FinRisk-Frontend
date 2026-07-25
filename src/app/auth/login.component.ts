@@ -19,7 +19,7 @@ import { LanguageToggleComponent } from '../shared/ui/language-toggle.component'
         </div>
         <div class="flex items-center gap-3">
           <div class="flex size-10 items-center justify-center rounded-[4px] bg-navy text-white">
-            <svg lucideShieldAlert class="size-5"></svg>
+            <svg lucideShieldAlert class="size-5" aria-hidden="true"></svg>
           </div>
           <div>
             <h1 class="m-0 text-lg font-extrabold text-ink">{{ t('login.title') }}</h1>
@@ -60,7 +60,7 @@ import { LanguageToggleComponent } from '../shared/ui/language-toggle.component'
             class="gov-btn-primary inline-flex h-11 items-center justify-center gap-2 disabled:cursor-not-allowed disabled:bg-slate-400"
             [disabled]="loading()"
           >
-            <svg lucideLogIn class="size-4"></svg>
+            <svg lucideLogIn class="size-4" aria-hidden="true"></svg>
             {{ loading() ? t('login.submitting') : t('login.submit') }}
           </button>
         </form>

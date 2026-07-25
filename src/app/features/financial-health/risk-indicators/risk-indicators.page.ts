@@ -103,9 +103,9 @@ import { FinancialHealthStateService } from '../financial-health-state.service';
             <table class="gov-table text-[13px]">
               <thead>
                 <tr>
-                  <th>{{ t('fh.metric') }}</th>
-                  <th>{{ t('fhRiskInd.colMethod') }}</th>
-                  <th>{{ t('fhRiskInd.colUnit') }}</th>
+                  <th scope="col">{{ t('fh.metric') }}</th>
+                  <th scope="col">{{ t('fhRiskInd.colMethod') }}</th>
+                  <th scope="col">{{ t('fhRiskInd.colUnit') }}</th>
                 </tr>
               </thead>
               <tbody>

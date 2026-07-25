@@ -39,6 +39,20 @@ export const th: Record<string, string> = {
   'common.prev': 'ก่อนหน้า',
   'common.next': 'ถัดไป',
 
+  // ---- a11y (ป้ายกำกับสำหรับ screen reader / มาตรฐานเว็บภาครัฐ) ----
+  'a11y.skipToContent': 'ข้ามไปยังเนื้อหาหลัก',
+  'a11y.mainNav': 'เมนูนำทางหลัก',
+  'a11y.mainContent': 'เนื้อหาหลัก',
+  'a11y.breadcrumb': 'เส้นทางหน้า',
+  'a11y.userAccount': 'บัญชีผู้ใช้งาน',
+  'a11y.closeDialog': 'ปิดหน้าต่าง',
+  'a11y.currentPageLabel': 'หน้าปัจจุบัน',
+  'a11y.chartTableCaption': 'ตารางข้อมูลของแผนภูมิ: {title}',
+  'a11y.chartRegion': 'แผนภูมิ: {title}',
+  'a11y.riskMatrixActive': 'ตารางความเสี่ยง โอกาส {likelihood} ผลกระทบ {impact} คะแนน {score} ระดับ {band}',
+  'a11y.riskMatrixEmpty': 'ตารางความเสี่ยง 5 คูณ 5 (ยังไม่มีค่าที่เลือก)',
+  'a11y.tooltipToggle': 'แสดง/ซ่อนคำอธิบายเพิ่มเติม',
+
   // ---- risk levels (โครงการ) ----
   'risk.level.high': 'เสี่ยงสูง',
   'risk.level.medium': 'เสี่ยงปานกลาง',

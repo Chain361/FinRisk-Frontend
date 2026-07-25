@@ -109,14 +109,14 @@ interface AssignmentHistoryRow {
             <table class="gov-table min-w-[1180px]">
               <thead>
                 <tr>
-                  <th class="w-[116px]">วันที่มอบหมาย</th>
-                  <th class="w-[390px]">โครงการ</th>
-                  <th class="w-[128px]">Due date</th>
-                  <th class="w-[140px]">ผู้รับมอบหมาย</th>
-                  <th class="w-[112px]">ความเสี่ยง</th>
-                  <th>คำแนะนำ</th>
+                  <th scope="col" class="w-[116px]">วันที่มอบหมาย</th>
+                  <th scope="col" class="w-[390px]">โครงการ</th>
+                  <th scope="col" class="w-[128px]">Due date</th>
+                  <th scope="col" class="w-[140px]">ผู้รับมอบหมาย</th>
+                  <th scope="col" class="w-[112px]">ความเสี่ยง</th>
+                  <th scope="col">คำแนะนำ</th>
                   @if (canDeleteHistory()) {
-                    <th class="w-[92px] text-right">จัดการ</th>
+                    <th scope="col" class="w-[92px] text-right">จัดการ</th>
                   }
                 </tr>
               </thead>

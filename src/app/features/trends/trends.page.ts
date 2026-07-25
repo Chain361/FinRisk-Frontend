@@ -109,10 +109,10 @@ interface Anomaly {
             <table class="gov-table">
               <thead>
                 <tr>
-                  <th>{{ t('trends.repeated.colItem') }}</th>
-                  <th>{{ t('trends.repeated.colYears') }}</th>
-                  <th class="text-right!">{{ t('trends.repeated.colCount') }}</th>
-                  <th class="text-right!">{{ t('trends.repeated.colBudget') }}</th>
+                  <th scope="col">{{ t('trends.repeated.colItem') }}</th>
+                  <th scope="col">{{ t('trends.repeated.colYears') }}</th>
+                  <th scope="col" class="text-right!">{{ t('trends.repeated.colCount') }}</th>
+                  <th scope="col" class="text-right!">{{ t('trends.repeated.colBudget') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -179,12 +179,12 @@ interface Anomaly {
             <table class="gov-table min-w-[900px]">
               <thead>
                 <tr>
-                  <th>{{ t('common.project') }}</th>
-                  <th>{{ t('common.year') }}</th>
-                  <th>{{ t('common.level') }}</th>
-                  <th class="text-right!">{{ t('trends.anomaly.colScore') }}</th>
-                  <th class="text-right!">{{ t('trends.anomaly.colRatio') }}</th>
-                  <th>{{ t('common.reason') }}</th>
+                  <th scope="col">{{ t('common.project') }}</th>
+                  <th scope="col">{{ t('common.year') }}</th>
+                  <th scope="col">{{ t('common.level') }}</th>
+                  <th scope="col" class="text-right!">{{ t('trends.anomaly.colScore') }}</th>
+                  <th scope="col" class="text-right!">{{ t('trends.anomaly.colRatio') }}</th>
+                  <th scope="col">{{ t('common.reason') }}</th>
                 </tr>
               </thead>
               <tbody>

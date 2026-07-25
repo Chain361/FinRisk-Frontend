@@ -106,11 +106,11 @@ import {
               <table class="min-w-full divide-y divide-slate-200 text-sm">
                 <thead class="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500">
                   <tr>
-                    <th class="px-4 py-3">โครงการ</th>
-                    <th class="px-4 py-3">ปี</th>
-                    <th class="px-4 py-3 text-right">คะแนนความเสี่ยง</th>
-                    <th class="px-4 py-3">สถานะความคิดเห็น</th>
-                    <th class="px-4 py-3">วันที่ตรวจล่าสุด</th>
+                    <th scope="col" class="px-4 py-3">โครงการ</th>
+                    <th scope="col" class="px-4 py-3">ปี</th>
+                    <th scope="col" class="px-4 py-3 text-right">คะแนนความเสี่ยง</th>
+                    <th scope="col" class="px-4 py-3">สถานะความคิดเห็น</th>
+                    <th scope="col" class="px-4 py-3">วันที่ตรวจล่าสุด</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 bg-white">
@@ -515,14 +515,14 @@ import {
                           class="bg-slate-50 text-right text-xs font-semibold uppercase text-slate-500"
                         >
                           <tr>
-                            <th class="px-3 py-2.5 text-left">วันที่ตรวจ</th>
-                            <th class="px-3 py-2.5">ผู้ตรวจสอบ</th>
-                            <th class="px-3 py-2.5">ความคิดเห็น</th>
-                            <th class="px-3 py-2.5">ระดับความกังวล</th>
-                            <th class="px-3 py-2.5">ข้อเสนอแนะ</th>
-                            <th class="px-3 py-2.5">คะแนนความเสี่ยง</th>
-                            <th class="px-3 py-2.5">สถานะ</th>
-                            <th class="px-3 py-2.5"></th>
+                            <th scope="col" class="px-3 py-2.5 text-left">วันที่ตรวจ</th>
+                            <th scope="col" class="px-3 py-2.5">ผู้ตรวจสอบ</th>
+                            <th scope="col" class="px-3 py-2.5">ความคิดเห็น</th>
+                            <th scope="col" class="px-3 py-2.5">ระดับความกังวล</th>
+                            <th scope="col" class="px-3 py-2.5">ข้อเสนอแนะ</th>
+                            <th scope="col" class="px-3 py-2.5">คะแนนความเสี่ยง</th>
+                            <th scope="col" class="px-3 py-2.5">สถานะ</th>
+                            <th scope="col" class="px-3 py-2.5"></th>
                           </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 bg-white">

@@ -18,7 +18,7 @@ import { I18nService } from '../../core/i18n/i18n.service';
         class="flex items-center gap-2.5 border-b border-white/15 bg-navy px-4 py-2 text-white lg:px-[30px]"
         role="status"
       >
-        <svg lucideFlaskConical class="size-4 shrink-0 text-gold"></svg>
+        <svg lucideFlaskConical class="size-4 shrink-0 text-gold" aria-hidden="true"></svg>
         <p class="m-0 flex-1 text-[12.5px] leading-snug">
           <span class="font-bold">{{ t('banner.prototype.label') }}</span>
           {{ t('banner.prototype.text') }}
@@ -29,7 +29,7 @@ import { I18nService } from '../../core/i18n/i18n.service';
           [attr.aria-label]="t('banner.prototype.close')"
           (click)="visible.set(false)"
         >
-          <svg lucideX class="size-4"></svg>
+          <svg lucideX class="size-4" aria-hidden="true"></svg>
         </button>
       </div>
     }

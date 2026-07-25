@@ -61,7 +61,7 @@ const DATA_SOURCES: DataSourceEntry[] = [
       </div>
 
       <div class="flex flex-wrap items-center gap-2.5 rounded-[4px] border-[1.5px] border-line bg-white px-4 py-3">
-        <svg lucideDatabase class="size-4 text-navy"></svg>
+        <svg lucideDatabase class="size-4 text-navy" aria-hidden="true"></svg>
         <span class="text-[13px] text-slate-700">
           ข้อมูลรวมของระบบ ณ วันที่ <span class="font-bold text-navy">{{ dataAsOf() }}</span>
           @if (fiscalYearRange()) {
@@ -75,12 +75,12 @@ const DATA_SOURCES: DataSourceEntry[] = [
           <table class="gov-table w-full">
             <thead>
               <tr>
-                <th>แหล่งข้อมูล</th>
-                <th>หน่วยงานเจ้าของข้อมูล</th>
-                <th>ช่วงเวลาที่ครอบคลุม</th>
-                <th>ความถี่การอัปเดต</th>
-                <th>ปรับปรุงล่าสุด</th>
-                <th>ผู้รับรองความถูกต้อง</th>
+                <th scope="col">แหล่งข้อมูล</th>
+                <th scope="col">หน่วยงานเจ้าของข้อมูล</th>
+                <th scope="col">ช่วงเวลาที่ครอบคลุม</th>
+                <th scope="col">ความถี่การอัปเดต</th>
+                <th scope="col">ปรับปรุงล่าสุด</th>
+                <th scope="col">ผู้รับรองความถูกต้อง</th>
               </tr>
             </thead>
             <tbody>

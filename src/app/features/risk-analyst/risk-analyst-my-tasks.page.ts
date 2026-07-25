@@ -144,11 +144,11 @@ interface MyTaskRow {
             <table class="gov-table min-w-[1000px]">
               <thead>
                 <tr>
-                  <th>สถานะ</th>
-                  <th>โครงการ</th>
-                  <th>ผู้มอบหมาย</th>
-                  <th>รายละเอียดงาน</th>
-                  <th></th>
+                  <th scope="col">สถานะ</th>
+                  <th scope="col">โครงการ</th>
+                  <th scope="col">ผู้มอบหมาย</th>
+                  <th scope="col">รายละเอียดงาน</th>
+                  <th scope="col"><span class="sr-only">การดำเนินการ</span></th>
                 </tr>
               </thead>
               <tbody>
