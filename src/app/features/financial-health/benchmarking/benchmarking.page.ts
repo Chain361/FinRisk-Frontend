@@ -1,5 +1,6 @@
 import { Component, inject, OnInit } from '@angular/core';
 
+import { I18nService } from '../../../core/i18n/i18n.service';
 import { BarChartComponent } from '../../../shared/charts/bar-chart.component';
 import { FilterBarComponent } from '../../../shared/filters/filter-bar.component';
 import { EmptyStateComponent } from '../../../shared/ui/empty-state.component';
@@ -11,16 +12,13 @@ import {
 @Component({
   selector: 'app-benchmarking-page',
   standalone: true,
-  imports: [
-    BarChartComponent,
-    EmptyStateComponent,
-    FilterBarComponent,
-  ],
+  imports: [BarChartComponent, EmptyStateComponent, FilterBarComponent],
   template: `
     <section class="page-shell">
       <div>
         <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F2.2</p>
-        <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">เปรียบเทียบสถานะการคลัง</h1>
+        <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">{{ t('fhBench.title') }}</h1>
+        <p class="m-0 mt-1.5 text-sm text-muted">{{ t('fhBench.subtitle') }}</p>
       </div>
 
       <app-filter-bar
@@ -44,29 +42,29 @@ import {
       <section class="panel p-[18px]">
         <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 class="m-0 text-[16px] font-bold text-ink">เปรียบเทียบตัวชี้วัดข้ามตำบล</h2>
+            <h2 class="m-0 text-[16px] font-bold text-ink">{{ t('fhBench.crossTitle') }}</h2>
             <p class="m-0 mt-1 text-[13px] text-muted">
-              เปรียบเทียบตัวชี้วัดสุขภาพการคลังของทุกตำบลในปี {{ selectedYear() ?? 'ทุกปี' }}
+              {{ t('fhBench.crossSubtitle', { year: selectedYear() ?? t('filter.allYears') }) }}
             </p>
           </div>
 
           <div class="flex flex-wrap items-end gap-3.5">
             <label class="block">
-              <span class="text-[12.5px] font-bold text-muted mr-3">ตัวชี้วัด</span>
+              <span class="text-[12.5px] font-bold text-muted mr-3">{{ t('fh.metric') }}</span>
               <select
                 class="gov-select mt-[5px] w-auto!"
                 [value]="comparisonMetric()"
                 (change)="setComparisonMetric($any($event.target).value)"
               >
-                <option value="netAssets">สินทรัพย์สุทธิ</option>
-                <option value="netIncome">ผลสุทธิ</option>
-                <option value="riskFactor">Risk Factor รายปี</option>
+                <option value="netAssets">{{ t('fh.metricNetAssets') }}</option>
+                <option value="netIncome">{{ t('fh.metricNetIncome') }}</option>
+                <option value="riskFactor">{{ t('fh.metricRiskFactorOption') }}</option>
               </select>
             </label>
 
             @if (comparisonMetric() === 'riskFactor') {
               <label class="block">
-                <span class="text-[12.5px] font-bold text-muted ml-3 mr-3">ปัจจัย</span>
+                <span class="text-[12.5px] font-bold text-muted ml-3 mr-3">{{ t('fh.factorLabel') }}</span>
                 <select
                   class="gov-select mt-[5px] w-auto!"
                   [value]="comparisonFactorCode() ?? ''"
@@ -83,8 +81,8 @@ import {
 
         @if (comparisonCategories().length) {
           <app-bar-chart
-            [title]="'เปรียบเทียบ' + comparisonMetricLabel() + 'ข้ามตำบล'"
-            [subtitle]="'ตัวชี้วัด: ' + comparisonMetricLabel()"
+            [title]="t('fh.compare.title', { metric: comparisonMetricLabel() })"
+            [subtitle]="t('fh.compare.subtitle', { metric: comparisonMetricLabel() })"
             [categories]="comparisonCategories()"
             [series]="comparisonBarSeries()"
             [unitSuffix]="comparisonUnit()"
@@ -93,8 +91,8 @@ import {
           />
         } @else {
           <app-empty-state
-            title="ไม่พบข้อมูลสำหรับเปรียบเทียบ"
-            message="ลองเลือกปีหรือตัวชี้วัดอื่น"
+            [title]="t('fhBench.emptyTitle')"
+            [message]="t('fhBench.emptyMsg')"
           />
         }
       </section>
@@ -103,6 +101,8 @@ import {
 })
 export class BenchmarkingPageComponent implements OnInit {
   private readonly state = inject(FinancialHealthStateService);
+  private readonly i18n = inject(I18nService);
+  protected readonly t = this.i18n.t;
 
   readonly error = this.state.error;
   readonly subdistricts = this.state.subdistricts;

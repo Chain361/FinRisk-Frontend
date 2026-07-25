@@ -261,6 +261,46 @@ export interface CreateAssignmentRequest {
 export type FeedbackStatus = 'draft' | 'submitted' | 'resolved';
 export type ConcernLevel = 'low' | 'medium' | 'high';
 
+export const FEEDBACK_STATUS_LABELS: Record<FeedbackStatus, string> = {
+  draft: 'แบบร่าง',
+  submitted: 'ส่งแล้ว',
+  resolved: 'ปิดเรื่องแล้ว',
+};
+
+export const CONCERN_LEVEL_OPTIONS: ReadonlyArray<{
+  value: ConcernLevel;
+  label: string;
+  hint: string;
+}> = [
+  { value: 'low', label: 'ต่ำ', hint: 'มีข้อสังเกตเล็กน้อย ติดตามตามรอบปกติ' },
+  { value: 'medium', label: 'ปานกลาง', hint: 'ควรตรวจสอบเอกสารหรือบริบทเพิ่มเติม' },
+  { value: 'high', label: 'สูง', hint: 'ควรเร่งตรวจสอบและบันทึกหลักฐานประกอบ' },
+];
+
+export const LIKELIHOOD_OPTIONS: ReadonlyArray<{
+  value: number;
+  label: string;
+  hint: string;
+}> = [
+  { value: 1, label: '1', hint: 'พบได้น้อยมาก' },
+  { value: 2, label: '2', hint: 'พบได้น้อย' },
+  { value: 3, label: '3', hint: 'มีโอกาสเกิดปานกลาง' },
+  { value: 4, label: '4', hint: 'มีโอกาสเกิดสูง' },
+  { value: 5, label: '5', hint: 'มีโอกาสเกิดสูงมากหรือพบสัญญาณชัดเจน' },
+];
+
+export const IMPACT_OPTIONS: ReadonlyArray<{
+  value: number;
+  label: string;
+  hint: string;
+}> = [
+  { value: 1, label: '1', hint: 'ผลกระทบต่ำมาก' },
+  { value: 2, label: '2', hint: 'ผลกระทบต่ำ' },
+  { value: 3, label: '3', hint: 'ผลกระทบปานกลาง' },
+  { value: 4, label: '4', hint: 'ผลกระทบสูง' },
+  { value: 5, label: '5', hint: 'ผลกระทบสูงมาก ต้องติดตามใกล้ชิด' },
+];
+
 export interface AuditorFeedback {
   feedback_id: number;
   project_id: string;

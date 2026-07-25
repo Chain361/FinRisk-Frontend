@@ -1,3 +1,4 @@
+import { AuditorFeedback } from '../../core/models/domain.models';
 import { toNumber } from './risk-utils';
 
 /** ป้ายสถานะความเห็นผู้ตรวจสอบ (F5/F6) */
@@ -82,4 +83,36 @@ export function formatFeedbackDate(value: string | null | undefined): string {
     hour: '2-digit',
     minute: '2-digit',
   }).format(date);
+}
+
+/** feedback ล่าสุดของแต่ละโครงการ จาก list ที่โหลดมาแล้ว (ใหม่สุดตาม updated_at) */
+export function latestOf(
+  records: AuditorFeedback[],
+  projectId: string | number,
+): AuditorFeedback | null {
+  const id = String(projectId);
+  return (
+    records
+      .filter((record) => record.project_id === id)
+      .sort((a, b) => b.updated_at.localeCompare(a.updated_at))[0] ?? null
+  );
+}
+
+/** ฉบับที่ auditor คนนี้กำลังทำอยู่สำหรับโครงการนี้ (ยังไม่ resolved) */
+export function activeOf(
+  records: AuditorFeedback[],
+  projectId: string | number,
+  username: string,
+): AuditorFeedback | null {
+  const id = String(projectId);
+  return (
+    records
+      .filter(
+        (record) =>
+          record.project_id === id &&
+          record.auditor_username === username &&
+          record.status !== 'resolved',
+      )
+      .sort((a, b) => b.updated_at.localeCompare(a.updated_at))[0] ?? null
+  );
 }

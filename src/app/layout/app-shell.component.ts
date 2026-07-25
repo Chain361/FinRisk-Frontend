@@ -1,10 +1,20 @@
 import { Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
+import {
+  LucideClipboardList,
+  LucideFolderKanban,
+  LucideKeyRound,
+  LucideLandmark,
+  LucideLayoutDashboard,
+  LucideMessageSquareText,
+  LucideShieldCheck,
+} from '@lucide/angular';
 import { catchError, filter, map, of } from 'rxjs';
 
 import { ApiService } from '../core/api/api.service';
 import { AuthService } from '../core/auth/auth.service';
+import { ASSIGNMENT_ROLES } from '../core/auth/roles';
 import { SystemMeta } from '../core/models/domain.models';
 import { GuardrailBannerComponent } from '../shared/ui/guardrail-banner.component';
 import { PrototypeBannerComponent } from '../shared/ui/prototype-banner.component';
@@ -119,19 +129,25 @@ const NAV_GROUPS: NavGroup[] = [
             label: 'ตรวจทานงานที่ส่งกลับมา',
             path: '/assignment-project-auditor/review',
           },
+          {
+            code: 'F4.4',
+            label: 'งานที่ได้รับมอบหมาย',
+            path: '/risk-analyst/my-tasks',
+            roles: [...ASSIGNMENT_ROLES],
+          },
         ],
       },
-    ],
-  },
-  {
-    id: 'admin',
-    label: 'ผู้ดูแลระบบ',
-    items: [
       {
-        code: 'A1',
-        label: 'บันทึกการเข้าถึงระบบ',
-        path: '/admin/access-log',
-        roles: ['admin'], // เห็นเฉพาะ admin — ตรงกับ roleGuard('admin') ที่ route
+        code: 'F5',
+        label: 'แบบฟอร์มบันทึกความคิดเห็น',
+        path: '/risk-analyst-feedback',
+        roles: [
+          'admin',
+          'regional_supervisor',
+          'local_executive',
+          'project_auditor',
+          'risk_analyst',
+        ],
       },
     ],
   },
@@ -148,12 +164,52 @@ const NAV_GROUPS: NavGroup[] = [
       },
     ],
   },
+  {
+    id: 'admin',
+    label: 'ผู้ดูแลระบบ',
+    items: [
+      {
+        code: 'A1',
+        label: 'บันทึกการเข้าถึงระบบ',
+        path: '/admin/access-log',
+        roles: ['admin'], // เห็นเฉพาะ admin — ตรงกับ roleGuard('admin') ที่ route
+      },
+    ],
+  },
+  {
+    id: 'transparency',
+    label: 'ความโปร่งใส & ติดต่อ',
+    items: [
+      {
+        code: 'T1',
+        label: 'ที่มาของข้อมูล',
+        path: '/data-sources',
+      },
+      {
+        code: 'T2',
+        label: 'ติดต่อ / แจ้งข้อมูลไม่ถูกต้อง',
+        path: '/contact',
+      },
+    ],
+  },
 ];
 
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, GuardrailBannerComponent, PrototypeBannerComponent],
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    GuardrailBannerComponent,
+    PrototypeBannerComponent,
+    LucideLayoutDashboard,
+    LucideLandmark,
+    LucideFolderKanban,
+    LucideClipboardList,
+    LucideMessageSquareText,
+    LucideShieldCheck,
+    LucideKeyRound,
+  ],
   template: `
     <app-prototype-banner />
     <div class="flex min-h-screen bg-page text-ink">
@@ -178,12 +234,34 @@ const NAV_GROUPS: NavGroup[] = [
                         [routerLink]="item.path"
                         class="flex items-center gap-2.5 border-l-4 px-5 py-[11px] pl-[26px] text-sm font-semibold no-underline hover:bg-white/[.08]"
                         [class]="
-                          isActive(item.path)
+                          isActiveGroup(item)
                             ? 'border-gold bg-white/10 text-white'
                             : 'border-transparent text-[#e6ecf5]'
                         "
                       >
-                        <span class="text-[12.5px] opacity-85">{{ item.code }}</span>
+                        @switch (item.code) {
+                          @case ('F1') {
+                            <svg lucideLayoutDashboard class="size-[18px] shrink-0"></svg>
+                          }
+                          @case ('F2') {
+                            <svg lucideLandmark class="size-[18px] shrink-0"></svg>
+                          }
+                          @case ('F3') {
+                            <svg lucideFolderKanban class="size-[18px] shrink-0"></svg>
+                          }
+                          @case ('F4') {
+                            <svg lucideClipboardList class="size-[18px] shrink-0"></svg>
+                          }
+                          @case ('F5') {
+                            <svg lucideMessageSquareText class="size-[18px] shrink-0"></svg>
+                          }
+                          @case ('F6') {
+                            <svg lucideShieldCheck class="size-[18px] shrink-0"></svg>
+                          }
+                          @case ('A1') {
+                            <svg lucideKeyRound class="size-[18px] shrink-0"></svg>
+                          }
+                        }
                         <span>{{ item.label }}</span>
                       </a>
 
@@ -214,7 +292,29 @@ const NAV_GROUPS: NavGroup[] = [
                           : 'border-transparent text-[#e6ecf5]'
                       "
                     >
-                      <span class="text-[12.5px] opacity-85">{{ item.code }}</span>
+                      @switch (item.code) {
+                        @case ('F1') {
+                          <svg lucideLayoutDashboard class="size-[18px] shrink-0"></svg>
+                        }
+                        @case ('F2') {
+                          <svg lucideLandmark class="size-[18px] shrink-0"></svg>
+                        }
+                        @case ('F3') {
+                          <svg lucideFolderKanban class="size-[18px] shrink-0"></svg>
+                        }
+                        @case ('F4') {
+                          <svg lucideClipboardList class="size-[18px] shrink-0"></svg>
+                        }
+                        @case ('F5') {
+                          <svg lucideMessageSquareText class="size-[18px] shrink-0"></svg>
+                        }
+                        @case ('F6') {
+                          <svg lucideShieldCheck class="size-[18px] shrink-0"></svg>
+                        }
+                        @case ('A1') {
+                          <svg lucideKeyRound class="size-[18px] shrink-0"></svg>
+                        }
+                      }
                       <span>{{ item.label }}</span>
                     </a>
                   }
@@ -228,8 +328,18 @@ const NAV_GROUPS: NavGroup[] = [
           <p class="m-0 text-xs text-[#9fb0c8]">ข้อมูลจากระบบ FinRisk Backend</p>
           <p class="m-0 mt-1 text-xs text-[#9fb0c8]">ข้อมูล ณ วันที่: {{ dataAsOf() }}</p>
           @if (fiscalYearRange()) {
-            <p class="m-0 mt-1 text-xs text-[#9fb0c8]">ครอบคลุมปีงบประมาณ {{ fiscalYearRange() }}</p>
+            <p class="m-0 mt-1 text-xs text-[#9fb0c8]">
+              ครอบคลุมปีงบประมาณ {{ fiscalYearRange() }}
+            </p>
           }
+          <div class="mt-2.5 flex flex-col gap-1 border-t border-white/10 pt-2.5">
+            <a routerLink="/data-sources" class="text-xs text-[#c9d4e3] no-underline hover:text-white hover:underline">
+              ที่มาของข้อมูล
+            </a>
+            <a routerLink="/contact" class="text-xs text-[#c9d4e3] no-underline hover:text-white hover:underline">
+              ติดต่อ / แจ้งข้อมูลไม่ถูกต้อง
+            </a>
+          </div>
         </div>
       </aside>
 
@@ -352,6 +462,15 @@ export class AppShellComponent {
 
   isActive(path: string, exact = false): boolean {
     return this.matchesUrl(this.currentUrl(), path, exact);
+  }
+
+  /** header ของกลุ่มติดไฮไลต์ด้วย ถ้า path ตัวเองตรง หรือ child คนไหนคนหนึ่งกำลังเปิดอยู่
+   * (child บาง path เช่น F4.4 อยู่คนละ prefix กับ item.path ของ header จึงต้องเช็คแยก) */
+  isActiveGroup(item: NavItem): boolean {
+    if (this.isActive(item.path)) {
+      return true;
+    }
+    return !!item.children?.some((child) => this.isActive(child.path, child.exact));
   }
 
   private matchesUrl(url: string, path: string, exact = false): boolean {

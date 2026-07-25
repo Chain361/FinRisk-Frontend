@@ -1,6 +1,7 @@
 import { Component, inject, input, output } from '@angular/core';
 
 import { AuthService } from '../../core/auth/auth.service';
+import { I18nService } from '../../core/i18n/i18n.service';
 import { Subdistrict } from '../../core/models/domain.models';
 import { FISCAL_YEARS, subdistrictLabel } from '../utils/risk-utils';
 
@@ -11,11 +12,11 @@ import { FISCAL_YEARS, subdistrictLabel } from '../utils/risk-utils';
     <div class="grid gap-3.5 rounded-[4px] border-[1.5px] border-line bg-white px-[18px] py-4 sm:grid-cols-2 lg:grid-cols-4">
       @if (showSearch()) {
         <label class="block sm:col-span-2">
-          <span class="text-[12.5px] font-bold text-muted">ค้นหาโครงการ</span>
+          <span class="text-[12.5px] font-bold text-muted">{{ t('filter.searchLabel') }}</span>
           <input
             type="search"
             class="gov-input mt-[5px]"
-            [placeholder]="searchPlaceholder()"
+            [placeholder]="searchPlaceholder() || t('filter.searchPlaceholder')"
             [value]="searchValue()"
             (input)="searchChange.emit($any($event.target).value)"
           />
@@ -24,9 +25,9 @@ import { FISCAL_YEARS, subdistrictLabel } from '../utils/risk-utils';
 
       <label class="block">
         <span class="text-[12.5px] font-bold text-muted">
-          ตำบล
+          {{ t('filter.subdistrict') }}
           @if (scopeLocked()) {
-            <span class="ml-1 font-bold text-[#8a2a1f]">(ล็อกตามสิทธิ์ของคุณ)</span>
+            <span class="ml-1 font-bold text-[#8a2a1f]">{{ t('filter.scopeLocked') }}</span>
           }
         </span>
         @if (scopeLocked()) {
@@ -40,7 +41,7 @@ import { FISCAL_YEARS, subdistrictLabel } from '../utils/risk-utils';
             [value]="selectedSubdistrictId() ?? 'all'"
             (change)="onSubdistrictChange($any($event.target).value)"
           >
-            <option value="all">ทุกตำบลที่มีสิทธิ์</option>
+            <option value="all">{{ t('filter.allSubdistricts') }}</option>
             @for (subdistrict of subdistricts(); track subdistrict.subdistrict_id) {
               <option [value]="subdistrict.subdistrict_id">{{ labelFor(subdistrict) }}</option>
             }
@@ -50,13 +51,13 @@ import { FISCAL_YEARS, subdistrictLabel } from '../utils/risk-utils';
 
       @if (showYearFilter()) {
         <label class="block">
-          <span class="text-[12.5px] font-bold text-muted">ปีงบประมาณ</span>
+          <span class="text-[12.5px] font-bold text-muted">{{ t('filter.year') }}</span>
           <select
             class="gov-select mt-[5px]"
             [value]="selectedYear() ?? 'all'"
             (change)="onYearChange($any($event.target).value)"
           >
-            <option value="all">ทุกปี</option>
+            <option value="all">{{ t('filter.allYears') }}</option>
             @for (year of yearOptions(); track year) {
               <option [value]="year">{{ year }}</option>
             }
@@ -66,29 +67,29 @@ import { FISCAL_YEARS, subdistrictLabel } from '../utils/risk-utils';
 
       @if (showRiskFilter()) {
         <label class="block">
-          <span class="text-[12.5px] font-bold text-muted">ระดับความเสี่ยง</span>
+          <span class="text-[12.5px] font-bold text-muted">{{ t('filter.riskLevel') }}</span>
           <select
             class="gov-select mt-[5px]"
             [value]="selectedRiskLevel() ?? 'all'"
             (change)="onRiskChange($any($event.target).value)"
           >
-            <option value="all">ทุกระดับ</option>
-            <option value="high">เสี่ยงสูง</option>
-            <option value="medium">เสี่ยงปานกลาง</option>
-            <option value="low">เสี่ยงต่ำ</option>
+            <option value="all">{{ t('filter.allRiskLevels') }}</option>
+            <option value="high">{{ t('risk.level.high') }}</option>
+            <option value="medium">{{ t('risk.level.medium') }}</option>
+            <option value="low">{{ t('risk.level.low') }}</option>
           </select>
         </label>
       }
 
       @if (showProjectTypeFilter()) {
         <label class="block">
-          <span class="text-xs font-semibold text-slate-500">ประเภทโครงการ</span>
+          <span class="text-xs font-semibold text-slate-500">{{ t('filter.projectType') }}</span>
           <select
             class="mt-1 h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-900"
             [value]="selectedProjectType() ?? 'all'"
             (change)="onProjectTypeChange($any($event.target).value)"
           >
-            <option value="all">ทุกประเภท</option>
+            <option value="all">{{ t('filter.allProjectTypes') }}</option>
             @for (type of projectTypes(); track type) {
               <option [value]="type">{{ type }}</option>
             }
@@ -99,7 +100,7 @@ import { FISCAL_YEARS, subdistrictLabel } from '../utils/risk-utils';
       @if (showBudgetScopeFilter()) {
         <div class="grid gap-3 sm:grid-cols-2 lg:col-span-2">
           <label class="block">
-            <span class="text-xs font-semibold text-slate-500">งบประมาณตั้งแต่</span>
+            <span class="text-xs font-semibold text-slate-500">{{ t('filter.budgetFrom') }}</span>
             <input
               type="number"
               inputmode="numeric"
@@ -112,7 +113,7 @@ import { FISCAL_YEARS, subdistrictLabel } from '../utils/risk-utils';
           </label>
 
           <label class="block">
-            <span class="text-xs font-semibold text-slate-500">ถึง</span>
+            <span class="text-xs font-semibold text-slate-500">{{ t('filter.budgetTo') }}</span>
             <input
               type="number"
               inputmode="numeric"
@@ -132,7 +133,7 @@ import { FISCAL_YEARS, subdistrictLabel } from '../utils/risk-utils';
           class="inline-flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-[3px] border-[1.5px] border-line bg-white px-3 text-[13.5px] font-bold text-slate-700 hover:bg-zebra"
           (click)="reset.emit()"
         >
-          ↺ รีเซ็ตตัวกรอง
+          ↺ {{ t('filter.reset') }}
         </button>
       </div>
     </div>
@@ -140,6 +141,8 @@ import { FISCAL_YEARS, subdistrictLabel } from '../utils/risk-utils';
 })
 export class FilterBarComponent {
   private readonly auth = inject(AuthService);
+  private readonly i18n = inject(I18nService);
+  protected readonly t = this.i18n.t;
 
   readonly subdistricts = input<Subdistrict[]>([]);
   readonly selectedSubdistrictId = input<number | null>(null);
@@ -155,7 +158,7 @@ export class FilterBarComponent {
   readonly yearOptions = input<readonly number[]>(FISCAL_YEARS);
   readonly showSearch = input(false);
   readonly searchValue = input('');
-  readonly searchPlaceholder = input('ค้นหาชื่อโครงการ หรือ Project ID');
+  readonly searchPlaceholder = input('');
   readonly projectTypes = input<readonly string[]>([]);
 
   readonly selectedSubdistrictIdChange = output<number | null>();
@@ -178,7 +181,7 @@ export class FilterBarComponent {
 
   lockedSubdistrictLabel(): string {
     const rows = this.subdistricts();
-    return rows.length ? subdistrictLabel(rows[0]) : 'ตำบลของคุณ';
+    return rows.length ? subdistrictLabel(rows[0]) : this.t('filter.yourSubdistrict');
   }
 
   onSubdistrictChange(value: string): void {

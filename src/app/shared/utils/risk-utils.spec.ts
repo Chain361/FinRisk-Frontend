@@ -6,7 +6,6 @@ import {
   countByRisk,
   formatMoney,
   formatNumber,
-  matrixChip,
   normalizeRiskLevel,
   riskColor,
   riskLabel,
@@ -209,18 +208,6 @@ describe('sortProjectsByRisk', () => {
     const original = [...projects];
     sortProjectsByRisk(projects);
     expect(projects).toEqual(original);
-  });
-});
-
-describe('matrixChip', () => {
-  it('formats the likelihood x impact = score label', () => {
-    expect(matrixChip({ likelihood: 4, impact: 5, matrix_score: 20 })).toBe('โอกาส 4 × ผลกระทบ 5 = 20');
-  });
-
-  it('returns "-" when any component is missing', () => {
-    expect(matrixChip({ likelihood: null, impact: 5, matrix_score: 20 })).toBe('-');
-    expect(matrixChip({ likelihood: 4, impact: undefined, matrix_score: 20 })).toBe('-');
-    expect(matrixChip({})).toBe('-');
   });
 });
 

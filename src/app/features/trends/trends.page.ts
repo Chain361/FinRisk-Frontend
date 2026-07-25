@@ -2,6 +2,7 @@ import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { forkJoin } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
+import { I18nService } from '../../core/i18n/i18n.service';
 import { AnnualRisk, Project, Subdistrict } from '../../core/models/domain.models';
 import { BarChartComponent, BarChartSeries } from '../../shared/charts/bar-chart.component';
 import { FilterBarComponent } from '../../shared/filters/filter-bar.component';
@@ -38,8 +39,8 @@ interface Anomaly {
     <section class="page-shell">
       <div>
         <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F4</p>
-        <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">Time Series & Trend Analysis</h1>
-        <p class="m-0 mt-1.5 text-sm text-muted">เปรียบเทียบข้อมูลข้ามปีและข้ามตำบล เพื่อดูแนวโน้มและความผิดปกติ</p>
+        <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">{{ t('trends.title') }}</h1>
+        <p class="m-0 mt-1.5 text-sm text-muted">{{ t('trends.subtitle') }}</p>
       </div>
 
       <app-filter-bar
@@ -58,48 +59,60 @@ interface Anomaly {
 
       <div class="grid gap-4 xl:grid-cols-2">
         <app-bar-chart
-          [title]="'งบเฉลี่ยตามประเภทโครงการ (ปี ' + FISCAL_YEARS[0] + '-' + FISCAL_YEARS[FISCAL_YEARS.length - 1] + ')'"
-          subtitle="ปีที่ไม่มีโครงการประเภทนั้นจะเว้นช่อง ไม่แทนค่า 0"
+          [title]="
+            t('trends.avgBudget.title', {
+              from: FISCAL_YEARS[0],
+              to: FISCAL_YEARS[FISCAL_YEARS.length - 1],
+            })
+          "
+          [subtitle]="t('trends.avgBudget.subtitle')"
           [categories]="fiscalYearLabels"
           [series]="averageBudgetBarSeries()"
-          unitSuffix="บาท"
-          rowHeader="ประเภทโครงการ"
+          [unitSuffix]="t('common.unit.baht')"
+          [rowHeader]="t('common.projectType')"
           [compactValueLabels]="true"
         />
 
         <app-bar-chart
-          [title]="selectedSubdistrictId() ? 'ความเสี่ยงข้ามปี (ตำบลที่เลือก)' : 'ความเสี่ยงข้ามปี (ทุกตำบล)'"
+          [title]="
+            selectedSubdistrictId()
+              ? t('trends.riskCross.titleSelected')
+              : t('trends.riskCross.titleAll')
+          "
           [subtitle]="
             selectedSubdistrictId()
-              ? 'จำนวนโครงการตามระดับความเสี่ยงรายปี'
-              : 'จำนวนโครงการเสี่ยงสูงรายปี แยกตามตำบล'
+              ? t('trends.riskCross.subtitleSelected')
+              : t('trends.riskCross.subtitleAll')
           "
           [categories]="fiscalYearLabels"
           [series]="riskTrendBarSeries()"
-          unitSuffix="โครงการ"
-          [rowHeader]="selectedSubdistrictId() ? 'ระดับความเสี่ยง' : 'ตำบล'"
+          [unitSuffix]="t('common.unit.project')"
+          [rowHeader]="selectedSubdistrictId() ? t('filter.riskLevel') : t('common.subdistrict')"
         />
       </div>
 
       <section class="panel overflow-hidden">
         <div class="border-b-[1.5px] border-line px-[18px] py-4">
-          <h2 class="m-0 text-[16px] font-bold text-ink">โครงการ/ผู้รับจ้าง/วิธีจัดซื้อที่ซ้ำข้ามปี</h2>
-          <p class="m-0 mt-1 text-[13px] text-muted">นับจากผู้รับจ้างที่ปรากฏตั้งแต่ 2 ปีงบประมาณขึ้นไป</p>
+          <h2 class="m-0 text-[16px] font-bold text-ink">{{ t('trends.repeated.title') }}</h2>
+          <p class="m-0 mt-1 text-[13px] text-muted">{{ t('trends.repeated.subtitle') }}</p>
         </div>
 
         @if (!repeatedEntities().length) {
           <div class="p-4">
-            <app-empty-state title="ยังไม่พบรายการซ้ำ ≥ 2 ปี" message="ข้อมูลใน scope ปัจจุบันอาจมีปีเดียวหรือไม่มี vendor field" />
+            <app-empty-state
+              [title]="t('trends.repeated.emptyTitle')"
+              [message]="t('trends.repeated.emptyMsg')"
+            />
           </div>
         } @else {
           <div class="overflow-x-auto">
             <table class="gov-table">
               <thead>
                 <tr>
-                  <th>รายการ</th>
-                  <th>ปีที่พบ</th>
-                  <th class="text-right!">จำนวน</th>
-                  <th class="text-right!">งบรวม (บาท)</th>
+                  <th>{{ t('trends.repeated.colItem') }}</th>
+                  <th>{{ t('trends.repeated.colYears') }}</th>
+                  <th class="text-right!">{{ t('trends.repeated.colCount') }}</th>
+                  <th class="text-right!">{{ t('trends.repeated.colBudget') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -118,27 +131,29 @@ interface Anomaly {
       </section>
 
       <section class="panel p-[18px]">
-        <h2 class="m-0 mb-0.5 text-[16px] font-bold text-ink">Financial Risk Coverage</h2>
-        <p class="m-0 mb-3.5 text-[13px] text-muted">สรุปจำนวนปัจจัยที่ตรวจสอบได้และประเมินไม่ได้รายปี</p>
+        <h2 class="m-0 mb-0.5 text-[16px] font-bold text-ink">{{ t('trends.coverage.title') }}</h2>
+        <p class="m-0 mb-3.5 text-[13px] text-muted">{{ t('trends.coverage.subtitle') }}</p>
         <div class="grid gap-3.5 md:grid-cols-3">
           @for (year of FISCAL_YEARS; track year) {
             <div class="rounded-[4px] border-[1.5px] border-line p-3.5">
               <div class="flex items-center justify-between">
-                <p class="m-0 text-sm font-extrabold text-ink">ปี {{ year }}</p>
-                <p class="m-0 text-xs text-muted">{{ annualRowsForYear(year).length }} factors</p>
+                <p class="m-0 text-sm font-extrabold text-ink">{{ t('common.yearLabel', { year }) }}</p>
+                <p class="m-0 text-xs text-muted">
+                  {{ annualRowsForYear(year).length }} {{ t('trends.coverage.factorsUnit') }}
+                </p>
               </div>
               <div class="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
                 <div class="rounded-[3px] border border-[#e2b3ac] bg-[#fdeceb] px-1 py-2 text-[#8a2a1f]">
                   <p class="m-0 text-[16px] font-extrabold">{{ annualHighCount(year) }}</p>
-                  <p class="m-0 mt-0.5">High</p>
+                  <p class="m-0 mt-0.5">{{ t('trends.coverage.high') }}</p>
                 </div>
                 <div class="rounded-[3px] border border-[#a9d9bb] bg-[#e9f6ee] px-1 py-2 text-[#0f5132]">
                   <p class="m-0 text-[16px] font-extrabold">{{ annualComputableCount(year) }}</p>
-                  <p class="m-0 mt-0.5">คำนวณได้</p>
+                  <p class="m-0 mt-0.5">{{ t('trends.coverage.computable') }}</p>
                 </div>
                 <div class="rounded-[3px] border border-[#c7cfd8] bg-page px-1 py-2 text-slate-700">
                   <p class="m-0 text-[16px] font-extrabold">{{ annualNotComputableCount(year) }}</p>
-                  <p class="m-0 mt-0.5">ประเมินไม่ได้</p>
+                  <p class="m-0 mt-0.5">{{ t('common.cannotEvaluate') }}</p>
                 </div>
               </div>
             </div>
@@ -148,25 +163,28 @@ interface Anomaly {
 
       <section class="panel overflow-hidden">
         <div class="border-b-[1.5px] border-line px-[18px] py-4">
-          <h2 class="m-0 text-[16px] font-bold text-ink">Anomaly ที่ควรตรวจต่อ</h2>
-          <p class="m-0 mt-1 text-[13px] text-muted">คัดจาก risk score สูง และ price ratio ที่ห่างจากราคากลางมาก</p>
+          <h2 class="m-0 text-[16px] font-bold text-ink">{{ t('trends.anomaly.title') }}</h2>
+          <p class="m-0 mt-1 text-[13px] text-muted">{{ t('trends.anomaly.subtitle') }}</p>
         </div>
 
         @if (!anomalies().length) {
           <div class="p-4">
-            <app-empty-state title="ไม่พบ anomaly ตาม rule รอบนี้" message="ลองเลือกทุกตำบลหรือเพิ่มช่วงข้อมูลจาก backend" />
+            <app-empty-state
+              [title]="t('trends.anomaly.emptyTitle')"
+              [message]="t('trends.anomaly.emptyMsg')"
+            />
           </div>
         } @else {
           <div class="overflow-x-auto">
             <table class="gov-table min-w-[900px]">
               <thead>
                 <tr>
-                  <th>โครงการ</th>
-                  <th>ปี</th>
-                  <th>ระดับ</th>
-                  <th class="text-right!">Risk Score</th>
-                  <th class="text-right!">Price Ratio</th>
-                  <th>เหตุผล</th>
+                  <th>{{ t('common.project') }}</th>
+                  <th>{{ t('common.year') }}</th>
+                  <th>{{ t('common.level') }}</th>
+                  <th class="text-right!">{{ t('trends.anomaly.colScore') }}</th>
+                  <th class="text-right!">{{ t('trends.anomaly.colRatio') }}</th>
+                  <th>{{ t('common.reason') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -190,6 +208,8 @@ interface Anomaly {
 })
 export class TrendsPageComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly i18n = inject(I18nService);
+  protected readonly t = this.i18n.t;
 
   readonly FISCAL_YEARS = FISCAL_YEARS;
   readonly fiscalYearLabels = FISCAL_YEARS.map(String);
@@ -230,7 +250,7 @@ export class TrendsPageComponent implements OnInit {
   readonly riskTrendBarSeries = computed<BarChartSeries[]>(() => {
     if (this.selectedSubdistrictId()) {
       return RISK_SERIES.map((item) => ({
-        name: item.name,
+        name: this.i18n.riskLabel(item.level),
         color: item.color,
         values: FISCAL_YEARS.map(
           (year) =>
@@ -301,7 +321,7 @@ export class TrendsPageComponent implements OnInit {
         this.annualRisks.set(annualRisks);
         this.projects.set(projectsByYear.flat());
       },
-      error: () => this.error.set('โหลดข้อมูลแนวโน้มไม่สำเร็จ'),
+      error: () => this.error.set(this.t('trends.error')),
     });
   }
 
@@ -350,7 +370,7 @@ export class TrendsPageComponent implements OnInit {
   }
 
   private projectType(project: Project): string {
-    return project.project_type || project.purchase_method_group || 'ไม่ระบุประเภท';
+    return project.project_type || project.purchase_method_group || this.t('common.unspecifiedType');
   }
 
   private entityLabel(project: Project): string {
@@ -360,7 +380,7 @@ export class TrendsPageComponent implements OnInit {
       project.supplier_name ||
       project.purchase_method_group ||
       project.project_type ||
-      'ไม่ระบุรายการ'
+      this.t('trends.unspecifiedItem')
     );
   }
 
@@ -375,7 +395,7 @@ export class TrendsPageComponent implements OnInit {
     const band = project.matrix_level;
 
     if (band === 'สูงมาก' || band === 'สูง') {
-      reasons.push(`ระดับ 5×5 = ${band}`);
+      reasons.push(this.t('trends.reason.band', { band: this.i18n.bandLabel(band) }));
     } else if (normalizeRiskLevel(project.risk_level) === 'high') {
       reasons.push('risk_level=high');
     }
@@ -383,7 +403,13 @@ export class TrendsPageComponent implements OnInit {
       reasons.push(`risk_score ${score.toFixed(0)} ≥ ${TrendsPageComponent.SCORE_CUTOFF}`);
     }
     if (ratio !== null && (ratio >= TrendsPageComponent.RATIO_HIGH || ratio <= TrendsPageComponent.RATIO_LOW)) {
-      reasons.push(`price_ratio ${ratio.toFixed(3)} (นอกช่วง ${TrendsPageComponent.RATIO_LOW}–${TrendsPageComponent.RATIO_HIGH})`);
+      reasons.push(
+        this.t('trends.reason.ratio', {
+          ratio: ratio.toFixed(3),
+          low: TrendsPageComponent.RATIO_LOW,
+          high: TrendsPageComponent.RATIO_HIGH,
+        }),
+      );
     }
 
     return reasons.join(' · ');

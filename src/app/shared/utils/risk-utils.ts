@@ -1,4 +1,4 @@
-import { AnnualRisk, Project, RiskBand, RiskLevel, Subdistrict } from '../../core/models/domain.models';
+import { AnnualRisk, Project, ProjectRiskFactor, RiskBand, RiskLevel, Subdistrict } from '../../core/models/domain.models';
 
 export const FISCAL_YEARS = [2566, 2567, 2568] as const;
 
@@ -159,19 +159,14 @@ export function sortProjectsByRisk(projects: Project[]): Project[] {
   });
 }
 
-/** ป้ายกำกับ "โอกาส × ผลกระทบ = คะแนน" ของกรอบ 5×5 — ใช้ร่วมกันทั้งฝั่งปัจจัยรายปีและปัจจัยระดับโครงการ */
-export function matrixChip(row: {
-  likelihood?: number | null;
-  impact?: number | null;
-  matrix_score?: number | null;
-}): string {
-  const l = toNumber(row.likelihood);
-  const i = toNumber(row.impact);
-  const s = toNumber(row.matrix_score);
-  if (l === null || i === null || s === null) {
+export function matrixChip(factor: ProjectRiskFactor): string {
+  const likelihood = toNumber(factor.likelihood);
+  const impact = toNumber(factor.impact);
+  const score = toNumber(factor.matrix_score);
+  if (likelihood === null || impact === null || score === null) {
     return '-';
   }
-  return `โอกาส ${l} × ผลกระทบ ${i} = ${s}`;
+  return `โอกาส ${likelihood} × ผลกระทบ ${impact} = ${score}`;
 }
 
 export function coverageText(rows: AnnualRisk[]): string {

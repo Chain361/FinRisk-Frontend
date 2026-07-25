@@ -1,5 +1,6 @@
 import { Component, inject, OnInit } from '@angular/core';
 
+import { I18nService } from '../../../core/i18n/i18n.service';
 import { BarChartComponent } from '../../../shared/charts/bar-chart.component';
 import { FilterBarComponent } from '../../../shared/filters/filter-bar.component';
 import { KpiCardComponent } from '../../../shared/ui/kpi-card.component';
@@ -8,18 +9,13 @@ import { FinancialHealthStateService } from '../financial-health-state.service';
 @Component({
   selector: 'app-investment-trends-page',
   standalone: true,
-  imports: [
-    BarChartComponent,
-    FilterBarComponent,
-    KpiCardComponent,
-  ],
+  imports: [BarChartComponent, FilterBarComponent, KpiCardComponent],
   template: `
     <section class="page-shell">
       <div>
         <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F2.3</p>
-        <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">
-          แนวโน้มการลงทุนและการจัดซื้อจัดจ้าง
-        </h1>
+        <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">{{ t('fhInvest.title') }}</h1>
+        <p class="m-0 mt-1.5 text-sm text-muted">{{ t('fhInvest.subtitle') }}</p>
       </div>
 
       <app-filter-bar
@@ -42,47 +38,49 @@ import { FinancialHealthStateService } from '../financial-health-state.service';
 
       <section class="panel p-[18px]">
         <div class="mb-3">
-          <h2 class="m-0 text-[16px] font-bold text-ink">แนวโน้มการลงทุน (สินทรัพย์ถาวร)</h2>
-          <p class="m-0 mt-1 text-[13px] text-muted">
-            มูลค่าสินทรัพย์ถาวรย้อนหลังของตำบลที่เลือก พร้อมการเปลี่ยนแปลงเทียบปีก่อน (YoY)
-          </p>
+          <h2 class="m-0 text-[16px] font-bold text-ink">{{ t('fhInvest.sectionTitle') }}</h2>
+          <p class="m-0 mt-1 text-[13px] text-muted">{{ t('fhInvest.sectionSubtitle') }}</p>
         </div>
 
         <div class="mb-4 grid gap-3.5 sm:grid-cols-2">
           <app-kpi-card
-            [label]="'มูลค่าสินทรัพย์ถาวร ปี ' + fixedAssetFocusYear()"
+            [label]="t('fhInvest.fixedAssetKpi', { year: fixedAssetFocusYear() })"
             [value]="fixedAssetFocusValueText()"
-            hint="อ้างอิงตัวกรองตำบล/ปีงบประมาณด้านบน"
+            [hint]="t('fhInvest.fixedAssetHint')"
             accentClass="bg-navy"
           />
 
           <div class="rounded-[4px] border-[1.5px] border-line bg-white p-4">
-            <p class="m-0 text-[13px] font-bold text-muted">YoY เทียบปีก่อน</p>
+            <p class="m-0 text-[13px] font-bold text-muted">{{ t('fhInvest.yoyTitle') }}</p>
             @if (fixedAssetYoyView(); as yoyView) {
               <p class="m-0 mt-2 text-2xl font-extrabold" [class]="yoyView.colorClass">
                 {{ yoyView.arrow }} {{ yoyView.magnitude }}%
               </p>
               <p class="m-0 mt-1 text-xs text-muted">
-                เทียบปี {{ fixedAssetPreviousYear() }} → {{ fixedAssetFocusYear() }}
+                {{
+                  t('fhInvest.yoyCompare', {
+                    prev: fixedAssetPreviousYear(),
+                    cur: fixedAssetFocusYear(),
+                  })
+                }}
               </p>
             } @else {
-              <p class="m-0 mt-2 text-sm text-muted">ไม่มีข้อมูลเพียงพอสำหรับคำนวณ YoY</p>
+              <p class="m-0 mt-2 text-sm text-muted">{{ t('fh.fixedAsset.insightNone') }}</p>
             }
           </div>
         </div>
 
         <app-bar-chart
           [title]="
-            'แนวโน้มมูลค่าสินทรัพย์ถาวร (ปี ' +
-            FISCAL_YEARS[0] +
-            '-' +
-            FISCAL_YEARS[FISCAL_YEARS.length - 1] +
-            ')'
+            t('fhInvest.chartTitle', {
+              from: FISCAL_YEARS[0],
+              to: FISCAL_YEARS[FISCAL_YEARS.length - 1],
+            })
           "
           [subtitle]="fixedAssetInsight()"
           [categories]="fiscalYearLabels"
           [series]="fixedAssetBarSeries()"
-          unitSuffix="บาท"
+          [unitSuffix]="t('common.unit.baht')"
           [compactValueLabels]="true"
         />
       </section>
@@ -91,6 +89,8 @@ import { FinancialHealthStateService } from '../financial-health-state.service';
 })
 export class InvestmentTrendsPageComponent implements OnInit {
   private readonly state = inject(FinancialHealthStateService);
+  private readonly i18n = inject(I18nService);
+  protected readonly t = this.i18n.t;
 
   readonly FISCAL_YEARS = this.state.FISCAL_YEARS;
   readonly fiscalYearLabels = this.state.fiscalYearLabels;

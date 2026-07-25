@@ -1,5 +1,6 @@
 import { Component, inject, OnInit } from '@angular/core';
 
+import { I18nService } from '../../../core/i18n/i18n.service';
 import { BarChartComponent } from '../../../shared/charts/bar-chart.component';
 import { FilterBarComponent } from '../../../shared/filters/filter-bar.component';
 import { CompositionBarComponent } from '../../../shared/ui/composition-bar.component';
@@ -9,17 +10,13 @@ import { FinancialHealthStateService } from '../financial-health-state.service';
 @Component({
   selector: 'app-overview-page',
   standalone: true,
-  imports: [
-    BarChartComponent,
-    CompositionBarComponent,
-    FilterBarComponent,
-    KpiCardComponent,
-  ],
+  imports: [BarChartComponent, CompositionBarComponent, FilterBarComponent, KpiCardComponent],
   template: `
     <section class="page-shell">
       <div>
         <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F2.1</p>
-        <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">ภาพรวมสุขภาพการคลัง</h1>
+        <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">{{ t('fhOverview.title') }}</h1>
+        <p class="m-0 mt-1.5 text-sm text-muted">{{ t('fhOverview.subtitle') }}</p>
       </div>
 
       <app-filter-bar
@@ -64,24 +61,24 @@ import { FinancialHealthStateService } from '../financial-health-state.service';
 
       <div class="grid gap-4 xl:grid-cols-2">
         <app-composition-bar
-          title="โครงสร้างสินทรัพย์"
-          subtitle="แบ่งเป็นสินทรัพย์หมุนเวียนและไม่หมุนเวียน"
+          [title]="t('fh.assetStructure.title')"
+          [subtitle]="t('fh.assetStructure.subtitle')"
           [segments]="assetComposition()"
         />
         <app-composition-bar
-          title="โครงสร้างหนี้สิน"
-          subtitle="แบ่งเป็นหนี้สินหมุนเวียนและระยะยาว"
+          [title]="t('fh.liabilityStructure.title')"
+          [subtitle]="t('fh.liabilityStructure.subtitle')"
           [segments]="liabilityComposition()"
         />
       </div>
 
       <app-bar-chart
-        title="โครงสร้างรายได้"
-        subtitle="เปรียบเทียบรายได้จัดเก็บเองและรัฐจัดสรร กับเงินอุดหนุนของตำบลที่เลือก"
+        [title]="t('fh.revenue.title')"
+        [subtitle]="t('fh.revenue.subtitle')"
         [categories]="revenueStructureCategories()"
         [series]="revenueStructureSeries()"
-        unitSuffix="บาท"
-        rowHeader="ประเภทรายได้"
+        [unitSuffix]="t('common.unit.baht')"
+        [rowHeader]="t('fh.revenue.rowHeader')"
         [compactValueLabels]="true"
       />
     </section>
@@ -89,6 +86,8 @@ import { FinancialHealthStateService } from '../financial-health-state.service';
 })
 export class OverviewPageComponent implements OnInit {
   private readonly state = inject(FinancialHealthStateService);
+  private readonly i18n = inject(I18nService);
+  protected readonly t = this.i18n.t;
 
   readonly error = this.state.error;
   readonly subdistricts = this.state.subdistricts;

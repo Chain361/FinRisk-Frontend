@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 
+import { I18nService } from '../../core/i18n/i18n.service';
 import { formatMoney, formatNumber } from '../utils/risk-utils';
 
 export interface BarChartSeries {
@@ -80,7 +81,7 @@ interface ViewRow {
         <table class="gov-table text-[12.5px]">
           <thead>
             <tr>
-              <th>{{ rowHeader() }}</th>
+              <th>{{ rowHeader() || t('chart.rowHeaderDefault') }}</th>
               @for (header of categories(); track header) {
                 <th class="text-right!">{{ header }}</th>
               }
@@ -107,9 +108,12 @@ export class BarChartComponent {
   readonly categories = input.required<string[]>();
   readonly series = input.required<BarChartSeries[]>();
   readonly unitSuffix = input<string>('');
-  readonly rowHeader = input<string>('ตัวชี้วัด');
+  readonly rowHeader = input<string>('');
   readonly fractionDigits = input<number>(0);
   readonly compactValueLabels = input<boolean>(false);
+
+  private readonly i18n = inject(I18nService);
+  protected readonly t = this.i18n.t;
 
   readonly legend = computed(() => {
     const series = this.series();
@@ -156,7 +160,7 @@ export class BarChartComponent {
       cells: this.categories().map((_, index) => {
         const value = s.values[index] ?? null;
         if (value === null) {
-          return 'ประเมินไม่ได้';
+          return this.t('common.cannotEvaluate');
         }
         return formatNumber(value, this.fractionDigits()) + suffix;
       }),
