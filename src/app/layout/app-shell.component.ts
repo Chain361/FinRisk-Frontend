@@ -4,6 +4,7 @@ import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router
 import {
   LucideClipboardList,
   LucideFolderKanban,
+  LucideFileText,
   LucideKeyRound,
   LucideLandmark,
   LucideLayoutDashboard,
@@ -130,16 +131,16 @@ const NAV_GROUPS: NavGroup[] = [
             label: 'ตรวจทานงานที่ส่งกลับมา',
             path: '/assignment-project-auditor/review',
           },
-          {
-            code: 'F4.4',
-            label: 'งานที่ได้รับมอบหมาย',
-            path: '/risk-analyst/my-tasks',
-            roles: [...ASSIGNMENT_ROLES],
-          },
         ],
       },
       {
         code: 'F5',
+        label: 'งานที่ได้รับมอบหมาย',
+        path: '/risk-analyst/my-tasks',
+        roles: [...ASSIGNMENT_ROLES],
+      },
+      {
+        code: 'F6',
         label: 'แบบฟอร์มบันทึกความคิดเห็น',
         path: '/risk-analyst-feedback',
         roles: [
@@ -157,11 +158,17 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'งานตรวจสอบ',
     items: [
       {
-        code: 'F6',
+        code: 'F7',
         label: 'ความเห็นผู้ตรวจสอบ',
         path: '/auditor-feedback',
         // mirror FEEDBACK_ROLES (core/auth/roles.ts) — ซ่อนจาก public_user
-        roles: ['admin', 'regional_supervisor', 'local_executive', 'project_auditor', 'risk_analyst'],
+        roles: [
+          'admin',
+          'regional_supervisor',
+          'local_executive',
+          'project_auditor',
+          'risk_analyst',
+        ],
       },
     ],
   },
@@ -207,6 +214,7 @@ const NAV_GROUPS: NavGroup[] = [
     LucideLandmark,
     LucideFolderKanban,
     LucideClipboardList,
+    LucideFileText,
     LucideMessageSquareText,
     LucideShieldCheck,
     LucideKeyRound,
@@ -225,7 +233,10 @@ const NAV_GROUPS: NavGroup[] = [
           </p>
         </div>
 
-        <nav class="flex flex-1 flex-col overflow-y-auto py-2.5" [attr.aria-label]="t('a11y.mainNav')">
+        <nav
+          class="flex flex-1 flex-col overflow-y-auto py-2.5"
+          [attr.aria-label]="t('a11y.mainNav')"
+        >
           @for (group of visibleNavGroups(); track group.id) {
             <div>
               <div class="flex flex-col pb-1.5">
@@ -244,25 +255,60 @@ const NAV_GROUPS: NavGroup[] = [
                       >
                         @switch (item.code) {
                           @case ('F1') {
-                            <svg lucideLayoutDashboard class="size-[18px] shrink-0" aria-hidden="true"></svg>
+                            <svg
+                              lucideLayoutDashboard
+                              class="size-[18px] shrink-0"
+                              aria-hidden="true"
+                            ></svg>
                           }
                           @case ('F2') {
-                            <svg lucideLandmark class="size-[18px] shrink-0" aria-hidden="true"></svg>
+                            <svg
+                              lucideLandmark
+                              class="size-[18px] shrink-0"
+                              aria-hidden="true"
+                            ></svg>
                           }
                           @case ('F3') {
-                            <svg lucideFolderKanban class="size-[18px] shrink-0" aria-hidden="true"></svg>
+                            <svg
+                              lucideFolderKanban
+                              class="size-[18px] shrink-0"
+                              aria-hidden="true"
+                            ></svg>
                           }
                           @case ('F4') {
-                            <svg lucideClipboardList class="size-[18px] shrink-0" aria-hidden="true"></svg>
+                            <svg
+                              lucideClipboardList
+                              class="size-[18px] shrink-0"
+                              aria-hidden="true"
+                            ></svg>
                           }
                           @case ('F5') {
-                            <svg lucideMessageSquareText class="size-[18px] shrink-0" aria-hidden="true"></svg>
+                            <svg
+                              lucideFileCheck
+                              class="size-[18px] shrink-0"
+                              aria-hidden="true"
+                            ></svg>
                           }
                           @case ('F6') {
-                            <svg lucideShieldCheck class="size-[18px] shrink-0" aria-hidden="true"></svg>
+                            <svg
+                              lucideMessageSquareText
+                              class="size-[18px] shrink-0"
+                              aria-hidden="true"
+                            ></svg>
+                          }
+                          @case ('F7') {
+                            <svg
+                              lucideShieldCheck
+                              class="size-[18px] shrink-0"
+                              aria-hidden="true"
+                            ></svg>
                           }
                           @case ('A1') {
-                            <svg lucideKeyRound class="size-[18px] shrink-0" aria-hidden="true"></svg>
+                            <svg
+                              lucideKeyRound
+                              class="size-[18px] shrink-0"
+                              aria-hidden="true"
+                            ></svg>
                           }
                         }
                         <span>{{ item.label }}</span>
@@ -299,22 +345,45 @@ const NAV_GROUPS: NavGroup[] = [
                     >
                       @switch (item.code) {
                         @case ('F1') {
-                          <svg lucideLayoutDashboard class="size-[18px] shrink-0" aria-hidden="true"></svg>
+                          <svg
+                            lucideLayoutDashboard
+                            class="size-[18px] shrink-0"
+                            aria-hidden="true"
+                          ></svg>
                         }
                         @case ('F2') {
                           <svg lucideLandmark class="size-[18px] shrink-0" aria-hidden="true"></svg>
                         }
                         @case ('F3') {
-                          <svg lucideFolderKanban class="size-[18px] shrink-0" aria-hidden="true"></svg>
+                          <svg
+                            lucideFolderKanban
+                            class="size-[18px] shrink-0"
+                            aria-hidden="true"
+                          ></svg>
                         }
                         @case ('F4') {
-                          <svg lucideClipboardList class="size-[18px] shrink-0" aria-hidden="true"></svg>
+                          <svg
+                            lucideClipboardList
+                            class="size-[18px] shrink-0"
+                            aria-hidden="true"
+                          ></svg>
                         }
                         @case ('F5') {
-                          <svg lucideMessageSquareText class="size-[18px] shrink-0" aria-hidden="true"></svg>
+                          <svg lucideFileText class="size-[18px] shrink-0" aria-hidden="true"></svg>
                         }
                         @case ('F6') {
-                          <svg lucideShieldCheck class="size-[18px] shrink-0" aria-hidden="true"></svg>
+                          <svg
+                            lucideMessageSquareText
+                            class="size-[18px] shrink-0"
+                            aria-hidden="true"
+                          ></svg>
+                        }
+                        @case ('F7') {
+                          <svg
+                            lucideShieldCheck
+                            class="size-[18px] shrink-0"
+                            aria-hidden="true"
+                          ></svg>
                         }
                         @case ('A1') {
                           <svg lucideKeyRound class="size-[18px] shrink-0" aria-hidden="true"></svg>
@@ -338,10 +407,16 @@ const NAV_GROUPS: NavGroup[] = [
             </p>
           }
           <div class="mt-2.5 flex flex-col gap-1 border-t border-white/10 pt-2.5">
-            <a routerLink="/data-sources" class="text-xs text-[#c9d4e3] no-underline hover:text-white hover:underline">
+            <a
+              routerLink="/data-sources"
+              class="text-xs text-[#c9d4e3] no-underline hover:text-white hover:underline"
+            >
               ที่มาของข้อมูล
             </a>
-            <a routerLink="/contact" class="text-xs text-[#c9d4e3] no-underline hover:text-white hover:underline">
+            <a
+              routerLink="/contact"
+              class="text-xs text-[#c9d4e3] no-underline hover:text-white hover:underline"
+            >
               ติดต่อ / แจ้งข้อมูลไม่ถูกต้อง
             </a>
           </div>
@@ -356,7 +431,9 @@ const NAV_GROUPS: NavGroup[] = [
             <nav [attr.aria-label]="t('a11y.breadcrumb')">
               <p class="m-0 text-[12.5px] text-muted">
                 หน้าหลัก /
-                <span class="font-bold text-navy" aria-current="page">{{ currentPageLabel() }}</span>
+                <span class="font-bold text-navy" aria-current="page">{{
+                  currentPageLabel()
+                }}</span>
               </p>
             </nav>
             <p class="m-0 mt-1 text-[13px] font-semibold text-slate-700">
