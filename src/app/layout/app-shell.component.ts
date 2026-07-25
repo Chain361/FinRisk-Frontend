@@ -234,7 +234,7 @@ const NAV_GROUPS: NavGroup[] = [
                         [routerLink]="item.path"
                         class="flex items-center gap-2.5 border-l-4 px-5 py-[11px] pl-[26px] text-sm font-semibold no-underline hover:bg-white/[.08]"
                         [class]="
-                          isActive(item.path)
+                          isActiveGroup(item)
                             ? 'border-gold bg-white/10 text-white'
                             : 'border-transparent text-[#e6ecf5]'
                         "
@@ -462,6 +462,15 @@ export class AppShellComponent {
 
   isActive(path: string, exact = false): boolean {
     return this.matchesUrl(this.currentUrl(), path, exact);
+  }
+
+  /** header ของกลุ่มติดไฮไลต์ด้วย ถ้า path ตัวเองตรง หรือ child คนไหนคนหนึ่งกำลังเปิดอยู่
+   * (child บาง path เช่น F4.4 อยู่คนละ prefix กับ item.path ของ header จึงต้องเช็คแยก) */
+  isActiveGroup(item: NavItem): boolean {
+    if (this.isActive(item.path)) {
+      return true;
+    }
+    return !!item.children?.some((child) => this.isActive(child.path, child.exact));
   }
 
   private matchesUrl(url: string, path: string, exact = false): boolean {
