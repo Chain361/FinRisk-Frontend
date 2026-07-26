@@ -109,13 +109,6 @@ export const routes: Routes = [
                 (m) => m.AssignmentProjectAuditorHistoryPageComponent,
               ),
           },
-          {
-            path: 'review',
-            loadComponent: () =>
-              import('./features/assignment-project-auditor/assignment-project-auditor-review.page').then(
-                (m) => m.AssignmentProjectAuditorReviewPageComponent,
-              ),
-          },
         ],
       },
       {
