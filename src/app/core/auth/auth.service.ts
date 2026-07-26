@@ -6,7 +6,7 @@ import { I18nService } from '../i18n/i18n.service';
 import { ApiService } from '../api/api.service';
 import { AppUser, LoginResponse } from '../models/domain.models';
 import { SCOPED_ROLES } from './roles';
-import { TOKEN_KEY } from './x-username.interceptor';
+import { TOKEN_KEY } from './auth.interceptor';
 
 const USER_KEY = 'finrisk_user';
 

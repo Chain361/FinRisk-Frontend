@@ -10,15 +10,15 @@ flowchart LR
   Browser[Browser] --> Angular[Angular app<br/>127.0.0.1:3000 หรือ 5173]
   Angular --> ApiAdapter[core/api ApiService]
   ApiAdapter --> Backend[FinRisk-Backend<br/>127.0.0.1:8000]
-  Backend --> SQLite[(SQLite<br/>fraud_risk.db)]
+  Backend --> Postgres[(PostgreSQL)]
 
   Auth[core/auth<br/>AuthService + interceptor] --> ApiAdapter
-  Auth -. sends .-> Header[X-Username]
+  Auth -. sends .-> Header[Authorization: Bearer]
   Header -. attached to .-> Backend
 ```
 
 Frontend เป็น client-only Angular app. Backend เป็น owner ของข้อมูล, role scope, risk engine result,
-และ mock auth. Frontend ไม่คำนวณ risk score ใหม่เอง ทำเฉพาะ presentation, aggregation เพื่อกราฟ,
+และ auth (bcrypt + JWT). Frontend ไม่คำนวณ risk score ใหม่เอง ทำเฉพาะ presentation, aggregation เพื่อกราฟ,
 และ guardrail การแสดงข้อมูลไม่สมบูรณ์
 
 ## Source Layout
@@ -28,7 +28,7 @@ src/app/
 ├── auth/                       # login route
 ├── core/
 │   ├── api/                    # one backend interface for all HTTP calls
-│   ├── auth/                   # session module, guard, X-Username interceptor
+│   ├── auth/                   # session module, guard, JWT Bearer interceptor
 │   └── models/                 # response/domain shapes matching backend
 ├── features/
 │   ├── project-risk/           # F1
@@ -57,13 +57,13 @@ Interface:
 Implementation:
 - builds query params
 - calls `HttpClient`
-- relies on `core/auth` interceptor for `X-Username`
+- relies on `core/auth` interceptor for `Authorization: Bearer`
 
 Rule: feature pages must not call `HttpClient` directly. Add or change backend access at this seam.
 
 ### `core/auth`
 
-Session module for mock backend auth.
+Session module for backend auth (bcrypt password hashing + JWT access token).
 
 Interface:
 - `login(username, password)`
@@ -72,13 +72,12 @@ Interface:
 - current user/token state
 
 Implementation:
-- stores backend token in `localStorage`
-- token is the username
-- interceptor attaches `X-Username: <token>`
+- stores JWT access token in `localStorage` (returned by `POST /auth/login`, 8h expiry)
+- interceptor attaches `Authorization: Bearer <token>`
 - guard protects authenticated routes
 
-This is intentionally isolated because production auth will replace this implementation later without
-rewriting feature pages.
+This seam stays isolated so future changes (token refresh, SSO, etc.) don't require rewriting feature
+pages.
 
 ### `core/models`
 
@@ -137,7 +136,7 @@ sequenceDiagram
 
   Page->>Api: request typed resource
   Api->>Auth: HttpClient request
-  Auth->>Backend: attach X-Username
+  Auth->>Backend: attach Authorization: Bearer
   Backend-->>Api: scoped backend data
   Api-->>Page: response shape
   Page->>Page: local view aggregation
@@ -188,7 +187,7 @@ Allowed dev origins must also exist in backend CORS config:
 
 Preferred test seams:
 - `core/api`: query params and endpoint mapping
-- `core/auth`: login persistence and `X-Username` attachment
+- `core/auth`: login persistence and `Authorization: Bearer` attachment
 - `shared/charts`: `null` gap conversion
 - feature pages: loading/error/empty states and page-level aggregation
 
@@ -196,6 +195,5 @@ Do not test by reaching into ECharts internals. Test the chart adapter interface
 
 ## Future Architecture Work
 
-- Replace mock auth implementation behind `core/auth` when backend moves to JWT.
 - Add a financial raw-data module only after backend exposes `/financials`.
 - Add e2e tests for all four feature routes after CI is configured.

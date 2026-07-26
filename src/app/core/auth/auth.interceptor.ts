@@ -2,7 +2,7 @@ import { HttpInterceptorFn } from '@angular/common/http';
 
 const TOKEN_KEY = 'finrisk_token';
 
-export const xUsernameInterceptor: HttpInterceptorFn = (request, next) => {
+export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const token = localStorage.getItem(TOKEN_KEY);
   if (!token || request.url.endsWith('/auth/login')) {
     return next(request);
@@ -11,7 +11,7 @@ export const xUsernameInterceptor: HttpInterceptorFn = (request, next) => {
   return next(
     request.clone({
       setHeaders: {
-        'X-Username': token,
+        Authorization: `Bearer ${token}`,
       },
     }),
   );

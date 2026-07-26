@@ -27,18 +27,17 @@ apiBaseUrl: 'http://127.0.0.1:8000'
 
 ## Auth Contract
 
-The backend uses mock auth:
+Backend ใช้ JWT auth จริงแล้ว (bcrypt password hashing + PyJWT access token):
 
-- `POST /auth/login` with `{ username, password }`
-- token is the username
+- `POST /auth/login` with `{ username, password }` → คืน `{ token, user }` (token = JWT, อายุ 8 ชม.)
 - frontend stores token in `localStorage`
-- every authenticated request sends `X-Username: <token>`
+- every authenticated request sends `Authorization: Bearer <token>`
 - default mock password is `password123`
 
 ## Demo Accounts (mock — ทุกคนรหัสผ่าน `password123`)
 
 > ⚠️ บัญชีทดสอบสำหรับ prototype เท่านั้น (seed จาก `FinRisk-Backend/seed_database.py`) —
-> ก่อนใช้งานจริงต้องเปลี่ยนเป็นระบบ auth จริง (bcrypt/JWT) และลบบัญชีเหล่านี้
+> ก่อนใช้งานจริงต้องลบบัญชีเหล่านี้และตั้ง password จริงต่อผู้ใช้
 
 | username | บทบาท | ขอบเขตข้อมูล |
 |---|---|---|

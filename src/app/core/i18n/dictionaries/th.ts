@@ -123,7 +123,7 @@ export const th: Record<string, string> = {
   'login.rolesHint':
     'ระบบรองรับ 6 บทบาท (ผู้ดูแลระบบ · ผู้กำกับดูแล · ผู้บริหารตำบล · ผู้ตรวจสอบโครงการ · นักวิเคราะห์ · ประชาชนทั่วไป) — ขอบเขตข้อมูลและสิทธิ์แตกต่างตามบทบาทที่ login',
   'login.tokenHint':
-    'Backend ใช้ token เป็น username และทุก request หลัง login จะส่ง header X-Username อัตโนมัติ',
+    'login จะได้ JWT access token กลับมา และทุก request หลังจากนั้นจะแนบเป็น header Authorization: Bearer อัตโนมัติ',
 
   // ---- filter bar ----
   'filter.searchLabel': 'ค้นหาโครงการ',

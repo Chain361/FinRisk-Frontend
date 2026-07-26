@@ -123,7 +123,7 @@ export const en: Record<string, string> = {
   'login.rolesHint':
     'The system supports 6 roles (administrator · supervisor · local executive · project auditor · analyst · general public) — data scope and permissions differ by the role you sign in as.',
   'login.tokenHint':
-    'The backend uses the token as the username, and every request after sign-in automatically sends the X-Username header.',
+    'Sign-in returns a JWT access token; every request after that automatically sends it as an Authorization: Bearer header.',
 
   // ---- filter bar ----
   'filter.searchLabel': 'Search projects',
