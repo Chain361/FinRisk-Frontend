@@ -208,6 +208,34 @@ export interface AccessLogFilters {
   offset?: number | null;
 }
 
+export interface LegalRef {
+  section_id: number;
+  law_code: string | null;
+  law: string;
+  law_type: string | null;
+  section_no: string;
+  section_title: string | null;
+  summary: string;
+  reason: string | null;
+}
+
+export interface ProjectLegalFactor {
+  factor_code: string;
+  factor_name: string;
+  description: string | null;
+  severity: string | null;
+  impact_level: number | null;
+  weight: number | null;
+  legal_ref_text: string | null;
+  action_suggestion: string | null;
+  applies_to_project_type: string | null;
+  triggered: number | boolean;
+  computable: number | boolean;
+  observed_value: number | string | null;
+  legal_refs: LegalRef[];
+  legal_ref_note?: string | null;
+}
+
 export interface RiskEngineRunResult {
   run_id: number;
   run_at: string;

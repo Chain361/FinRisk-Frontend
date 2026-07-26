@@ -20,6 +20,7 @@ import {
   ProjectDetail,
   ProjectDetailResponse,
   ProjectFilters,
+  ProjectLegalFactor,
   RiskEngineRunResult,
   RiskFactorCatalog,
   RiskSummary,
@@ -63,6 +64,11 @@ export class ApiService {
     return this.http.get<ProjectDetailResponse>(`${this.baseUrl}/projects/${projectId}`).pipe(
       map((response) => this.unwrapProjectDetail(response)),
     );
+  }
+
+  /** ผล risk factor ล่าสุด + legal_refs (มาตรา/ระเบียบที่เกี่ยวข้อง) ของโครงการ */
+  projectLegal(projectId: string | number): Observable<ProjectLegalFactor[]> {
+    return this.http.get<ProjectLegalFactor[]>(`${this.baseUrl}/risk/projects/${projectId}/legal`);
   }
 
   riskFactors(): Observable<RiskFactorCatalog[]> {

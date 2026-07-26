@@ -12,6 +12,7 @@ import {
   Project,
   ProjectDetail,
   ProjectFilters,
+  ProjectLegalFactor,
   ProjectRiskFactor,
   RiskFactorCatalog,
   Subdistrict,
@@ -625,6 +626,29 @@ import {
                               {{ factor.legal_ref }}
                             </p>
                           }
+
+                          <!-- มาตรา/ระเบียบที่ curate ไว้ (ต่างจาก legal_ref ด้านบนซึ่งเป็นข้อความสรุปจาก catalog) -->
+                          @if (legalRefs(factor.factor_code).length > 0) {
+                            <div class="mt-2 border-t border-line-soft pt-2">
+                              <p class="m-0 text-[11.5px] font-bold text-slate-600">มาตรา/ระเบียบที่เกี่ยวข้อง:</p>
+                              <ul class="m-0 mt-1 grid gap-1.5 pl-0">
+                                @for (ref of legalRefs(factor.factor_code); track ref.section_id) {
+                                  <li class="list-none text-[11.5px] leading-relaxed text-muted">
+                                    <span class="font-bold text-slate-700"
+                                      >{{ ref.law }}{{ ref.section_no ? ' ' + ref.section_no : '' }}</span
+                                    >
+                                    @if (ref.reason) {
+                                      — {{ ref.reason }}
+                                    }
+                                  </li>
+                                }
+                              </ul>
+                            </div>
+                          } @else if (legalRefNote(factor.factor_code)) {
+                            <p class="m-0 mt-2 border-t border-line-soft pt-2 text-[11.5px] italic text-muted">
+                              {{ legalRefNote(factor.factor_code) }}
+                            </p>
+                          }
                         </article>
                       }
                     </div>
@@ -721,6 +745,7 @@ export class RiskFactorsPageComponent implements OnInit {
   readonly projects = signal<Project[]>([]);
   readonly catalog = signal<RiskFactorCatalog[]>([]);
   readonly projectDetail = signal<ProjectDetail | null>(null);
+  readonly projectLegal = signal<ProjectLegalFactor[]>([]);
   readonly assignments = signal<SavedAssignment[]>([]);
   readonly searchQuery = signal('');
 
@@ -771,6 +796,12 @@ export class RiskFactorsPageComponent implements OnInit {
   readonly triggeredFactors = computed(() => {
     const factors = this.projectDetail()?.risk_factors ?? [];
     return factors.filter((factor) => toBool(factor.triggered));
+  });
+
+  readonly legalByFactor = computed(() => {
+    const map = new Map<string, ProjectLegalFactor>();
+    this.projectLegal().forEach((item) => map.set(item.factor_code, item));
+    return map;
   });
 
   readonly selectedProjectCatalog = computed(() => {
@@ -902,6 +933,7 @@ export class RiskFactorsPageComponent implements OnInit {
     }
     this.selectedProjectId.set(null);
     this.projectDetail.set(null);
+    this.projectLegal.set([]);
     this.loadingDetail.set(false);
     this.syncProjectIdQueryParam(null);
   }
@@ -1065,6 +1097,16 @@ export class RiskFactorsPageComponent implements OnInit {
     return toBool(factor.computable);
   }
 
+  /** มาตรา/ระเบียบที่ curate ไว้สำหรับ factor นี้ (จาก /risk/projects/{id}/legal) */
+  legalRefs(factorCode: string) {
+    return this.legalByFactor().get(factorCode)?.legal_refs ?? [];
+  }
+
+  /** ข้อความเมื่อ factor นี้ triggered แต่ยังไม่มีการ curate มาตราผูกไว้ (ข้อความตายตัวจาก backend) */
+  legalRefNote(factorCode: string): string | null {
+    return this.legalByFactor().get(factorCode)?.legal_ref_note ?? null;
+  }
+
   /** ข้อมูลคะแนนรวม (จาก ProjectDetailResponse.risk_score ที่ api ผสมเข้ามาบน detail) */
   scoreInfo() {
     const d = this.projectDetail() as (ProjectDetail & Record<string, unknown>) | null;
@@ -1152,6 +1194,11 @@ export class RiskFactorsPageComponent implements OnInit {
         this.loadingDetail.set(false);
       },
     });
+    // มาตรา/ระเบียบที่เกี่ยวข้อง — ไม่ critical เท่าตัว detail หลัก ถ้าพลาดให้เงียบไว้ (แสดง section ว่างแทน error)
+    this.api
+      .projectLegal(projectId)
+      .pipe(catchError(() => of<ProjectLegalFactor[]>([])))
+      .subscribe((legal) => this.projectLegal.set(legal));
   }
 
   private filters(): ProjectFilters {
