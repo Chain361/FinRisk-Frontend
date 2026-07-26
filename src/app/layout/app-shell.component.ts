@@ -188,6 +188,12 @@ const NAV_GROUPS: NavGroup[] = [
         path: '/admin/data-upload',
         roles: ['admin'], // เห็นเฉพาะ admin — ตรงกับ roleGuard('admin') ที่ route
       },
+      {
+        code: 'A3',
+        label: 'จัดการผู้ใช้งาน',
+        path: '/admin/user-management',
+        roles: ['admin'], // เห็นเฉพาะ admin — ตรงกับ roleGuard('admin') ที่ route
+      },
     ],
   },
   {
