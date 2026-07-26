@@ -182,6 +182,12 @@ const NAV_GROUPS: NavGroup[] = [
         path: '/admin/access-log',
         roles: ['admin'], // เห็นเฉพาะ admin — ตรงกับ roleGuard('admin') ที่ route
       },
+      {
+        code: 'A2',
+        label: 'นำเข้าข้อมูล & รัน Risk Engine',
+        path: '/admin/data-upload',
+        roles: ['admin'], // เห็นเฉพาะ admin — ตรงกับ roleGuard('admin') ที่ route
+      },
     ],
   },
   {

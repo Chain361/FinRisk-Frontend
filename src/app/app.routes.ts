@@ -145,6 +145,13 @@ export const routes: Routes = [
           import('./features/admin/access-log.page').then((m) => m.AccessLogPageComponent),
       },
       {
+        // นำเข้าข้อมูลรอบใหม่ + สั่งรัน risk engine ใหม่ — เฉพาะ admin
+        path: 'admin/data-upload',
+        canActivate: [roleGuard('admin')],
+        loadComponent: () =>
+          import('./features/admin/data-upload.page').then((m) => m.DataUploadPageComponent),
+      },
+      {
         path: 'risk-analyst-feedback',
         canActivate: [roleGuard(...FEEDBACK_ROLES)],
         loadComponent: () =>

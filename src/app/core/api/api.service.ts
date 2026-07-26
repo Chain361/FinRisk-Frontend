@@ -12,6 +12,7 @@ import {
   AuditorFeedback,
   AuditorFeedbackCreate,
   CreateAssignmentRequest,
+  DataUploadResult,
   FinancialStatement,
   LoginRequest,
   LoginResponse,
@@ -19,6 +20,7 @@ import {
   ProjectDetail,
   ProjectDetailResponse,
   ProjectFilters,
+  RiskEngineRunResult,
   RiskFactorCatalog,
   RiskSummary,
   Subdistrict,
@@ -103,6 +105,28 @@ export class ApiService {
       }
     });
     return this.http.get<AccessLogPage>(`${this.baseUrl}/audit/access-log`, { params });
+  }
+
+  /** admin เท่านั้น — คำนวณ risk score ใหม่จากข้อมูลปัจจุบันในฐานข้อมูล (ไม่อ่าน CSV ใหม่) */
+  runRiskEngine(): Observable<RiskEngineRunResult> {
+    return this.http.post<RiskEngineRunResult>(`${this.baseUrl}/admin/risk-engine/run`, {});
+  }
+
+  /** admin เท่านั้น — นำเข้าโครงการ/งบการเงินรอบใหม่ของตำบลที่มีอยู่แล้ว (ต้องแนบไฟล์อย่างน้อย 1 ไฟล์) */
+  uploadAdminData(
+    subdistrictId: number,
+    projectsCsv: File | null,
+    financialCsv: File | null,
+  ): Observable<DataUploadResult> {
+    const form = new FormData();
+    form.set('subdistrict_id', String(subdistrictId));
+    if (projectsCsv) {
+      form.set('projects_csv', projectsCsv);
+    }
+    if (financialCsv) {
+      form.set('financial_csv', financialCsv);
+    }
+    return this.http.post<DataUploadResult>(`${this.baseUrl}/admin/data/upload`, form);
   }
 
   assignmentAssignees(): Observable<AssignmentAssignee[]> {

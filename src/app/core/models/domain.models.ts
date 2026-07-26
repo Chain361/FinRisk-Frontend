@@ -208,6 +208,21 @@ export interface AccessLogFilters {
   offset?: number | null;
 }
 
+export interface RiskEngineRunResult {
+  run_id: number;
+  run_at: string;
+  triggered_by: string;
+  project_count: number;
+  annual_count: number;
+}
+
+export interface DataUploadResult {
+  subdistrict_id: number;
+  projects_inserted: number;
+  projects_skipped_duplicate: string[];
+  financial_rows_inserted: number;
+}
+
 export type AssignmentPriority = 'low' | 'normal' | 'high';
 export type AssignmentStatus =
   | 'waiting_acceptance'
