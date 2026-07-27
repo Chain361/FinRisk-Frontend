@@ -2,12 +2,19 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { catchError, forkJoin, of } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
+import { AuthService } from '../../core/auth/auth.service';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { AnnualRisk, FinancialStatement, Subdistrict } from '../../core/models/domain.models';
 import { BarChartSeries } from '../../shared/charts/bar-chart.component';
 import { CompositionSegment } from '../../shared/ui/composition-bar.component';
 import { PALETTE } from '../../shared/utils/design-tokens';
-import { FISCAL_YEARS, formatNumber, subdistrictLabel, toBool, toNumber } from '../../shared/utils/risk-utils';
+import {
+  FISCAL_YEARS,
+  formatNumber,
+  subdistrictLabel,
+  toBool,
+  toNumber,
+} from '../../shared/utils/risk-utils';
 import {
   getBalanceSheetTotals,
   getIncomeStatementTotals,
@@ -36,9 +43,12 @@ interface ComparisonDatum {
 @Injectable({ providedIn: 'root' })
 export class FinancialHealthStateService {
   private readonly api = inject(ApiService);
+  private readonly auth = inject(AuthService);
   private readonly i18n = inject(I18nService);
   private readonly t = this.i18n.t;
   private initialized = false;
+  /** username ที่โหลดข้อมูลไว้ล่าสุด — ถ้า login คนละคนต้องโหลดใหม่ (ข้อมูล/ตำบลถูก scope ต่อ user) */
+  private loadedForUsername: string | null = null;
 
   readonly FISCAL_YEARS = FISCAL_YEARS;
   readonly fiscalYearLabels = FISCAL_YEARS.map(String);
@@ -56,7 +66,9 @@ export class FinancialHealthStateService {
 
   readonly scopedRows = computed(() => {
     const subdistrictId = this.selectedSubdistrictId();
-    return this.annualRisks().filter((row) => !subdistrictId || row.subdistrict_id === subdistrictId);
+    return this.annualRisks().filter(
+      (row) => !subdistrictId || row.subdistrict_id === subdistrictId,
+    );
   });
 
   readonly factorCards = computed(() => {
@@ -71,7 +83,8 @@ export class FinancialHealthStateService {
     const year = this.selectedYear();
     return this.financialStatements().filter(
       (row) =>
-        (!subdistrictId || row.subdistrict_id === subdistrictId) && (!year || row.fiscal_year === year),
+        (!subdistrictId || row.subdistrict_id === subdistrictId) &&
+        (!year || row.fiscal_year === year),
     );
   });
 
@@ -119,15 +132,27 @@ export class FinancialHealthStateService {
     const { currentAssets, nonCurrentAssets } = this.balanceSheet();
     return [
       { label: this.t('fh.comp.currentAssets'), value: currentAssets, color: PALETTE.navy },
-      { label: this.t('fh.comp.nonCurrentAssets'), value: nonCurrentAssets, color: PALETTE.chartBlue },
+      {
+        label: this.t('fh.comp.nonCurrentAssets'),
+        value: nonCurrentAssets,
+        color: PALETTE.chartBlue,
+      },
     ];
   });
 
   readonly liabilityComposition = computed<CompositionSegment[]>(() => {
     const { currentLiabilities, nonCurrentLiabilities } = this.balanceSheet();
     return [
-      { label: this.t('fh.comp.currentLiabilities'), value: currentLiabilities, color: PALETTE.chartRed },
-      { label: this.t('fh.comp.longTermLiabilities'), value: nonCurrentLiabilities, color: PALETTE.chartOrange },
+      {
+        label: this.t('fh.comp.currentLiabilities'),
+        value: currentLiabilities,
+        color: PALETTE.chartRed,
+      },
+      {
+        label: this.t('fh.comp.longTermLiabilities'),
+        value: nonCurrentLiabilities,
+        color: PALETTE.chartOrange,
+      },
     ];
   });
 
@@ -184,7 +209,9 @@ export class FinancialHealthStateService {
 
   readonly subdistrictFinancialStatements = computed(() => {
     const subdistrictId = this.selectedSubdistrictId();
-    return this.financialStatements().filter((row) => !subdistrictId || row.subdistrict_id === subdistrictId);
+    return this.financialStatements().filter(
+      (row) => !subdistrictId || row.subdistrict_id === subdistrictId,
+    );
   });
 
   readonly fixedAssetTotals = computed(() => {
@@ -209,7 +236,11 @@ export class FinancialHealthStateService {
   ]);
 
   readonly fixedAssetComputableYears = computed(
-    () => this.fixedAssetTotals().filter((item) => item.value !== null) as { year: number; value: number }[],
+    () =>
+      this.fixedAssetTotals().filter((item) => item.value !== null) as {
+        year: number;
+        value: number;
+      }[],
   );
 
   readonly fixedAssetFocusYear = computed(() => {
@@ -218,17 +249,23 @@ export class FinancialHealthStateService {
       return year;
     }
     const computable = this.fixedAssetComputableYears();
-    return computable.length ? computable[computable.length - 1].year : FISCAL_YEARS[FISCAL_YEARS.length - 1];
+    return computable.length
+      ? computable[computable.length - 1].year
+      : FISCAL_YEARS[FISCAL_YEARS.length - 1];
   });
 
   readonly fixedAssetPreviousYear = computed(() => this.fixedAssetFocusYear() - 1);
 
   readonly fixedAssetFocusValue = computed(
-    () => this.fixedAssetTotals().find((item) => item.year === this.fixedAssetFocusYear())?.value ?? null,
+    () =>
+      this.fixedAssetTotals().find((item) => item.year === this.fixedAssetFocusYear())?.value ??
+      null,
   );
 
   readonly fixedAssetPreviousValue = computed(
-    () => this.fixedAssetTotals().find((item) => item.year === this.fixedAssetPreviousYear())?.value ?? null,
+    () =>
+      this.fixedAssetTotals().find((item) => item.year === this.fixedAssetPreviousYear())?.value ??
+      null,
   );
 
   readonly fixedAssetFocusValueText = computed(() => {
@@ -309,25 +346,36 @@ export class FinancialHealthStateService {
     if (this.comparisonMetric() !== 'riskFactor') {
       return this.t('common.unit.baht');
     }
-    const option = this.allFactorOptions().find((item) => item.code === this.comparisonFactorCode());
+    const option = this.allFactorOptions().find(
+      (item) => item.code === this.comparisonFactorCode(),
+    );
     return option
       ? this.observedValueUnit({ factor_code: option.code, factor_name: option.name } as AnnualRisk)
       : '';
   });
 
-  /** โหลดข้อมูลครั้งแรกที่มีหน้าใดในโมดูล Financial Health ถูกเปิด — หน้าถัดไปใช้ข้อมูลชุดเดียวกันต่อ ไม่ยิงซ้ำ */
+  /**
+   * โหลดข้อมูลครั้งแรกที่มีหน้าใดในโมดูล Financial Health ถูกเปิด — หน้าถัดไปใช้ข้อมูลชุดเดียวกันต่อ ไม่ยิงซ้ำ
+   * ยกเว้นว่า user ที่ login เปลี่ยนไปจากตอนโหลดครั้งก่อน (เช่น logout แล้ว login คนละบัญชีโดยไม่ reload หน้า)
+   * ต้องโหลดใหม่เสมอ เพราะ /subdistricts และข้อมูลการเงินถูก scope ตาม user ที่ login
+   */
   initialize(): void {
-    if (this.initialized) {
+    const currentUsername = this.auth.user()?.username ?? null;
+    if (this.initialized && this.loadedForUsername === currentUsername) {
       return;
     }
     this.initialized = true;
+    this.loadedForUsername = currentUsername;
+    this.resetFilters();
     this.loading.set(true);
     forkJoin({
       subdistricts: this.api.subdistricts(),
       annualRisks: this.api.annualRisk(),
       // `/financials` is optional while older backends are being upgraded.
       // Its absence must not block the existing annual-risk view.
-      financialStatements: this.api.financialStatements().pipe(catchError(() => of<FinancialStatement[]>([]))),
+      financialStatements: this.api
+        .financialStatements()
+        .pipe(catchError(() => of<FinancialStatement[]>([]))),
     }).subscribe({
       next: ({ subdistricts, annualRisks, financialStatements }) => {
         this.subdistricts.set(subdistricts);
@@ -386,7 +434,9 @@ export class FinancialHealthStateService {
       case 'netIncome':
         return this.t('fh.metricNetIncome');
       case 'riskFactor': {
-        const option = this.allFactorOptions().find((item) => item.code === this.comparisonFactorCode());
+        const option = this.allFactorOptions().find(
+          (item) => item.code === this.comparisonFactorCode(),
+        );
         return option ? `${option.code} - ${option.name}` : 'Risk Factor';
       }
     }
