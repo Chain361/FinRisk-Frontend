@@ -143,7 +143,13 @@ interface ProjectStatusRow {
               >
                 <option value="all">ทุกผู้รับมอบหมาย</option>
                 @for (analyst of analysts(); track analyst.id) {
-                  <option [value]="analyst.id">{{ analyst.name }}</option>
+                  <option [value]="analyst.id">
+                    {{
+                      analyst.userLabel
+                        ? analyst.name + ' (' + analyst.userLabel + ')'
+                        : analyst.name
+                    }}
+                  </option>
                 }
               </select>
             </label>
@@ -232,6 +238,11 @@ interface ProjectStatusRow {
                     <td class="align-top">
                       @if (row.analyst) {
                         <p class="m-0 font-bold text-ink">{{ row.analyst.name }}</p>
+                        @if (row.analyst.userLabel) {
+                          <p class="m-0 mt-1 text-xs font-bold text-navy">
+                            {{ row.analyst.userLabel }}
+                          </p>
+                        }
                         <p class="m-0 mt-1 text-xs text-muted">{{ row.analyst.team }}</p>
                       } @else {
                         <p class="m-0 mt-1 text-xs italic text-slate-400">ยังไม่มีผู้รับผิดชอบ</p>
@@ -455,6 +466,8 @@ export class AssignmentProjectAuditorStatusPageComponent implements OnInit {
       this.projectWorkflowLabel(latestAssignment),
       subdistrictName,
       analyst?.name,
+      analyst?.username,
+      analyst?.userLabel,
       analyst?.team,
       latestAssignment?.note,
       latestAssignment?.assignedBy,
@@ -497,6 +510,8 @@ export class AssignmentProjectAuditorStatusPageComponent implements OnInit {
     return {
       id: assignment.analystId,
       name: assignment.analystName || assignment.analystId,
+      userLabel: assignment.analystUserLabel,
+      entityType: assignment.analystEntityType,
       team: assignment.analystTeam || 'นักวิเคราะห์ความเสี่ยง',
       activeCases: 0,
       specialties: [],
@@ -509,6 +524,10 @@ export class AssignmentProjectAuditorStatusPageComponent implements OnInit {
       projectId: assignment.project_id,
       analystId: String(assignment.assigned_to),
       analystName: assignment.assignee_display_name || assignment.assignee_username || undefined,
+      analystUserLabel:
+        assignment.assignee_user_label ??
+        (assignment.assignee_username ? `user:${assignment.assignee_username}` : undefined),
+      analystEntityType: assignment.assignee_entity_type ?? undefined,
       assignedAt: assignment.created_at,
       priority: assignment.priority,
       note: assignment.note,

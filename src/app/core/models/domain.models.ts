@@ -277,6 +277,8 @@ export interface AuditAssignment {
   updated_at: string;
   project_name?: string | null;
   subdistrict_id?: number | null;
+  assignee_entity_type?: string | null;
+  assignee_user_label?: string | null;
   assignee_username?: string | null;
   assignee_display_name?: string | null;
   assigned_by_username?: string | null;
@@ -287,6 +289,9 @@ export interface AssignmentAssignee {
   user_id: number;
   username: string;
   display_name?: string | null;
+  role?: string | null;
+  entity_type?: string | null;
+  user_label?: string | null;
   subdistrict_id: number;
   active_cases: number;
 }

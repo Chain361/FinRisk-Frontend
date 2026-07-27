@@ -5,13 +5,15 @@ import { catchError, forkJoin, of } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
 import { AuthService } from '../../core/auth/auth.service';
-import { AssignmentAssignee, AuditAssignment, Project, Subdistrict } from '../../core/models/domain.models';
+import {
+  AssignmentAssignee,
+  AuditAssignment,
+  Project,
+  Subdistrict,
+} from '../../core/models/domain.models';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { formatMoney, normalizeRiskLevel, subdistrictLabel } from '../../shared/utils/risk-utils';
-import {
-  Analyst,
-  SavedAssignment,
-} from './assignment-project-auditor.models';
+import { Analyst, SavedAssignment } from './assignment-project-auditor.models';
 
 interface AssignmentHistoryRow {
   key: string;
@@ -39,12 +41,16 @@ interface AssignmentHistoryRow {
           </p>
         </div>
         <div class="flex flex-wrap gap-2">
-          <button type="button" class="gov-btn-outline" (click)="reloadAssignments()">รีเฟรชประวัติ</button>
+          <button type="button" class="gov-btn-outline" (click)="reloadAssignments()">
+            รีเฟรชประวัติ
+          </button>
         </div>
       </div>
 
       @if (error()) {
-        <div class="rounded-[4px] border-[1.5px] border-risk-high bg-red-50 px-4 py-3 text-sm text-risk-high">
+        <div
+          class="rounded-[4px] border-[1.5px] border-risk-high bg-red-50 px-4 py-3 text-sm text-risk-high"
+        >
           {{ error() }}
         </div>
       }
@@ -56,7 +62,9 @@ interface AssignmentHistoryRow {
         </div>
         <div class="panel p-4">
           <p class="m-0 text-xs font-bold text-muted">มอบหมายล่าสุด</p>
-          <p class="m-0 mt-2 text-sm font-extrabold leading-6 text-ink">{{ latestAssignmentText() }}</p>
+          <p class="m-0 mt-2 text-sm font-extrabold leading-6 text-ink">
+            {{ latestAssignmentText() }}
+          </p>
         </div>
       </div>
 
@@ -65,10 +73,14 @@ interface AssignmentHistoryRow {
           <div class="flex flex-wrap items-end justify-between gap-3">
             <div>
               <h2 class="m-0 text-[17px] font-extrabold text-ink">รายการประวัติ</h2>
-              <p class="m-0 mt-1 text-[13px] text-muted">ค้นหาโครงการ ผู้รับมอบหมาย หรือคำแนะนำที่เคยบันทึกไว้</p>
+              <p class="m-0 mt-1 text-[13px] text-muted">
+                ค้นหาโครงการ ผู้รับมอบหมาย หรือคำแนะนำที่เคยบันทึกไว้
+              </p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-              <span class="rounded-full bg-navy px-2.5 py-1 text-xs font-bold text-white">{{ filteredRows().length }} รายการ</span>
+              <span class="rounded-full bg-navy px-2.5 py-1 text-xs font-bold text-white"
+                >{{ filteredRows().length }} รายการ</span
+              >
             </div>
           </div>
 
@@ -85,10 +97,20 @@ interface AssignmentHistoryRow {
             </label>
             <label>
               <span class="sr-only">กรองผู้รับมอบหมาย</span>
-              <select class="gov-select" [ngModel]="analystFilter()" (ngModelChange)="analystFilter.set($event)">
+              <select
+                class="gov-select"
+                [ngModel]="analystFilter()"
+                (ngModelChange)="analystFilter.set($event)"
+              >
                 <option value="all">ทุกผู้รับมอบหมาย</option>
                 @for (analyst of analysts(); track analyst.id) {
-                  <option [value]="analyst.id">{{ analyst.name }}</option>
+                  <option [value]="analyst.id">
+                    {{
+                      analyst.userLabel
+                        ? analyst.name + ' (' + analyst.userLabel + ')'
+                        : analyst.name
+                    }}
+                  </option>
                 }
               </select>
             </label>
@@ -96,7 +118,9 @@ interface AssignmentHistoryRow {
         </div>
 
         @if (loading()) {
-          <p class="px-[18px] py-8 text-center text-sm text-muted">กำลังโหลดประวัติการมอบหมายงาน...</p>
+          <p class="px-[18px] py-8 text-center text-sm text-muted">
+            กำลังโหลดประวัติการมอบหมายงาน...
+          </p>
         } @else if (!filteredRows().length) {
           <div class="p-[18px]">
             <app-empty-state
@@ -147,8 +171,13 @@ interface AssignmentHistoryRow {
                         {{ row.projectName }}
                       </a>
                       <div class="mt-2 flex flex-wrap gap-1.5">
-                        <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">{{ row.subdistrictName }}</span>
-                        <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
+                        <span
+                          class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700"
+                          >{{ row.subdistrictName }}</span
+                        >
+                        <span
+                          class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700"
+                        >
                           ปีงบ
                           @if (row.project?.budget_year) {
                             {{ row.project?.budget_year }}
@@ -156,21 +185,38 @@ interface AssignmentHistoryRow {
                             <span class="font-normal italic text-slate-400">ยังไม่มีข้อมูล</span>
                           }
                         </span>
-                        <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">รหัส {{ row.assignment.projectId }}</span>
+                        <span
+                          class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700"
+                          >รหัส {{ row.assignment.projectId }}</span
+                        >
                       </div>
                     </td>
                     <td class="align-top">
                       @if (row.assignment.dueDate) {
-                        <div class="inline-flex min-w-[104px] flex-col rounded-[4px] border border-blue-100 bg-blue-50 px-3 py-2 text-sm leading-5 text-navy">
-                          <span class="text-[11px] font-extrabold uppercase tracking-wide text-muted">Due date</span>
-                          <span class="mt-0.5 font-extrabold">{{ formatDueDate(row.assignment.dueDate) }}</span>
+                        <div
+                          class="inline-flex min-w-[104px] flex-col rounded-[4px] border border-blue-100 bg-blue-50 px-3 py-2 text-sm leading-5 text-navy"
+                        >
+                          <span
+                            class="text-[11px] font-extrabold uppercase tracking-wide text-muted"
+                            >Due date</span
+                          >
+                          <span class="mt-0.5 font-extrabold">{{
+                            formatDueDate(row.assignment.dueDate)
+                          }}</span>
                         </div>
                       } @else {
                         <span class="text-sm italic text-slate-400">ยังไม่ระบุ</span>
                       }
                     </td>
                     <td class="align-top">
-                      <p class="m-0 font-bold text-ink">{{ row.analyst?.name || row.assignment.analystId }}</p>
+                      <p class="m-0 font-bold text-ink">
+                        {{ row.analyst?.name || row.assignment.analystId }}
+                      </p>
+                      @if (row.analyst?.userLabel || row.assignment.analystUserLabel) {
+                        <p class="m-0 mt-1 text-xs font-bold text-navy">
+                          {{ row.analyst?.userLabel || row.assignment.analystUserLabel }}
+                        </p>
+                      }
                       @if (row.analyst?.team) {
                         <p class="m-0 mt-1 text-xs text-muted">{{ row.analyst?.team }}</p>
                       } @else {
@@ -178,23 +224,36 @@ interface AssignmentHistoryRow {
                       }
                     </td>
                     <td class="align-top">
-                      <span class="rounded-full px-2.5 py-1 text-xs font-bold" [class]="riskBadgeClass(row.project)">
+                      <span
+                        class="rounded-full px-2.5 py-1 text-xs font-bold"
+                        [class]="riskBadgeClass(row.project)"
+                      >
                         {{ riskLabel(row.project) }}
                       </span>
                     </td>
                     <td class="align-top">
                       @if (row.assignment.note) {
-                        <p class="m-0 max-w-[280px] text-sm leading-6 text-ink">{{ row.assignment.note }}</p>
+                        <p class="m-0 max-w-[280px] text-sm leading-6 text-ink">
+                          {{ row.assignment.note }}
+                        </p>
                       } @else {
                         <p class="m-0 text-sm italic text-slate-400">ยังไม่มีข้อมูล</p>
                       }
                       @if (row.assignment.budgetHours || row.assignment.auditSteps) {
-                        <div class="mt-2 max-w-[320px] rounded-[4px] bg-slate-50 p-2 text-xs leading-5 text-muted">
+                        <div
+                          class="mt-2 max-w-[320px] rounded-[4px] bg-slate-50 p-2 text-xs leading-5 text-muted"
+                        >
                           @if (row.assignment.budgetHours) {
-                            <p class="m-0"><span class="font-bold text-ink">Budget:</span> {{ row.assignment.budgetHours }} ชม.</p>
+                            <p class="m-0">
+                              <span class="font-bold text-ink">Budget:</span>
+                              {{ row.assignment.budgetHours }} ชม.
+                            </p>
                           }
                           @if (row.assignment.auditSteps) {
-                            <p class="m-0"><span class="font-bold text-ink">Audit steps:</span> {{ row.assignment.auditSteps }}</p>
+                            <p class="m-0">
+                              <span class="font-bold text-ink">Audit steps:</span>
+                              {{ row.assignment.auditSteps }}
+                            </p>
                           }
                         </div>
                       }
@@ -223,7 +282,6 @@ interface AssignmentHistoryRow {
         }
       </section>
     </section>
-
   `,
 })
 export class AssignmentProjectAuditorHistoryPageComponent implements OnInit {
@@ -244,7 +302,9 @@ export class AssignmentProjectAuditorHistoryPageComponent implements OnInit {
   readonly historyRows = computed<AssignmentHistoryRow[]>(() =>
     this.assignments()
       .map((assignment) => this.toHistoryRow(assignment))
-      .sort((a, b) => this.dateValue(b.assignment.assignedAt) - this.dateValue(a.assignment.assignedAt)),
+      .sort(
+        (a, b) => this.dateValue(b.assignment.assignedAt) - this.dateValue(a.assignment.assignedAt),
+      ),
   );
 
   readonly filteredRows = computed(() => {
@@ -257,7 +317,9 @@ export class AssignmentProjectAuditorHistoryPageComponent implements OnInit {
     );
   });
 
-  readonly latestAssignmentText = computed(() => this.historyRows()[0]?.assignedAtText ?? 'ยังไม่มีข้อมูล');
+  readonly latestAssignmentText = computed(
+    () => this.historyRows()[0]?.assignedAtText ?? 'ยังไม่มีข้อมูล',
+  );
 
   ngOnInit(): void {
     this.reloadAssignments();
@@ -282,7 +344,8 @@ export class AssignmentProjectAuditorHistoryPageComponent implements OnInit {
   reloadAssignments(): void {
     this.error.set('');
     this.api.assignments().subscribe({
-      next: (assignments) => this.assignments.set(assignments.map((assignment) => this.toSavedAssignment(assignment))),
+      next: (assignments) =>
+        this.assignments.set(assignments.map((assignment) => this.toSavedAssignment(assignment))),
       error: () => this.error.set('โหลดประวัติการมอบหมายงานจากระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'),
     });
   }
@@ -293,7 +356,9 @@ export class AssignmentProjectAuditorHistoryPageComponent implements OnInit {
       this.error.set('ไม่พบรหัสรายการประวัติที่จะลบ กรุณารีเฟรชหน้าแล้วลองใหม่');
       return;
     }
-    const confirmed = window.confirm(`ต้องการลบประวัติการมอบหมายงานของโครงการ "${row.projectName}" ใช่หรือไม่?`);
+    const confirmed = window.confirm(
+      `ต้องการลบประวัติการมอบหมายงานของโครงการ "${row.projectName}" ใช่หรือไม่?`,
+    );
     if (!confirmed) {
       return;
     }
@@ -339,10 +404,13 @@ export class AssignmentProjectAuditorHistoryPageComponent implements OnInit {
 
   private toHistoryRow(assignment: SavedAssignment): AssignmentHistoryRow {
     const key = this.assignmentKey(assignment);
-    const project = this.projects().find((item) => String(item.project_id) === assignment.projectId) ?? null;
+    const project =
+      this.projects().find((item) => String(item.project_id) === assignment.projectId) ?? null;
     const analyst = this.analysts().find((item) => item.id === assignment.analystId) ?? null;
     const subdistrictName = project
-      ? subdistrictLabel(this.subdistricts().find((item) => item.subdistrict_id === project.subdistrict_id))
+      ? subdistrictLabel(
+          this.subdistricts().find((item) => item.subdistrict_id === project.subdistrict_id),
+        )
       : 'ยังไม่มีข้อมูล';
     const projectName = project?.project_name || 'ไม่พบข้อมูลโครงการ';
     const assignedAtText = this.formatAssignedAt(assignment.assignedAt);
@@ -351,8 +419,11 @@ export class AssignmentProjectAuditorHistoryPageComponent implements OnInit {
       assignment.projectId,
       subdistrictName,
       analyst?.name,
+      analyst?.username,
+      analyst?.userLabel,
       analyst?.team,
       assignment.analystId,
+      assignment.analystUserLabel,
       assignment.note,
       assignment.assignedBy,
     ]
@@ -413,6 +484,9 @@ export class AssignmentProjectAuditorHistoryPageComponent implements OnInit {
     return {
       id: String(analyst.user_id),
       name: analyst.display_name || analyst.username,
+      username: analyst.username,
+      entityType: analyst.entity_type ?? undefined,
+      userLabel: analyst.user_label ?? `user:${analyst.username}`,
       team: 'นักวิเคราะห์ความเสี่ยง',
       activeCases: analyst.active_cases,
       specialties: [],
@@ -424,6 +498,11 @@ export class AssignmentProjectAuditorHistoryPageComponent implements OnInit {
       assignmentId: assignment.assignment_id,
       projectId: assignment.project_id,
       analystId: String(assignment.assigned_to),
+      analystName: assignment.assignee_display_name || assignment.assignee_username || undefined,
+      analystUserLabel:
+        assignment.assignee_user_label ??
+        (assignment.assignee_username ? `user:${assignment.assignee_username}` : undefined),
+      analystEntityType: assignment.assignee_entity_type ?? undefined,
       assignedAt: assignment.created_at,
       priority: assignment.priority,
       note: assignment.note,
@@ -431,7 +510,8 @@ export class AssignmentProjectAuditorHistoryPageComponent implements OnInit {
       budgetHours: assignment.budget_hours ?? undefined,
       auditSteps: assignment.audit_steps,
       workflowStatus: assignment.status,
-      assignedBy: assignment.assigned_by_display_name || assignment.assigned_by_username || undefined,
+      assignedBy:
+        assignment.assigned_by_display_name || assignment.assigned_by_username || undefined,
     };
   }
 

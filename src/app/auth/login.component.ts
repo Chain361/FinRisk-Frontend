@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+﻿import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { LucideLogIn, LucideShieldAlert } from '@lucide/angular';
@@ -52,7 +52,11 @@ import { LanguageToggleComponent } from '../shared/ui/language-toggle.component'
           </label>
 
           @if (error()) {
-            <p class="rounded-[3px] border-[1.5px] border-risk-high bg-red-50 px-3 py-2 text-sm text-risk-high">{{ error() }}</p>
+            <p
+              class="rounded-[3px] border-[1.5px] border-risk-high bg-red-50 px-3 py-2 text-sm text-risk-high"
+            >
+              {{ error() }}
+            </p>
           }
 
           <button
