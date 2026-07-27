@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 
 import { ApiService } from '../../../core/api/api.service';
+import { AuthService } from '../../../core/auth/auth.service';
 import {
   Project,
   ProjectFilters,
@@ -68,92 +69,99 @@ interface CrossTabRow {
         </p>
       }
 
-      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <app-kpi-card
-          label="โครงการทั้งหมด"
-          [value]="totalProjects()"
-          hint=""
-          accentClass="bg-navy"
-        />
-        <app-kpi-card
-          label="เสี่ยงสูง"
-          [value]="byLevel()['high'] ?? 0"
-          hint=""
-          accentClass="bg-risk-high"
-        />
-        <app-kpi-card
-          label="เสี่ยงปานกลาง"
-          [value]="byLevel()['medium'] ?? 0"
-          hint=""
-          accentClass="bg-risk-medium"
-        />
-        <app-kpi-card
-          label="เสี่ยงต่ำ"
-          [value]="byLevel()['low'] ?? 0"
-          hint=""
-          accentClass="bg-risk-low"
-        />
-      </div>
-
-      <section class="panel p-[18px]">
-        <h2 class="m-0 mb-0.5 text-[16px] font-bold text-ink">สัดส่วนความเสี่ยงตามประเภทโครงการ</h2>
-        <p class="m-0 mb-3.5 text-[13px] text-muted">
-          ตารางไขว้ระหว่างประเภทโครงการและระดับความเสี่ยง
+      @if (needsSubdistrictSelection()) {
+        <p class="rounded-[4px] border-[1.5px] border-line bg-zebra px-4 py-3 text-sm text-muted">
+          กรุณาเลือกตำบลเพื่อแสดงข้อมูล
         </p>
-        <div class="overflow-x-auto">
-          <table class="gov-table">
-            <thead>
-              <tr>
-                <th scope="col">ประเภทโครงการ</th>
-                <th scope="col" class="text-right!">เสี่ยงสูง</th>
-                <th scope="col" class="text-right!">เสี่ยงปานกลาง</th>
-                <th scope="col" class="text-right!">เสี่ยงต่ำ</th>
-                <th scope="col" class="text-right!">รวม</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (row of crossTab().rows; track row.type) {
-                <tr>
-                  <td class="font-bold">{{ row.type }}</td>
-                  <td class="text-right">{{ row.high }}</td>
-                  <td class="text-right">{{ row.medium }}</td>
-                  <td class="text-right">{{ row.low }}</td>
-                  <td class="text-right font-bold">{{ row.total }}</td>
-                </tr>
-              }
-              <tr class="bg-row-active! font-extrabold">
-                <td>รวมทั้งหมด</td>
-                <td class="text-right">{{ crossTab().totals.high }}</td>
-                <td class="text-right">{{ crossTab().totals.medium }}</td>
-                <td class="text-right">{{ crossTab().totals.low }}</td>
-                <td class="text-right">{{ crossTab().totals.total }}</td>
-              </tr>
-            </tbody>
-          </table>
+      } @else {
+        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <app-kpi-card
+            label="โครงการทั้งหมด"
+            [value]="totalProjects()"
+            hint=""
+            accentClass="bg-navy"
+          />
+          <app-kpi-card
+            label="เสี่ยงสูง"
+            [value]="byLevel()['high'] ?? 0"
+            hint=""
+            accentClass="bg-risk-high"
+          />
+          <app-kpi-card
+            label="เสี่ยงปานกลาง"
+            [value]="byLevel()['medium'] ?? 0"
+            hint=""
+            accentClass="bg-risk-medium"
+          />
+          <app-kpi-card
+            label="เสี่ยงต่ำ"
+            [value]="byLevel()['low'] ?? 0"
+            hint=""
+            accentClass="bg-risk-low"
+          />
         </div>
-      </section>
 
-      <app-bar-chart
-        title="แนวโน้มจำนวนโครงการตามระดับความเสี่ยง (ปี 2566–2568)"
-        subtitle="ปีที่ไม่มีโครงการจะแสดงเป็น 0"
-        [categories]="fiscalYearLabels"
-        [series]="riskLevelTrendBarSeries()"
-        unitSuffix="โครงการ"
-      />
-      <app-bar-chart
-        title="งบประมาณรวมแต่ละปี แบ่งตามประเภทโครงการ"
-        subtitle="เปรียบเทียบงบประมาณของแต่ละประเภทโครงการในแต่ละปี"
-        [categories]="fiscalYearLabels"
-        [series]="budgetByTypeBarSeries()"
-        unitSuffix="บาท"
-        rowHeader="ประเภทโครงการ"
-        [compactValueLabels]="true"
-      />
+        <section class="panel p-[18px]">
+          <h2 class="m-0 mb-0.5 text-[16px] font-bold text-ink">สัดส่วนความเสี่ยงตามประเภทโครงการ</h2>
+          <p class="m-0 mb-3.5 text-[13px] text-muted">
+            ตารางไขว้ระหว่างประเภทโครงการและระดับความเสี่ยง
+          </p>
+          <div class="overflow-x-auto">
+            <table class="gov-table">
+              <thead>
+                <tr>
+                  <th scope="col">ประเภทโครงการ</th>
+                  <th scope="col" class="text-right!">เสี่ยงสูง</th>
+                  <th scope="col" class="text-right!">เสี่ยงปานกลาง</th>
+                  <th scope="col" class="text-right!">เสี่ยงต่ำ</th>
+                  <th scope="col" class="text-right!">รวม</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of crossTab().rows; track row.type) {
+                  <tr>
+                    <td class="font-bold">{{ row.type }}</td>
+                    <td class="text-right">{{ row.high }}</td>
+                    <td class="text-right">{{ row.medium }}</td>
+                    <td class="text-right">{{ row.low }}</td>
+                    <td class="text-right font-bold">{{ row.total }}</td>
+                  </tr>
+                }
+                <tr class="bg-row-active! font-extrabold">
+                  <td>รวมทั้งหมด</td>
+                  <td class="text-right">{{ crossTab().totals.high }}</td>
+                  <td class="text-right">{{ crossTab().totals.medium }}</td>
+                  <td class="text-right">{{ crossTab().totals.low }}</td>
+                  <td class="text-right">{{ crossTab().totals.total }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <app-bar-chart
+          title="แนวโน้มจำนวนโครงการตามระดับความเสี่ยง (ปี 2566–2568)"
+          subtitle="ปีที่ไม่มีโครงการจะแสดงเป็น 0"
+          [categories]="fiscalYearLabels"
+          [series]="riskLevelTrendBarSeries()"
+          unitSuffix="โครงการ"
+        />
+        <app-bar-chart
+          title="งบประมาณรวมแต่ละปี แบ่งตามประเภทโครงการ"
+          subtitle="เปรียบเทียบงบประมาณของแต่ละประเภทโครงการในแต่ละปี"
+          [categories]="fiscalYearLabels"
+          [series]="budgetByTypeBarSeries()"
+          unitSuffix="บาท"
+          rowHeader="ประเภทโครงการ"
+          [compactValueLabels]="true"
+        />
+      }
     </section>
   `,
 })
 export class OverviewPageComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly auth = inject(AuthService);
   readonly fiscalYearLabels = FISCAL_YEARS.map(String);
   readonly error = signal('');
   readonly subdistricts = signal<Subdistrict[]>([]);
@@ -169,6 +177,10 @@ export class OverviewPageComponent implements OnInit {
       Boolean(this.selectedSubdistrictId()) ||
       Boolean(this.selectedYear()) ||
       Boolean(this.selectedRiskLevel()),
+  );
+  /** role ไม่ถูกจำกัดพื้นที่ (เห็นได้หลายตำบล) ต้องเลือกตำบลก่อนถึงจะโหลด/แสดงข้อมูล */
+  readonly needsSubdistrictSelection = computed(
+    () => !this.auth.isScopedRole() && this.selectedSubdistrictId() === null,
   );
   readonly byLevel = computed<Record<string, number | undefined>>(() =>
     this.hasActiveFilter()
@@ -233,28 +245,38 @@ export class OverviewPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadSubdistricts();
-    this.loadDashboard();
-    this.loadTimeSeries();
+    if (!this.needsSubdistrictSelection()) {
+      this.loadDashboard();
+      this.loadTimeSeries();
+    }
   }
   setSubdistrict(value: number | null): void {
     this.selectedSubdistrictId.set(value);
-    this.loadDashboard();
-    this.loadTimeSeries();
+    if (!this.needsSubdistrictSelection()) {
+      this.loadDashboard();
+      this.loadTimeSeries();
+    }
   }
   setYear(value: number | null): void {
     this.selectedYear.set(value);
-    this.loadDashboard();
+    if (!this.needsSubdistrictSelection()) {
+      this.loadDashboard();
+    }
   }
   setRisk(value: string | null): void {
     this.selectedRiskLevel.set(value);
-    this.loadDashboard();
+    if (!this.needsSubdistrictSelection()) {
+      this.loadDashboard();
+    }
   }
   resetFilters(): void {
     this.selectedSubdistrictId.set(null);
     this.selectedYear.set(2568);
     this.selectedRiskLevel.set(null);
-    this.loadDashboard();
-    this.loadTimeSeries();
+    if (!this.needsSubdistrictSelection()) {
+      this.loadDashboard();
+      this.loadTimeSeries();
+    }
   }
   private loadSubdistricts(): void {
     this.api.subdistricts().subscribe({

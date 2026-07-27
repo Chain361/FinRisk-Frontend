@@ -2,6 +2,7 @@ import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { catchError, forkJoin, of } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
+import { AuthService } from '../../core/auth/auth.service';
 import { AnnualRisk, FinancialStatement, Subdistrict } from '../../core/models/domain.models';
 import { BarChartComponent, BarChartSeries } from '../../shared/charts/bar-chart.component';
 import { FilterBarComponent } from '../../shared/filters/filter-bar.component';
@@ -88,6 +89,11 @@ interface IncomeStatementTotals {
         </p>
       }
 
+      @if (needsSubdistrictSelection()) {
+        <p class="rounded-[4px] border-[1.5px] border-line bg-zebra px-4 py-3 text-sm text-muted">
+          กรุณาเลือกตำบลเพื่อแสดงข้อมูล
+        </p>
+      } @else {
       <div class="grid gap-4 md:grid-cols-3">
         @for (card of balanceSheetKpis(); track card.label) {
           <app-kpi-card
@@ -319,11 +325,13 @@ interface IncomeStatementTotals {
           </div>
         </div>
       </section>
+      }
     </section>
   `,
 })
 export class FinancialHealthPageComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly auth = inject(AuthService);
 
   readonly FISCAL_YEARS = FISCAL_YEARS;
   readonly fiscalYearLabels = FISCAL_YEARS.map(String);
@@ -338,6 +346,11 @@ export class FinancialHealthPageComponent implements OnInit {
 
   readonly comparisonMetric = signal<ComparisonMetric>('netAssets');
   readonly comparisonFactorCode = signal<string | null>(null);
+
+  /** role ไม่ถูกจำกัดพื้นที่ (เห็นได้หลายตำบล) ต้องเลือกตำบลก่อนถึงจะแสดงข้อมูล */
+  readonly needsSubdistrictSelection = computed(
+    () => !this.auth.isScopedRole() && this.selectedSubdistrictId() === null,
+  );
 
   readonly scopedRows = computed(() => {
     const subdistrictId = this.selectedSubdistrictId();

@@ -40,10 +40,10 @@ import { FISCAL_YEARS, subdistrictLabel } from '../utils/risk-utils';
         } @else {
           <select
             class="gov-select mt-[5px]"
-            [value]="selectedSubdistrictId() ?? 'all'"
+            [value]="selectedSubdistrictId() ?? ''"
             (change)="onSubdistrictChange($any($event.target).value)"
           >
-            <option value="all">{{ t('filter.allSubdistricts') }}</option>
+            <option value="" disabled>{{ t('filter.selectSubdistrict') }}</option>
             @for (subdistrict of subdistricts(); track subdistrict.subdistrict_id) {
               <option [value]="subdistrict.subdistrict_id">{{ labelFor(subdistrict) }}</option>
             }
@@ -193,7 +193,7 @@ export class FilterBarComponent {
   }
 
   onSubdistrictChange(value: string): void {
-    this.selectedSubdistrictIdChange.emit(value === 'all' ? null : Number(value));
+    this.selectedSubdistrictIdChange.emit(value ? Number(value) : null);
   }
 
   onYearChange(value: string): void {

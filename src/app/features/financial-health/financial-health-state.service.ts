@@ -64,6 +64,11 @@ export class FinancialHealthStateService {
   readonly comparisonMetric = signal<ComparisonMetric>('netAssets');
   readonly comparisonFactorCode = signal<string | null>(null);
 
+  /** role ไม่ถูกจำกัดพื้นที่ (เห็นได้หลายตำบล) ต้องเลือกตำบลก่อนถึงจะแสดงข้อมูล */
+  readonly needsSubdistrictSelection = computed(
+    () => !this.auth.isScopedRole() && this.selectedSubdistrictId() === null,
+  );
+
   readonly scopedRows = computed(() => {
     const subdistrictId = this.selectedSubdistrictId();
     return this.annualRisks().filter(

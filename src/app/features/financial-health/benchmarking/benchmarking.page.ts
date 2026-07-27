@@ -39,6 +39,11 @@ import {
         </p>
       }
 
+      @if (needsSubdistrictSelection()) {
+        <p class="rounded-[4px] border-[1.5px] border-line bg-zebra px-4 py-3 text-sm text-muted">
+          {{ t('filter.selectSubdistrictPrompt') }}
+        </p>
+      } @else {
       <section class="panel p-[18px]">
         <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -96,6 +101,7 @@ import {
           />
         }
       </section>
+      }
     </section>
   `,
 })
@@ -107,6 +113,7 @@ export class BenchmarkingPageComponent implements OnInit {
   readonly error = this.state.error;
   readonly subdistricts = this.state.subdistricts;
   readonly selectedSubdistrictId = this.state.selectedSubdistrictId;
+  readonly needsSubdistrictSelection = this.state.needsSubdistrictSelection;
   readonly selectedYear = this.state.selectedYear;
   readonly comparisonMetric = this.state.comparisonMetric;
   readonly comparisonFactorCode = this.state.comparisonFactorCode;
