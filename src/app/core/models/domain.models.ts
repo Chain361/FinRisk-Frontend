@@ -371,3 +371,19 @@ export interface AuditorFeedbackCreate {
   suggestions?: string | null;
   status: 'draft' | 'submitted';
 }
+
+/** ประวัติแชท — ฝั่ง client ถืออยู่ ไม่เก็บใน backend (ส่งไปทุกครั้งพร้อมข้อความใหม่) */
+export interface ChatTurn {
+  role: 'user' | 'model';
+  text: string;
+}
+
+export interface ChatToolCall {
+  name: string;
+  args: Record<string, unknown>;
+}
+
+export interface ChatResponse {
+  reply: string;
+  tool_calls: ChatToolCall[];
+}
