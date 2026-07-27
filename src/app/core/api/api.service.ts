@@ -13,6 +13,8 @@ import {
   AuditAssignment,
   AuditorFeedback,
   AuditorFeedbackCreate,
+  ChatResponse,
+  ChatTurn,
   CreateAssignmentRequest,
   DataUploadResult,
   FinancialStatement,
@@ -216,6 +218,11 @@ export class ApiService {
       `${this.baseUrl}/audit/feedback/${feedbackId}/resolve`,
       {},
     );
+  }
+
+  /** ส่งข้อความไปยัง chatbot — history เป็น turn ก่อนหน้าที่ client ถืออยู่เอง (backend ไม่เก็บ state) */
+  chatbotMessage(message: string, history: ChatTurn[]): Observable<ChatResponse> {
+    return this.http.post<ChatResponse>(`${this.baseUrl}/chatbot`, { message, history });
   }
 
   private toParams(filters: ProjectFilters): HttpParams {

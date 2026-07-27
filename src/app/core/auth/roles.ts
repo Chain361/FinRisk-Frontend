@@ -44,3 +44,6 @@ export const ASSIGNMENT_ROLES = [
   'project_auditor',
   'risk_analyst',
 ] as const;
+
+/** role ที่ใช้ chatbot ได้ — mirror ของ require_roles บน POST /chatbot (routers/chatbot.py) */
+export const CHATBOT_ROLES = ['admin', 'project_auditor', 'risk_analyst'] as const;

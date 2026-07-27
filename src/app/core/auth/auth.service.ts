@@ -7,9 +7,7 @@ import { ApiService } from '../api/api.service';
 import { AppUser, LoginResponse } from '../models/domain.models';
 import { defaultFeaturesForRole } from './features';
 import { SCOPED_ROLES } from './roles';
-import { TOKEN_KEY } from './auth.interceptor';
-
-const USER_KEY = 'finrisk_user';
+import { TOKEN_KEY, USER_KEY, isTokenExpired } from './auth.constants';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -17,9 +15,12 @@ export class AuthService {
   private readonly router = inject(Router);
   private readonly i18n = inject(I18nService);
 
-  readonly token = signal<string | null>(localStorage.getItem(TOKEN_KEY));
+  readonly token = signal<string | null>(this.readStoredToken());
   readonly user = signal<AppUser | null>(this.restoreUser());
-  readonly isAuthenticated = computed(() => Boolean(this.token()));
+  readonly isAuthenticated = computed(() => {
+    const token = this.token();
+    return token !== null && !isTokenExpired(token);
+  });
 
   /** role code ของผู้ใช้ปัจจุบัน (null = ยังไม่ login) */
   readonly role = computed(() => this.user()?.role ?? null);
@@ -100,6 +101,18 @@ export class AuthService {
     this.token.set(null);
     this.user.set(null);
     void this.router.navigate(['/login']);
+  }
+
+  /** token เก่าที่ค้างใน localStorage แล้วหมดอายุไปแล้ว (เช่น ปิดแท็บทิ้งไว้ข้ามวัน) ถือว่าไม่มี
+   * session — เคลียร์ทิ้งตั้งแต่ตอน init กัน guard เข้าใจผิดว่า login อยู่ทั้งที่ยิง request ไปก็ 401 */
+  private readStoredToken(): string | null {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (token && isTokenExpired(token)) {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+      return null;
+    }
+    return token;
   }
 
   private restoreUser(): AppUser | null {

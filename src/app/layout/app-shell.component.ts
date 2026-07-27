@@ -16,7 +16,9 @@ import { catchError, filter, map, of } from 'rxjs';
 import { ApiService } from '../core/api/api.service';
 import { AuthService } from '../core/auth/auth.service';
 import { I18nService } from '../core/i18n/i18n.service';
+import { ASSIGNMENT_ROLES, CHATBOT_ROLES } from '../core/auth/roles';
 import { SystemMeta } from '../core/models/domain.models';
+import { ChatbotWidgetComponent } from '../features/chatbot/chatbot-widget.component';
 import { GuardrailBannerComponent } from '../shared/ui/guardrail-banner.component';
 import { PrototypeBannerComponent } from '../shared/ui/prototype-banner.component';
 import { NAV_GROUPS, NavGroup, NavItem } from './nav-groups';
@@ -27,6 +29,7 @@ import { NAV_GROUPS, NavGroup, NavItem } from './nav-groups';
   imports: [
     RouterOutlet,
     RouterLink,
+    ChatbotWidgetComponent,
     GuardrailBannerComponent,
     PrototypeBannerComponent,
     LucideLayoutDashboard,
@@ -295,6 +298,10 @@ import { NAV_GROUPS, NavGroup, NavItem } from './nav-groups';
         </main>
       </div>
     </div>
+
+    @if (auth.hasRole(...chatbotRoles)) {
+      <app-chatbot-widget />
+    }
   `,
 })
 export class AppShellComponent {
@@ -304,6 +311,8 @@ export class AppShellComponent {
   private readonly api = inject(ApiService);
 
   readonly navGroups = NAV_GROUPS;
+  /** mirror ของ require_roles บน POST /chatbot (FinRisk-Backend routers/chatbot.py) */
+  readonly chatbotRoles = CHATBOT_ROLES;
 
   /** เมทาดาทาระบบจาก /meta — data-as-of จริง (ไม่ใช่วันที่เครื่องผู้ใช้) */
   private readonly meta = toSignal<SystemMeta | null>(
