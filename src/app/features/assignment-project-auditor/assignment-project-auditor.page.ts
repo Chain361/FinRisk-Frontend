@@ -38,7 +38,7 @@ import {
         class="rounded-[4px] border-l-4 border-gold bg-gold-bg px-4 py-3 text-sm leading-6 text-[#66511b]"
       >
         เลือกโครงการ เลือกผู้รับผิดชอบ และระบุคำแนะนำก่อนยืนยันการมอบหมาย
-        ระบบจะบันทึกการมอบหมายไว้ในเครื่องในระยะแรก
+        ระบบจะบันทึกการมอบหมายเข้ากับ user จริงใน FinRisk Backend
       </div>
 
       @if (error()) {
@@ -154,7 +154,7 @@ import {
                     >
                       มอบหมายแล้วให้
                       <span class="font-extrabold">{{
-                        assignmentAnalystName(projectAssignment(project)!)
+                        assignmentAnalystLabel(projectAssignment(project)!)
                       }}</span>
                       · {{ assignmentProjectStatus(projectAssignment(project)!) }}
                     </div>
@@ -185,7 +185,7 @@ import {
                 >
                   โครงการนี้ถูกมอบหมายแล้วให้
                   <span class="font-extrabold">{{
-                    assignmentAnalystName(selectedProjectAssignment()!)
+                    assignmentAnalystLabel(selectedProjectAssignment()!)
                   }}</span>
                   · {{ assignmentProjectStatus(selectedProjectAssignment()!) }}
                 </div>
@@ -200,7 +200,7 @@ import {
             <input
               class="gov-input"
               type="search"
-              placeholder="พิมพ์ชื่อหรือความเชี่ยวชาญ"
+              placeholder="พิมพ์ชื่อ ความเชี่ยวชาญ หรือ user"
               [ngModel]="analystSearch()"
               (ngModelChange)="analystSearch.set($event)"
             />
@@ -224,7 +224,9 @@ import {
                     >งานคงค้าง {{ analyst.activeCases }}</span
                   >
                 </div>
-                <p class="m-0 mt-1 text-xs text-muted">{{ analyst.team }}</p>
+                @if (analyst.userLabel) {
+                  <p class="m-0 mt-1 text-xs font-bold text-navy">{{ analyst.userLabel }}</p>
+                }
                 <p class="m-0 mt-1.5 text-xs text-navy">{{ analyst.specialties.join(' · ') }}</p>
               </button>
             } @empty {
@@ -398,7 +400,7 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
     return this.analysts().filter(
       (analyst) =>
         !search ||
-        `${analyst.name} ${analyst.team} ${analyst.specialties.join(' ')}`
+        `${analyst.name} ${analyst.username ?? ''} ${analyst.userLabel ?? ''} ${analyst.team} ${analyst.specialties.join(' ')}`
           .toLocaleLowerCase('th')
           .includes(search),
     );
@@ -407,9 +409,10 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
   readonly confirmationMessage = computed(() => {
     const project = this.selectedProject();
     const analyst = this.analysts().find((item) => item.id === this.selectedAnalystId());
+    const assignee = analyst ? this.analystDisplayLabel(analyst) : '';
     const assignmentScope = this.dueDate() ? ` Due date ${this.dueDate()}.` : '';
     return project && analyst
-      ? `ต้องการมอบหมาย “${project.project_name}” ให้ ${analyst.name} ใช่หรือไม่?${assignmentScope} ระบบจะบันทึกการมอบหมายและแจ้งผลสำเร็จทันที`
+      ? `ต้องการมอบหมาย “${project.project_name}” ให้ ${assignee} ใช่หรือไม่?${assignmentScope} ระบบจะบันทึกการมอบหมายและแจ้งผลสำเร็จทันที`
       : 'กรุณาตรวจสอบข้อมูลการมอบหมายอีกครั้ง';
   });
 
@@ -511,10 +514,14 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
     return this.assignmentsByProject().get(this.projectId(project)) ?? null;
   }
 
-  assignmentAnalystName(assignment: SavedAssignment): string {
-    return (
-      this.analysts().find((item) => item.id === assignment.analystId)?.name ?? assignment.analystId
-    );
+  assignmentAnalystLabel(assignment: SavedAssignment): string {
+    const analyst = this.analysts().find((item) => item.id === assignment.analystId);
+    if (analyst) {
+      return this.analystDisplayLabel(analyst);
+    }
+    return assignment.analystUserLabel
+      ? `${assignment.analystName ?? assignment.analystId} (${assignment.analystUserLabel})`
+      : (assignment.analystName ?? assignment.analystId);
   }
 
   assignmentProjectStatus(assignment: SavedAssignment): string {
@@ -569,6 +576,9 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
     return {
       id: String(analyst.user_id),
       name: analyst.display_name || analyst.username,
+      username: analyst.username,
+      entityType: analyst.entity_type ?? undefined,
+      userLabel: analyst.user_label ?? `user:${analyst.username}`,
       team: 'นักวิเคราะห์ความเสี่ยง',
       activeCases: analyst.active_cases,
       specialties: [],
@@ -579,6 +589,11 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
     return {
       projectId: assignment.project_id,
       analystId: String(assignment.assigned_to),
+      analystName: assignment.assignee_display_name || assignment.assignee_username || undefined,
+      analystUserLabel:
+        assignment.assignee_user_label ??
+        (assignment.assignee_username ? `user:${assignment.assignee_username}` : undefined),
+      analystEntityType: assignment.assignee_entity_type ?? undefined,
       assignedAt: assignment.created_at,
       priority: assignment.priority === 'normal' ? 'normal' : assignment.priority,
       note: assignment.note,
@@ -589,5 +604,9 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
       assignedBy:
         assignment.assigned_by_display_name || assignment.assigned_by_username || undefined,
     };
+  }
+
+  private analystDisplayLabel(analyst: Analyst): string {
+    return analyst.userLabel ? `${analyst.name} (${analyst.userLabel})` : analyst.name;
   }
 }

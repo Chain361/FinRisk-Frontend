@@ -36,6 +36,9 @@ export const PROJECT_WORKFLOW_STATUS_LABELS: Record<AssignmentWorkflowStatus, st
 export interface Analyst {
   id: string;
   name: string;
+  username?: string;
+  entityType?: string;
+  userLabel?: string;
   team: string;
   activeCases: number;
   specialties: string[];
@@ -47,6 +50,8 @@ export interface SavedAssignment {
   analystId: string;
   analystName?: string;
   analystTeam?: string;
+  analystUserLabel?: string;
+  analystEntityType?: string;
   assignedAt: string;
   priority?: AssignmentPriority;
   note: string;
@@ -66,7 +71,9 @@ export function assignmentWorkflowStatusLabel(status?: AssignmentWorkflowStatus 
   return ASSIGNMENT_WORKFLOW_STATUS_LABELS[status ?? DEFAULT_ASSIGNMENT_WORKFLOW_STATUS];
 }
 
-export function assignmentWorkflowStatusBadgeClass(status?: AssignmentWorkflowStatus | null): string {
+export function assignmentWorkflowStatusBadgeClass(
+  status?: AssignmentWorkflowStatus | null,
+): string {
   switch (status ?? DEFAULT_ASSIGNMENT_WORKFLOW_STATUS) {
     case 'waiting_acceptance':
       return 'bg-orange-100 text-risk-medium';

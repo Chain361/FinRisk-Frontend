@@ -3,6 +3,8 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { catchError, forkJoin, of } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
+import { AuthService } from '../../core/auth/auth.service';
+import { FEEDBACK_ROLES } from '../../core/auth/roles';
 import {
   SavedAssignment,
   projectWorkflowStatusLabel,
@@ -31,6 +33,7 @@ import {
   toBool,
   toNumber,
 } from '../../shared/utils/risk-utils';
+import { ProjectFeedbackPanelComponent } from './project-feedback-panel.component';
 
 @Component({
   selector: 'app-risk-factors-page',
@@ -40,6 +43,7 @@ import {
     FilterBarComponent,
     InfoTooltipComponent,
     RouterLink,
+    ProjectFeedbackPanelComponent,
     RiskBadgeComponent,
     RiskMatrixComponent,
   ],
@@ -180,7 +184,7 @@ import {
                       class="inline-flex h-10 items-center justify-center rounded-[3px] border-[1.5px] border-line bg-white px-3 text-[13.5px] font-bold text-slate-700 hover:bg-zebra"
                       (click)="clearSelection()"
                     >
-                      {{ returnUrl() ? 'กลับไปหน้าก่อนหน้า' : 'กลับไปรายการ' }}
+                      กลับไปรายการ
                     </button>
                     <label class="block">
                       <span class="sr-only">ค้นหาโครงการ</span>
@@ -249,7 +253,7 @@ import {
                         }
                       </p>
                     </div>
-                    <div class="flex flex-col items-start gap-1.5">
+                    <div class="flex flex-col items-end gap-1.5">
                       <app-risk-badge [level]="scoreInfo().risk_level" />
                       <span class="text-[11px] font-bold text-muted"
                         >Risk Score {{ number(scoreInfo().risk_score, 0) }}/100</span
@@ -302,6 +306,11 @@ import {
                             <p class="m-0 mt-0.5 text-[13.5px] font-extrabold text-ink">
                               {{ assignmentAnalystName() }}
                             </p>
+                            @if (assignmentAnalystUserLabel()) {
+                              <p class="m-0 mt-0.5 text-[11.5px] font-bold text-navy">
+                                {{ assignmentAnalystUserLabel() }}
+                              </p>
+                            }
                           } @else {
                             <p class="m-0 mt-0.5 text-[13.5px] italic text-slate-400">รอมอบหมาย</p>
                           }
@@ -630,12 +639,15 @@ import {
                           <!-- มาตรา/ระเบียบที่ curate ไว้ (ต่างจาก legal_ref ด้านบนซึ่งเป็นข้อความสรุปจาก catalog) -->
                           @if (legalRefs(factor.factor_code).length > 0) {
                             <div class="mt-2 border-t border-line-soft pt-2">
-                              <p class="m-0 text-[11.5px] font-bold text-slate-600">มาตรา/ระเบียบที่เกี่ยวข้อง:</p>
+                              <p class="m-0 text-[11.5px] font-bold text-slate-600">
+                                มาตรา/ระเบียบที่เกี่ยวข้อง:
+                              </p>
                               <ul class="m-0 mt-1 grid gap-1.5 pl-0">
                                 @for (ref of legalRefs(factor.factor_code); track ref.section_id) {
                                   <li class="list-none text-[11.5px] leading-relaxed text-muted">
                                     <span class="font-bold text-slate-700"
-                                      >{{ ref.law }}{{ ref.section_no ? ' ' + ref.section_no : '' }}</span
+                                      >{{ ref.law
+                                      }}{{ ref.section_no ? ' ' + ref.section_no : '' }}</span
                                     >
                                     @if (ref.reason) {
                                       — {{ ref.reason }}
@@ -645,7 +657,9 @@ import {
                               </ul>
                             </div>
                           } @else if (legalRefNote(factor.factor_code)) {
-                            <p class="m-0 mt-2 border-t border-line-soft pt-2 text-[11.5px] italic text-muted">
+                            <p
+                              class="m-0 mt-2 border-t border-line-soft pt-2 text-[11.5px] italic text-muted"
+                            >
                               {{ legalRefNote(factor.factor_code) }}
                             </p>
                           }
@@ -674,6 +688,10 @@ import {
                     </div>
                   }
                 </section>
+
+                @if (canSeeFeedback()) {
+                  <app-project-feedback-panel [projectId]="String(selectedProjectId())" />
+                }
 
                 <section class="panel p-[18px]">
                   <div class="flex flex-wrap items-start justify-between gap-3">
@@ -733,6 +751,7 @@ import {
 })
 export class RiskFactorsPageComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
@@ -848,6 +867,8 @@ export class RiskFactorsPageComponent implements OnInit {
     return {
       id: assignment.analystId,
       name: assignment.analystName || assignment.analystId,
+      userLabel: assignment.analystUserLabel,
+      entityType: assignment.analystEntityType,
       team: assignment.analystTeam || 'นักวิเคราะห์ความเสี่ยง',
       activeCases: 0,
       specialties: [],
@@ -992,6 +1013,10 @@ export class RiskFactorsPageComponent implements OnInit {
     return this.assignmentAnalyst()?.name || 'รอมอบหมาย';
   }
 
+  assignmentAnalystUserLabel(): string {
+    return this.assignmentAnalyst()?.userLabel || '';
+  }
+
   assignmentAnalystTeam(): string {
     return this.assignmentAnalyst()?.team || 'ยังไม่มีผู้รับผิดชอบ';
   }
@@ -1014,6 +1039,10 @@ export class RiskFactorsPageComponent implements OnInit {
     const status = this.latestProjectAssignment()?.workflowStatus;
     if (!status) return 'bg-risk-medium text-white';
     return status === 'completed' ? 'bg-risk-low text-white' : 'bg-navy text-white';
+  }
+
+  canSeeFeedback(): boolean {
+    return this.auth.hasRole(...FEEDBACK_ROLES);
   }
 
   vendorLabel(): string {
@@ -1270,6 +1299,10 @@ export class RiskFactorsPageComponent implements OnInit {
       projectId: assignment.project_id,
       analystId: String(assignment.assigned_to),
       analystName: assignment.assignee_display_name || assignment.assignee_username || undefined,
+      analystUserLabel:
+        assignment.assignee_user_label ??
+        (assignment.assignee_username ? `user:${assignment.assignee_username}` : undefined),
+      analystEntityType: assignment.assignee_entity_type ?? undefined,
       assignedAt: assignment.created_at,
       priority: assignment.priority,
       note: assignment.note,
