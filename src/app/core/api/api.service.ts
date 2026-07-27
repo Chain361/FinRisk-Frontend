@@ -18,6 +18,9 @@ import {
   FinancialStatement,
   LoginRequest,
   LoginResponse,
+  NotificationListResponse,
+  NotificationReadAllResponse,
+  NotificationReadResponse,
   Project,
   ProjectDetail,
   ProjectDetailResponse,
@@ -151,6 +154,28 @@ export class ApiService {
 
   deleteAssignment(assignmentId: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/audit/assignments/${assignmentId}`);
+  }
+
+  notifications(filters: { unread?: boolean } = {}): Observable<NotificationListResponse> {
+    let params = new HttpParams();
+    if (filters.unread !== undefined) {
+      params = params.set('unread', String(filters.unread));
+    }
+    return this.http.get<NotificationListResponse>(`${this.baseUrl}/notifications`, { params });
+  }
+
+  markNotificationRead(notificationId: number): Observable<NotificationReadResponse> {
+    return this.http.patch<NotificationReadResponse>(
+      `${this.baseUrl}/notifications/${notificationId}/read`,
+      {},
+    );
+  }
+
+  markAllNotificationsRead(): Observable<NotificationReadAllResponse> {
+    return this.http.post<NotificationReadAllResponse>(
+      `${this.baseUrl}/notifications/read-all`,
+      {},
+    );
   }
 
   feedbackList(): Observable<AuditorFeedback[]> {
