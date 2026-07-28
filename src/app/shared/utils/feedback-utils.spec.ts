@@ -11,7 +11,7 @@ describe('feedbackStatusLabel', () => {
   it('labels each workflow status in Thai', () => {
     expect(feedbackStatusLabel('draft')).toBe('ฉบับร่าง');
     expect(feedbackStatusLabel('submitted')).toBe('ส่งแล้ว');
-    expect(feedbackStatusLabel('resolved')).toBe('ปิดเรื่องแล้ว');
+    expect(feedbackStatusLabel('resolved')).toBe('อนุมัติแล้ว');
   });
 
   it('falls back for unknown statuses', () => {

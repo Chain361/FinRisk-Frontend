@@ -381,7 +381,7 @@ export type ConcernLevel = 'low' | 'medium' | 'high';
 export const FEEDBACK_STATUS_LABELS: Record<FeedbackStatus, string> = {
   draft: 'แบบร่าง',
   submitted: 'ส่งแล้ว',
-  resolved: 'ปิดเรื่องแล้ว',
+  resolved: 'อนุมัติแล้ว',
 };
 
 export const CONCERN_LEVEL_OPTIONS: ReadonlyArray<{

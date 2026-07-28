@@ -23,8 +23,8 @@ type ModalMode = 'submit' | 'delete' | 'resolve' | null;
 
 /**
  * F5 — ความเห็นผู้ตรวจสอบต่อโครงการ (แผงใต้รายละเอียดโครงการในหน้า F3)
- * workflow: draft (แก้/ลบได้) → submitted (แก้ไม่ได้) → resolved (ปิดเรื่องโดย admin/auditor)
- * สิทธิ์ mirror ฝั่ง backend: FEEDBACK_ROLES เห็น/เขียน, RESOLVE_ROLES ปิดเรื่อง+จัดการของคนอื่น
+ * workflow: draft (แก้/ลบได้) → submitted (แก้ไม่ได้) → resolved (อนุมัติโดย admin/auditor)
+ * สิทธิ์ mirror ฝั่ง backend: FEEDBACK_ROLES เห็น/เขียน, RESOLVE_ROLES อนุมัติ+จัดการของคนอื่น
  */
 @Component({
   selector: 'app-project-feedback-panel',
@@ -76,7 +76,7 @@ type ModalMode = 'submit' | 'delete' | 'resolve' | null;
                     <p class="m-0 mt-0.5 text-[11.5px] text-muted">
                       อัปเดตล่าสุด {{ date(item.updated_at) }}
                       @if (item.resolved_at) {
-                        · ปิดเรื่องเมื่อ {{ date(item.resolved_at) }}
+                        · อนุมัติเมื่อ {{ date(item.resolved_at) }}
                       }
                     </p>
                   </div>
@@ -136,7 +136,7 @@ type ModalMode = 'submit' | 'delete' | 'resolve' | null;
                         class="gov-btn-primary text-[12.5px]"
                         (click)="askResolve(item)"
                       >
-                        ปิดเรื่อง
+                        อนุมัติ
                       </button>
                     }
                   </div>
@@ -208,7 +208,7 @@ export class ProjectFeedbackPanelComponent {
       case 'delete':
         return 'ยืนยันการลบความเห็น';
       case 'resolve':
-        return 'ยืนยันการปิดเรื่อง';
+        return 'ยืนยันการอนุมัติ';
       default:
         return '';
     }
@@ -221,7 +221,7 @@ export class ProjectFeedbackPanelComponent {
       case 'delete':
         return 'ความเห็นที่ลบจะหายไปถาวร ต้องการลบใช่หรือไม่?';
       case 'resolve':
-        return 'ปิดเรื่องเมื่อดำเนินการตามข้อสังเกตครบถ้วนแล้ว ต้องการปิดเรื่องใช่หรือไม่?';
+        return 'อนุมัติเมื่อดำเนินการตามข้อสังเกตครบถ้วนแล้ว ต้องการอนุมัติใช่หรือไม่?';
       default:
         return '';
     }
@@ -234,7 +234,7 @@ export class ProjectFeedbackPanelComponent {
       case 'delete':
         return 'ลบ';
       case 'resolve':
-        return 'ปิดเรื่อง';
+        return 'อนุมัติ';
       default:
         return 'ยืนยัน';
     }
@@ -249,7 +249,7 @@ export class ProjectFeedbackPanelComponent {
     return item.auditor_username === username || this.auth.hasRole(...RESOLVE_ROLES);
   }
 
-  /** ปุ่มปิดเรื่อง — แสดงเฉพาะรายการที่ส่งแล้ว (design choice ฝั่ง UI; backend ไม่บังคับสถานะ) */
+  /** ปุ่มอนุมัติ — แสดงเฉพาะรายการที่ส่งแล้ว (design choice ฝั่ง UI; backend ไม่บังคับสถานะ) */
   canResolve(item: AuditorFeedback): boolean {
     return item.status === 'submitted' && this.auth.hasRole(...RESOLVE_ROLES);
   }
@@ -363,8 +363,37 @@ export class ProjectFeedbackPanelComponent {
   private resolve(feedbackId: number): void {
     this.error.set('');
     this.api.resolveFeedback(feedbackId).subscribe({
-      next: () => this.reload(this.projectId()),
-      error: (err) => this.error.set(err?.error?.detail ?? 'ปิดเรื่องไม่สำเร็จ'),
+      next: () => {
+        this.reload(this.projectId());
+        this.completeAssignmentForProject();
+      },
+      error: (err) => this.error.set(err?.error?.detail ?? 'อนุมัติไม่สำเร็จ'),
+    });
+  }
+
+  /** อนุมัติความเห็นแล้ว → ปิดงานตรวจสอบ (assignment) ของโครงการนี้เป็น completed ไปเลย
+   * ข้ามขั้น pending_approval/regional_supervisor ตามปกติของ workflow — เป็นทางลัดที่ตกลงกันไว้
+   * ต้องมี endpoint ฝั่ง backend รองรับ transition นี้ด้วย (ไม่ใช่แค่ฝั่ง UI) */
+  private completeAssignmentForProject(): void {
+    const projectId = this.projectId();
+    this.api.assignments().subscribe({
+      next: (assignments) => {
+        const target = assignments.find(
+          (a) => String(a.project_id) === String(projectId) && a.status !== 'completed',
+        );
+        if (!target) {
+          return;
+        }
+        this.api
+          .updateAssignmentStatus(
+            target.assignment_id,
+            'completed',
+            'ปิดอัตโนมัติหลังอนุมัติความเห็นผู้ตรวจสอบ',
+          )
+          .subscribe({
+            error: () => this.error.set('อนุมัติความเห็นสำเร็จ แต่ปิดสถานะงานตรวจสอบไม่สำเร็จ'),
+          });
+      },
     });
   }
 

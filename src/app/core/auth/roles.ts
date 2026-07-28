@@ -25,7 +25,7 @@ export const FEEDBACK_ROLES = [
   'risk_analyst',
 ] as const;
 
-/** role ที่ปิดเรื่อง (resolve) และจัดการความเห็นของคนอื่นได้ — mirror ของ RESOLVE_ROLES ฝั่ง backend */
+/** role ที่อนุมัติ (resolve) และจัดการความเห็นของคนอื่นได้ — mirror ของ RESOLVE_ROLES ฝั่ง backend */
 export const RESOLVE_ROLES = ['admin', 'project_auditor'] as const;
 
 export const ROLE_LABELS: Record<string, string> = {

@@ -46,19 +46,9 @@ import {
     FeedbackStatusBadgeComponent,
     FilterBarComponent,
     FormsModule,
-    RouterLink,
   ],
   template: `
     <section class="page-shell">
-      @if (assignmentRouteId()) {
-        <a
-          routerLink="/risk-analyst-feedback/projects"
-          class="inline-flex w-fit items-center gap-1.5 text-sm font-bold text-navy no-underline hover:underline"
-        >
-          &larr; กลับไปรายการโครงการ
-        </a>
-      }
-
       <div>
         <h1 class="m-0 text-[26px] font-extrabold text-ink">
           แบบฟอร์มบันทึกความคิดเห็นด้านความเสี่ยงของโครงการ
@@ -73,6 +63,8 @@ import {
         [selectedSubdistrictId]="selectedSubdistrictId()"
         [selectedYear]="selectedYear()"
         [selectedRiskLevel]="selectedRiskLevel()"
+        [showYearFilter]="!isRiskAnalyst()"
+        [showRiskFilter]="!isRiskAnalyst()"
         (selectedSubdistrictIdChange)="setSubdistrict($event)"
         (selectedYearChange)="setYear($event)"
         (selectedRiskLevelChange)="setRisk($event)"
@@ -109,13 +101,6 @@ import {
                     </p>
                   </div>
                   <div class="flex w-full max-w-[305px] flex-col gap-2">
-                    <button
-                      type="button"
-                      class="inline-flex h-10 items-center justify-center rounded-[3px] border-[1.5px] border-line bg-white px-3 text-[13.5px] font-bold text-slate-700 hover:bg-zebra"
-                      (click)="clearSelection()"
-                    >
-                      กลับไปรายการ
-                    </button>
                     <label class="block">
                       <span class="sr-only">ค้นหาโครงการ</span>
                       <input
@@ -148,7 +133,8 @@ import {
                       </p>
                     </div>
                     <p class="m-0 mt-1.5 text-xs text-muted">
-                      ปี {{ project.budget_year }} · คะแนน {{ number(project.risk_score, 2) }}
+                      ปี {{ project.budget_year || '-' }} · คะแนน
+                      {{ number(project.risk_score, 2) }}
                     </p>
                   </button>
                 }
@@ -608,14 +594,10 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
 
   readonly canResolveFeedback = computed(() => this.auth.hasRole(...RESOLVE_ROLES));
 
-  /** risk_analyst เห็นเฉพาะโครงการที่ตนเองถูกมอบหมาย (จาก GET /audit/assignments) —
-   * role อื่นที่เข้าหน้านี้ได้ (FEEDBACK_ROLES) ยังเห็นครบตามสโคปตำบลเดิม ไม่ถูกจำกัดเพิ่ม */
-  private readonly assignedProjectIds = computed<Set<string> | null>(() => {
-    if (!this.auth.hasRole('risk_analyst')) {
-      return null;
-    }
-    return new Set(this.myAssignments().map((a) => a.project_id));
-  });
+  /** risk_analyst เห็นเฉพาะโครงการที่ตนเองถูกมอบหมาย (จาก GET /audit/assignments โดยตรง
+   * ไม่ต้องโหลด GET /projects ทั้งก้อนมากรอง) — role อื่นที่เข้าหน้านี้ได้ (FEEDBACK_ROLES)
+   * ยังเห็นครบตามสโคปตำบลเดิม ไม่ถูกจำกัดเพิ่ม จึงยังต้องโหลด GET /projects ตามเดิม */
+  readonly isRiskAnalyst = computed(() => this.auth.hasRole('risk_analyst'));
 
   readonly auditorDisplayName = computed(() => {
     const user = this.auth.user();
@@ -708,30 +690,37 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     const preselectProjectId = this.route.snapshot.queryParamMap.get('projectId');
     const assignmentRouteId = this.route.snapshot.paramMap.get('id');
     this.assignmentRouteId.set(assignmentRouteId);
+    const isRiskAnalyst = this.isRiskAnalyst();
 
     forkJoin({
       subdistricts: this.api.subdistricts(),
       catalog: this.api.riskFactors(),
-      allProjects: this.api.projects(),
+      // risk_analyst: รายการโครงการมาจาก assignments โดยตรง ไม่ต้องโหลด GET /projects ทั้งก้อน
+      // (รายละเอียดเต็มค่อยโหลดทีละโครงการตอนกด selectProject → GET /projects/:id ผ่าน loadProjectDetail)
+      // role อื่นที่เข้าหน้านี้ได้ ยังเห็นครบตามสโคปตำบลเดิม จึงยังต้องโหลด GET /projects ตามเดิม
+      allProjects: isRiskAnalyst ? of<Project[]>([]) : this.api.projects(),
       feedback: this.api.feedbackList(),
-      // เฉพาะ risk_analyst ต้องรู้ว่าตัวเองถูกมอบหมายโครงการไหนบ้าง เพื่อจำกัดรายการที่เห็น
+      // เฉพาะ risk_analyst ต้องรู้ว่าตัวเองถูกมอบหมายโครงการไหนบ้าง เพื่อสร้างรายการ
       // (และใช้ resolve project_id จาก assignment_id เมื่อเข้าหน้านี้ผ่าน /risk-analyst-feedback/task/:id)
-      assignments: this.auth.hasRole('risk_analyst')
-        ? this.api.assignments()
-        : of<AuditAssignment[]>([]),
+      assignments: isRiskAnalyst ? this.api.assignments() : of<AuditAssignment[]>([]),
     }).subscribe({
       next: ({ subdistricts, catalog, allProjects, feedback, assignments }) => {
         this.subdistricts.set(subdistricts);
         this.catalog.set(catalog);
         this.myAssignments.set(assignments);
-        this.allProjects.set(this.scopeToAssignedProjects(allProjects));
+        this.allProjects.set(
+          isRiskAnalyst ? this.projectsFromAssignments(assignments) : allProjects,
+        );
         this.allFeedback.set(feedback);
         this.loadingProjects.set(false);
 
         const projectIdFromAssignment = assignmentRouteId
           ? assignments.find((a) => String(a.assignment_id) === assignmentRouteId)?.project_id
           : null;
-        const targetProjectId = preselectProjectId || projectIdFromAssignment;
+        // ไม่มี id/projectId จาก route → auto-select โครงการแรก (เรียงตามความเสี่ยง) จากรายการที่ scope ไว้แล้ว
+        // (risk_analyst = เฉพาะที่ได้รับมอบหมาย, role อื่น = ตามสโคปตำบลเดิม) แทนที่จะปล่อยเป็นหน้าว่าง
+        const targetProjectId =
+          preselectProjectId || projectIdFromAssignment || this.sortedProjects()[0]?.project_id;
         if (targetProjectId) {
           this.selectProject(targetProjectId);
         }
@@ -1173,13 +1162,17 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     return factor?.description_th ?? factor?.category ?? '';
   }
 
-  /** จำกัดรายการโครงการเหลือเฉพาะที่ risk_analyst ถูกมอบหมาย (role อื่นไม่ถูกกรองเพิ่ม) */
-  private scopeToAssignedProjects(projects: Project[]): Project[] {
-    const ids = this.assignedProjectIds();
-    if (!ids) {
-      return projects;
-    }
-    return projects.filter((project) => ids.has(String(project.project_id)));
+  /** risk_analyst: แปลง assignment → แถวโครงการแบบย่อสำหรับสร้างรายการ (ไม่มี budget_year/risk_score
+   * เพราะไม่ได้โหลด GET /projects ทั้งก้อน) — รายละเอียดเต็มโหลดทีหลังตอนเลือกโครงการผ่าน loadProjectDetail */
+  private projectsFromAssignments(assignments: AuditAssignment[]): Project[] {
+    return assignments.map(
+      (assignment) =>
+        ({
+          project_id: assignment.project_id,
+          project_name: assignment.project_name || 'ไม่ระบุชื่อโครงการ',
+          subdistrict_id: assignment.subdistrict_id ?? undefined,
+        }) as unknown as Project,
+    );
   }
 
   private loadProjectDetail(projectId: string | number): void {
