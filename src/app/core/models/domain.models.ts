@@ -6,6 +6,7 @@ export type RiskLevel = 'low' | 'medium' | 'high' | string;
 export type RiskBand = 'ต่ำ' | 'ปานกลาง' | 'สูง' | 'สูงมาก' | string;
 
 export interface AppUser {
+  user_id: number;
   username: string;
   role: string;
   subdistrict_id?: number | null;
@@ -284,6 +285,7 @@ export type AssignmentStatus =
   | 'clarification_needed'
   | 'ready_for_review'
   | 'under_review'
+  | 'pending_approval'
   | 'revision_requested'
   | 'completed';
 
@@ -329,6 +331,45 @@ export interface CreateAssignmentRequest {
   due_date?: string;
   budget_hours?: number;
   audit_steps?: string;
+}
+
+export interface AssignmentStatusHistoryEntry {
+  history_id: number;
+  assignment_id: number;
+  old_status: AssignmentStatus | null;
+  new_status: AssignmentStatus;
+  changed_by: number;
+  changed_by_username?: string | null;
+  changed_by_display_name?: string | null;
+  note?: string | null;
+  created_at: string;
+}
+
+export interface AssignmentDetailResponse {
+  assignment: AuditAssignment;
+  status_history: AssignmentStatusHistoryEntry[];
+}
+
+/** ไฟล์หลักฐาน (evidence) แนบกับ assignment — backend เก็บเป็น BYTEA ตรงๆ ใน Postgres */
+export interface AssignmentAttachment {
+  attachment_id: number;
+  assignment_id: number;
+  file_name: string;
+  content_type: string;
+  file_size: number;
+  uploaded_by: number;
+  uploaded_by_display_name?: string | null;
+  created_at: string;
+}
+
+/** ข้อความในกระทู้ขอความชัดเจน (clarification thread) ระหว่าง risk_analyst กับ project_auditor */
+export interface AssignmentClarification {
+  clarification_id: number;
+  assignment_id: number;
+  message_text: string;
+  created_by: number;
+  created_by_display_name?: string | null;
+  created_at: string;
 }
 
 export type FeedbackStatus = 'draft' | 'submitted' | 'resolved';
