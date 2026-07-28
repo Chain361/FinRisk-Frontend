@@ -71,6 +71,10 @@ export function riskLabel(level: RiskLevel | null | undefined): string {
   }
 }
 
+export function bandLabel(band: RiskBand | null | undefined): string {
+  return band ?? 'ไม่ระบุ';
+}
+
 export function riskColor(level: RiskLevel | null | undefined): string {
   switch (normalizeRiskLevel(level)) {
     case 'high':
