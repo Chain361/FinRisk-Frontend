@@ -237,6 +237,31 @@ export interface AccessLogFilters {
   offset?: number | null;
 }
 
+export interface AppNotification {
+  notification_id: number;
+  user_id: number;
+  type: 'assignment' | 'high_risk' | string;
+  message: string;
+  ref_type?: 'assignment' | 'project' | string | null;
+  ref_id?: string | null;
+  read_at?: string | null;
+  created_at: string;
+}
+
+export interface NotificationListResponse {
+  notifications: AppNotification[];
+  unread_count: number;
+}
+
+export interface NotificationReadResponse {
+  notification_id: number;
+  read: boolean;
+}
+
+export interface NotificationReadAllResponse {
+  marked_read: boolean;
+}
+
 export interface LegalRef {
   section_id: number;
   law_code: string | null;

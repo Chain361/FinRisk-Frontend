@@ -24,6 +24,9 @@ import {
   FinancialStatement,
   LoginRequest,
   LoginResponse,
+  NotificationListResponse,
+  NotificationReadAllResponse,
+  NotificationReadResponse,
   ManagedUser,
   ManagedUserCreate,
   ManagedUserPatch,
@@ -236,6 +239,27 @@ export class ApiService {
     return this.http.delete<void>(`${this.baseUrl}/audit/assignments/${assignmentId}`);
   }
 
+  notifications(filters: { unread?: boolean } = {}): Observable<NotificationListResponse> {
+    let params = new HttpParams();
+    if (filters.unread !== undefined) {
+      params = params.set('unread', String(filters.unread));
+    }
+    return this.http.get<NotificationListResponse>(`${this.baseUrl}/notifications`, { params });
+  }
+
+  markNotificationRead(notificationId: number): Observable<NotificationReadResponse> {
+    return this.http.patch<NotificationReadResponse>(
+      `${this.baseUrl}/notifications/${notificationId}/read`,
+      {},
+    );
+  }
+
+  markAllNotificationsRead(): Observable<NotificationReadAllResponse> {
+    return this.http.post<NotificationReadAllResponse>(
+      `${this.baseUrl}/notifications/read-all`,
+      {},
+   );
+  }
   /** เปลี่ยนสถานะงานตรวจสอบ (accept/submit/approve/reject ฯลฯ) — backend บังคับ transition ที่อนุญาตตาม role อยู่แล้ว */
   updateAssignmentStatus(
     assignmentId: number,

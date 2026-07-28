@@ -20,6 +20,7 @@ import { ASSIGNMENT_ROLES, CHATBOT_ROLES, PUBLIC_EXPORT_ROLES } from '../core/au
 import { SystemMeta } from '../core/models/domain.models';
 import { ChatbotWidgetComponent } from '../features/chatbot/chatbot-widget.component';
 import { GuardrailBannerComponent } from '../shared/ui/guardrail-banner.component';
+import { NotificationBellComponent } from '../shared/ui/notification-bell.component';
 import { PrototypeBannerComponent } from '../shared/ui/prototype-banner.component';
 import { NAV_GROUPS, NavGroup, NavItem } from './nav-groups';
 
@@ -31,6 +32,7 @@ import { NAV_GROUPS, NavGroup, NavItem } from './nav-groups';
     RouterLink,
     ChatbotWidgetComponent,
     GuardrailBannerComponent,
+    NotificationBellComponent,
     PrototypeBannerComponent,
     LucideLayoutDashboard,
     LucideLandmark,
@@ -264,6 +266,7 @@ import { NAV_GROUPS, NavGroup, NavItem } from './nav-groups';
           </div>
 
           <div class="flex items-center gap-3.5">
+            <app-notification-bell />
             <div class="rounded-[3px] border-[1.5px] border-line px-3.5 py-[7px] text-right">
               <p class="m-0 text-[13px] font-bold text-ink">
                 {{ auth.user()?.display_name ?? auth.user()?.username ?? auth.token() }}
