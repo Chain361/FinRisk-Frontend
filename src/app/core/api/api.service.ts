@@ -3,7 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
-import { defaultFeaturesForRole } from '../auth/features';
+import { resolveAllowedFeatures } from '../auth/features';
 import { RoleCode } from '../auth/roles';
 import {
   AccessLogFilters,
@@ -257,10 +257,7 @@ export class ApiService {
       role: row.role as RoleCode,
       subdistrict_id: row.subdistrict_id,
       status: row.status,
-      // ผู้ใช้ที่ยังไม่เคยตั้งค่าสิทธิ์เอง (allowed_features ว่าง) → ใช้ค่าเริ่มต้นตาม role ไปก่อน
-      allowed_features: row.allowed_features?.length
-        ? row.allowed_features
-        : defaultFeaturesForRole(row.role),
+      allowed_features: resolveAllowedFeatures(row.allowed_features, row.role),
     };
   }
 

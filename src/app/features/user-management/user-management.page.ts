@@ -369,7 +369,7 @@ export class UserManagementPageComponent implements OnInit {
     return ROLE_LABELS[role] ?? role;
   }
 
-  subLabel(sub: Subdistrict): string {
+  subLabel(sub: Subdistrict | undefined): string {
     return subdistrictLabel(sub);
   }
 
@@ -377,7 +377,7 @@ export class UserManagementPageComponent implements OnInit {
     if (subdistrictId == null) {
       return '—';
     }
-    return this.subLabel(this.subdistricts().find((s) => s.subdistrict_id === subdistrictId)!);
+    return this.subLabel(this.subdistricts().find((s) => s.subdistrict_id === subdistrictId));
   }
 
   openEditModal(user: ManagedUser): void {

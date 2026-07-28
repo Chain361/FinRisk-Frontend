@@ -4,6 +4,7 @@ import { forkJoin } from 'rxjs';
 
 import { ApiService } from '../../../core/api/api.service';
 import { AuthService } from '../../../core/auth/auth.service';
+import { I18nService } from '../../../core/i18n/i18n.service';
 import {
   AnnualRisk,
   Project,
@@ -77,7 +78,7 @@ interface RepeatedEntity {
 
       @if (needsSubdistrictSelection()) {
         <p class="rounded-[4px] border-[1.5px] border-line bg-zebra px-4 py-3 text-sm text-muted">
-          กรุณาเลือกตำบลเพื่อแสดงข้อมูล
+          {{ t('filter.selectSubdistrictPrompt') }}
         </p>
       } @else {
       <section class="panel p-[18px]">
@@ -295,6 +296,8 @@ interface RepeatedEntity {
 })
 export class InsightsPageComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly i18n = inject(I18nService);
+  protected readonly t = this.i18n.t;
   private readonly auth = inject(AuthService);
   readonly FISCAL_YEARS = FISCAL_YEARS;
   readonly fiscalYearLabels = FISCAL_YEARS.map(String);

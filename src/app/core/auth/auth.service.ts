@@ -5,7 +5,7 @@ import { Observable, tap } from 'rxjs';
 import { I18nService } from '../i18n/i18n.service';
 import { ApiService } from '../api/api.service';
 import { AppUser, LoginResponse } from '../models/domain.models';
-import { defaultFeaturesForRole } from './features';
+import { resolveAllowedFeatures } from './features';
 import { SCOPED_ROLES } from './roles';
 import { TOKEN_KEY, USER_KEY, isTokenExpired } from './auth.constants';
 
@@ -59,9 +59,7 @@ export class AuthService {
     if (!user) {
       return [];
     }
-    return user.allowed_features?.length
-      ? user.allowed_features
-      : defaultFeaturesForRole(user.role);
+    return resolveAllowedFeatures(user.allowed_features, user.role);
   });
 
   /** true เมื่อผู้ใช้ปัจจุบันเข้าถึงฟีเจอร์รหัสนี้ได้ */

@@ -1,5 +1,5 @@
 import { AuthService } from '../core/auth/auth.service';
-import { ASSIGNMENT_ROLES } from '../core/auth/roles';
+import { FEATURE_GROUPS } from '../core/auth/features';
 
 export interface NavItem {
   code: string;
@@ -8,7 +8,7 @@ export interface NavItem {
   children?: NavItem[];
   exact?: boolean;
   /** จำกัดเมนูเฉพาะบาง role (ตาม roles.md) — ไม่ระบุ = ทุก role เห็น */
-  roles?: string[];
+  roles?: readonly string[];
 }
 
 export interface NavGroup {
@@ -17,182 +17,139 @@ export interface NavGroup {
   items: NavItem[];
 }
 
-export const NAV_GROUPS: NavGroup[] = [
-  {
-    id: 'overview',
-    label: 'ภาพรวมความเสี่ยง',
-    items: [
+interface NavRoute {
+  path: string;
+  exact?: boolean;
+  children?: Array<{ code: string; label: string; path: string; exact?: boolean }>;
+}
+
+/**
+ * เส้นทาง/หน้าย่อยของแต่ละฟีเจอร์ — คีย์ตาม FeatureItem.code ใน core/auth/features.ts
+ * id/label กลุ่ม + code/label/roles ของฟีเจอร์ใช้จาก FEATURE_GROUPS ที่เดียว (ไม่ duplicate ที่นี่)
+ * เพิ่ม/ลบหน้าเมนู: แก้ FEATURE_GROUPS ก่อน แล้วเพิ่ม route ที่นี่ให้ตรง code
+ */
+const NAV_ROUTES: Record<string, NavRoute> = {
+  risk_dashboard: {
+    path: '/project-risk',
+    children: [
       {
-        code: 'risk_dashboard',
-        label: 'แดชบอร์ดความเสี่ยงโครงการ',
-        path: '/project-risk',
-        children: [
-          {
-            code: 'F1.1',
-            label: 'ภาพรวมสุขภาพความเสี่ยงโครงการ',
-            path: '/project-risk/overview',
-          },
-          {
-            code: 'F1.2',
-            label: 'วิเคราะห์ข้อมูลโครงการเชิงลึก',
-            path: '/project-risk/insights',
-          },
-        ],
+        code: 'F1.1',
+        label: 'ภาพรวมสุขภาพความเสี่ยงโครงการ',
+        path: '/project-risk/overview',
+      },
+      {
+        code: 'F1.2',
+        label: 'วิเคราะห์ข้อมูลโครงการเชิงลึก',
+        path: '/project-risk/insights',
       },
     ],
   },
-  {
-    id: 'finance',
-    label: 'การเงินและปัจจัยเสี่ยง',
-    items: [
+  fiscal_dashboard: {
+    path: '/financial-health',
+    children: [
       {
-        code: 'fiscal_dashboard',
-        label: 'สถานะและสุขภาพการคลัง',
-        path: '/financial-health',
-        children: [
-          {
-            code: 'F2.1',
-            label: 'ภาพรวมสุขภาพการคลัง',
-            path: '/financial-health/overview',
-          },
-          {
-            code: 'F2.2',
-            label: 'เปรียบเทียบสถานะการคลัง',
-            path: '/financial-health/benchmarking',
-          },
-          {
-            code: 'F2.3',
-            label: 'แนวโน้มการลงทุนและการจัดซื้อจัดจ้าง',
-            path: '/financial-health/investment-trends',
-          },
-          {
-            code: 'F2.4',
-            label: 'ตัวชี้วัดความเสี่ยงทางการคลัง',
-            path: '/financial-health/risk-indicators',
-          },
-        ],
+        code: 'F2.1',
+        label: 'ภาพรวมสุขภาพการคลัง',
+        path: '/financial-health/overview',
       },
       {
-        code: 'projects_view',
-        label: 'โครงการทั้งหมด',
+        code: 'F2.2',
+        label: 'เปรียบเทียบสถานะการคลัง',
+        path: '/financial-health/benchmarking',
+      },
+      {
+        code: 'F2.3',
+        label: 'แนวโน้มการลงทุนและการจัดซื้อจัดจ้าง',
+        path: '/financial-health/investment-trends',
+      },
+      {
+        code: 'F2.4',
+        label: 'ตัวชี้วัดความเสี่ยงทางการคลัง',
+        path: '/financial-health/risk-indicators',
+      },
+    ],
+  },
+  projects_view: {
+    path: '/risk-factors',
+    children: [
+      {
+        code: 'F3.1',
+        label: 'รายละเอียดโครงการ',
         path: '/risk-factors',
-        children: [
-          {
-            code: 'F3.1',
-            label: 'รายละเอียดโครงการ',
-            path: '/risk-factors',
-            exact: true,
-          },
-          {
-            code: 'F3.2',
-            label: 'สถานะโครงการ',
-            path: '/risk-factors/status',
-          },
-        ],
+        exact: true,
       },
       {
-        code: 'assign_audit_tasks',
-        label: 'มอบหมายงาน',
+        code: 'F3.2',
+        label: 'สถานะโครงการ',
+        path: '/risk-factors/status',
+      },
+    ],
+  },
+  assign_audit_tasks: {
+    path: '/assignment-project-auditor',
+    children: [
+      {
+        code: 'F4.1',
+        label: 'มอบหมายงานหลัก',
         path: '/assignment-project-auditor',
-        children: [
-          {
-            code: 'F4.1',
-            label: 'มอบหมายงานหลัก',
-            path: '/assignment-project-auditor',
-            exact: true,
-          },
-          {
-            code: 'F4.2',
-            label: 'ประวัติการมอบหมายงาน',
-            path: '/assignment-project-auditor/history',
-          },
-          {
-            code: 'F4.3',
-            label: 'ตรวจทานงานที่ส่งกลับมา',
-            path: '/assignment-project-auditor/review',
-          },
-        ],
+        exact: true,
       },
       {
-        code: 'team_reports',
-        label: 'งานที่ได้รับมอบหมาย',
-        path: '/risk-analyst/my-tasks',
-        roles: [...ASSIGNMENT_ROLES],
+        code: 'F4.2',
+        label: 'ประวัติการมอบหมายงาน',
+        path: '/assignment-project-auditor/history',
       },
       {
-        code: 'audit_feedback',
-        label: 'แบบฟอร์มบันทึกความคิดเห็น',
-        path: '/risk-analyst-feedback',
-        roles: [
-          'admin',
-          'regional_supervisor',
-          'local_executive',
-          'project_auditor',
-          'risk_analyst',
-        ],
+        code: 'F4.3',
+        label: 'ตรวจทานงานที่ส่งกลับมา',
+        path: '/assignment-project-auditor/review',
       },
     ],
   },
-  {
-    id: 'audit',
-    label: 'งานตรวจสอบ',
-    items: [
-      {
-        code: 'auditor_feedback',
-        label: 'ความเห็นผู้ตรวจสอบ',
-        path: '/auditor-feedback',
-        // mirror FEEDBACK_ROLES (core/auth/roles.ts) — ซ่อนจาก public_user
-        roles: [
-          'admin',
-          'regional_supervisor',
-          'local_executive',
-          'project_auditor',
-          'risk_analyst',
-        ],
-      },
-    ],
+  team_reports: {
+    path: '/risk-analyst/my-tasks',
   },
-  {
-    id: 'admin',
-    label: 'ผู้ดูแลระบบ',
-    items: [
-      {
-        code: 'access_logs',
-        label: 'บันทึกการเข้าถึงระบบ',
-        path: '/admin/access-log',
-        roles: ['admin'], // เห็นเฉพาะ admin — ตรงกับ roleGuard('admin') ที่ route
-      },
-      {
-        code: 'risk_engine',
-        label: 'นำเข้าข้อมูล & รัน Risk Engine',
-        path: '/admin/data-upload',
-        roles: ['admin'], // เห็นเฉพาะ admin — ตรงกับ roleGuard('admin') ที่ route
-      },
-      {
-        code: 'user_management',
-        label: 'จัดการผู้ใช้งาน',
-        path: '/admin/user-management',
-        roles: ['admin'], // เห็นเฉพาะ admin — ตรงกับ roleGuard('admin') ที่ route
-      },
-    ],
+  audit_feedback: {
+    path: '/risk-analyst-feedback',
   },
-  {
-    id: 'transparency',
-    label: 'ความโปร่งใส & ติดต่อ',
-    items: [
-      {
-        code: 'public_audit_info',
-        label: 'ที่มาของข้อมูล',
-        path: '/data-sources',
-      },
-      {
-        code: 'contact_report',
-        label: 'ติดต่อ / แจ้งข้อมูลไม่ถูกต้อง',
-        path: '/contact',
-      },
-    ],
+  auditor_feedback: {
+    path: '/auditor-feedback',
   },
-];
+  access_logs: {
+    path: '/admin/access-log', // เห็นเฉพาะ admin — ตรงกับ roleGuard('admin') ที่ route
+  },
+  risk_engine: {
+    path: '/admin/data-upload', // เห็นเฉพาะ admin — ตรงกับ roleGuard('admin') ที่ route
+  },
+  user_management: {
+    path: '/admin/user-management', // เห็นเฉพาะ admin — ตรงกับ roleGuard('admin') ที่ route
+  },
+  public_audit_info: {
+    path: '/data-sources',
+  },
+  contact_report: {
+    path: '/contact',
+  },
+};
+
+export const NAV_GROUPS: NavGroup[] = FEATURE_GROUPS.map((group) => ({
+  id: group.id,
+  label: group.label,
+  items: group.items.map((item): NavItem => {
+    const route = NAV_ROUTES[item.code];
+    if (!route) {
+      throw new Error(`nav-groups: missing route mapping for feature "${item.code}"`);
+    }
+    return {
+      code: item.code,
+      label: item.label,
+      path: route.path,
+      exact: route.exact,
+      children: route.children,
+      roles: item.roles,
+    };
+  }),
+}));
 
 /** เมนูแรกตามลำดับ NAV_GROUPS ที่ผู้ใช้คนนี้เข้าถึงได้ — ใช้เป็นหน้าแรกหลัง login แทนเส้นทางตายตัว */
 export function firstAccessibleNavPath(auth: AuthService): string {

@@ -13,7 +13,8 @@ export interface FeatureGroup {
   items: FeatureItem[];
 }
 
-/** mirror ของ NAV_GROUPS ใน layout/app-shell.component.ts (เฉพาะเมนูระดับบนสุด) — เพิ่ม/ลบหน้าต้องแก้ทั้งสองที่ */
+/** แหล่งความจริงเดียวของ id/label/roles ระดับฟีเจอร์ — layout/nav-groups.ts ดึงจากที่นี่แล้วเติม path/children เอง
+ * เพิ่ม/ลบฟีเจอร์ใหม่: เพิ่มที่นี่ก่อน แล้วเพิ่ม route ให้ตรง code ใน layout/nav-groups.ts (NAV_ROUTES) */
 export const FEATURE_GROUPS: FeatureGroup[] = [
   {
     id: 'overview',
@@ -108,4 +109,16 @@ export function defaultFeaturesForRole(role: string): string[] {
   return ALL_FEATURE_ITEMS.filter((item) => !item.roles || item.roles.includes(role)).map(
     (item) => item.code,
   );
+}
+
+/**
+ * เลือกสิทธิ์ฟีเจอร์ที่ใช้จริงจาก response ของ backend
+ * - `undefined` (field ไม่ถูกส่งมาเลย, backward-compat กับ response เก่า) → ยังไม่เคยตั้งค่า ใช้ default ของ role
+ * - `[]` (ส่งมาเป็น array ว่างตรงๆ) → แอดมินตั้งใจเพิกถอนสิทธิ์ทั้งหมด ต้องเก็บไว้ตามนั้น ห้าม fallback
+ */
+export function resolveAllowedFeatures(
+  features: string[] | undefined,
+  role: string,
+): string[] {
+  return features === undefined ? defaultFeaturesForRole(role) : features;
 }
