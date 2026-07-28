@@ -38,6 +38,11 @@ import { FinancialHealthStateService } from '../financial-health-state.service';
         </p>
       }
 
+      @if (needsSubdistrictSelection()) {
+        <p class="rounded-[4px] border-[1.5px] border-line bg-zebra px-4 py-3 text-sm text-muted">
+          {{ t('filter.selectSubdistrictPrompt') }}
+        </p>
+      } @else {
       <section class="panel p-[18px]">
         <div class="mb-0.5 flex items-center gap-2">
           <h2 class="m-0 text-[16px] font-bold text-ink">
@@ -129,6 +134,7 @@ import { FinancialHealthStateService } from '../financial-health-state.service';
           </div>
         </div>
       </section>
+      }
     </section>
   `,
 })
@@ -141,6 +147,7 @@ export class RiskIndicatorsPageComponent implements OnInit {
   readonly subdistricts = this.state.subdistricts;
   readonly selectedSubdistrictId = this.state.selectedSubdistrictId;
   readonly selectedYear = this.state.selectedYear;
+  readonly needsSubdistrictSelection = this.state.needsSubdistrictSelection;
   readonly factorCards = this.state.factorCards;
 
   readonly bandColor = bandColor;

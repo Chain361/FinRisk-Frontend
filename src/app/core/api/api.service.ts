@@ -3,6 +3,8 @@ import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
+import { resolveAllowedFeatures } from '../auth/features';
+import { RoleCode } from '../auth/roles';
 import {
   AccessLogFilters,
   AccessLogPage,
@@ -21,6 +23,8 @@ import {
   NotificationListResponse,
   NotificationReadAllResponse,
   NotificationReadResponse,
+  ManagedUser,
+  ManagedUserPatch,
   Project,
   ProjectDetail,
   ProjectDetailResponse,
@@ -31,7 +35,27 @@ import {
   RiskSummary,
   Subdistrict,
   SystemMeta,
+  UserStatus,
 } from '../models/domain.models';
+
+/** shape จริงที่ GET/PUT /users ส่งมา — backend ใช้ snake_case (allowed_features) ต่างจาก ManagedUser ฝั่ง frontend */
+interface ManagedUserWire {
+  user_id: number;
+  username: string;
+  display_name: string | null;
+  role: string;
+  subdistrict_id: number | null;
+  status: UserStatus;
+  allowed_features: string[];
+}
+
+interface ManagedUserWirePatch {
+  display_name: string;
+  role: string;
+  subdistrict_id: number | null;
+  status: UserStatus;
+  allowed_features: string[];
+}
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -53,22 +77,38 @@ export class ApiService {
     );
   }
 
+  /** รายชื่อผู้ใช้ + สิทธิ์เข้าถึงฟีเจอร์ (allowedFeatures) — admin เท่านั้น (หน้าจัดการผู้ใช้งาน) */
+  getUsers(): Observable<ManagedUser[]> {
+    return this.http
+      .get<{ value?: ManagedUserWire[] } | ManagedUserWire[]>(`${this.baseUrl}/users`)
+      .pipe(map((response) => this.unwrapList(response).map((row) => this.fromWire(row))));
+  }
+
+  /** แก้ไขข้อมูล + สิทธิ์เข้าถึงฟีเจอร์ของผู้ใช้รายคน — admin เท่านั้น */
+  updateUser(userId: number, body: ManagedUserPatch): Observable<ManagedUser> {
+    return this.http
+      .put<ManagedUserWire>(`${this.baseUrl}/users/${userId}`, this.toWire(body))
+      .pipe(map((row) => this.fromWire(row)));
+  }
+
   subdistricts(): Observable<Subdistrict[]> {
-    return this.http.get<{ value?: Subdistrict[] } | Subdistrict[]>(`${this.baseUrl}/subdistricts`).pipe(
-      map((response) => this.unwrapList(response)),
-    );
+    return this.http
+      .get<{ value?: Subdistrict[] } | Subdistrict[]>(`${this.baseUrl}/subdistricts`)
+      .pipe(map((response) => this.unwrapList(response)));
   }
 
   projects(filters: ProjectFilters = {}): Observable<Project[]> {
-    return this.http.get<{ value?: Project[] } | Project[]>(`${this.baseUrl}/projects`, { params: this.toParams(filters) }).pipe(
-      map((response) => this.unwrapList(response)),
-    );
+    return this.http
+      .get<{ value?: Project[] } | Project[]>(`${this.baseUrl}/projects`, {
+        params: this.toParams(filters),
+      })
+      .pipe(map((response) => this.unwrapList(response)));
   }
 
   project(projectId: string | number): Observable<ProjectDetail> {
-    return this.http.get<ProjectDetailResponse>(`${this.baseUrl}/projects/${projectId}`).pipe(
-      map((response) => this.unwrapProjectDetail(response)),
-    );
+    return this.http
+      .get<ProjectDetailResponse>(`${this.baseUrl}/projects/${projectId}`)
+      .pipe(map((response) => this.unwrapProjectDetail(response)));
   }
 
   /** ผล risk factor ล่าสุด + legal_refs (มาตรา/ระเบียบที่เกี่ยวข้อง) ของโครงการ */
@@ -77,15 +117,15 @@ export class ApiService {
   }
 
   riskFactors(): Observable<RiskFactorCatalog[]> {
-    return this.http.get<{ value?: RiskFactorCatalog[] } | RiskFactorCatalog[]>(`${this.baseUrl}/risk/factors`).pipe(
-      map((response) => this.unwrapList(response)),
-    );
+    return this.http
+      .get<{ value?: RiskFactorCatalog[] } | RiskFactorCatalog[]>(`${this.baseUrl}/risk/factors`)
+      .pipe(map((response) => this.unwrapList(response)));
   }
 
   annualRisk(): Observable<AnnualRisk[]> {
-    return this.http.get<{ value?: AnnualRisk[] } | AnnualRisk[]>(`${this.baseUrl}/risk/annual`).pipe(
-      map((response) => this.unwrapList(response)),
-    );
+    return this.http
+      .get<{ value?: AnnualRisk[] } | AnnualRisk[]>(`${this.baseUrl}/risk/annual`)
+      .pipe(map((response) => this.unwrapList(response)));
   }
 
   financialStatements(): Observable<FinancialStatement[]> {
@@ -199,7 +239,10 @@ export class ApiService {
   }
 
   resolveFeedback(feedbackId: number): Observable<AuditorFeedback> {
-    return this.http.patch<AuditorFeedback>(`${this.baseUrl}/audit/feedback/${feedbackId}/resolve`, {});
+    return this.http.patch<AuditorFeedback>(
+      `${this.baseUrl}/audit/feedback/${feedbackId}/resolve`,
+      {},
+    );
   }
 
   /** ส่งข้อความไปยัง chatbot — history เป็น turn ก่อนหน้าที่ client ถืออยู่เอง (backend ไม่เก็บ state) */
@@ -228,6 +271,29 @@ export class ApiService {
       return response;
     }
     return response.value ?? [];
+  }
+
+  /** GET/PUT /users คืน field เป็น snake_case (allowed_features) → แปลงเป็น ManagedUser (camelCase) ที่ frontend ใช้ */
+  private fromWire(row: ManagedUserWire): ManagedUser {
+    return {
+      user_id: row.user_id,
+      username: row.username,
+      display_name: row.display_name ?? row.username,
+      role: row.role as RoleCode,
+      subdistrict_id: row.subdistrict_id,
+      status: row.status,
+      allowed_features: resolveAllowedFeatures(row.allowed_features, row.role),
+    };
+  }
+
+  private toWire(body: ManagedUserPatch): ManagedUserWirePatch {
+    return {
+      display_name: body.display_name,
+      role: body.role,
+      subdistrict_id: body.subdistrict_id,
+      status: body.status,
+      allowed_features: body.allowed_features,
+    };
   }
 
   private unwrapProjectDetail(response: ProjectDetailResponse): ProjectDetail {

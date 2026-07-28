@@ -3,6 +3,8 @@ import { RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 
 import { ApiService } from '../../../core/api/api.service';
+import { AuthService } from '../../../core/auth/auth.service';
+import { I18nService } from '../../../core/i18n/i18n.service';
 import {
   AnnualRisk,
   Project,
@@ -74,6 +76,11 @@ interface RepeatedEntity {
         </p>
       }
 
+      @if (needsSubdistrictSelection()) {
+        <p class="rounded-[4px] border-[1.5px] border-line bg-zebra px-4 py-3 text-sm text-muted">
+          {{ t('filter.selectSubdistrictPrompt') }}
+        </p>
+      } @else {
       <section class="panel p-[18px]">
         <div class="mb-4">
           <h2 class="m-0 text-[16px] font-bold text-ink">ผู้รับจ้างที่ได้รับงานบ่อยที่สุด</h2>
@@ -283,11 +290,15 @@ interface RepeatedEntity {
           [rowHeader]="selectedSubdistrictId() ? 'ระดับความเสี่ยง' : 'ตำบล'"
         />
       </div>
+      }
     </section>
   `,
 })
 export class InsightsPageComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly i18n = inject(I18nService);
+  protected readonly t = this.i18n.t;
+  private readonly auth = inject(AuthService);
   readonly FISCAL_YEARS = FISCAL_YEARS;
   readonly fiscalYearLabels = FISCAL_YEARS.map(String);
   readonly error = signal('');
@@ -301,6 +312,10 @@ export class InsightsPageComponent implements OnInit {
   readonly selectedProjectType = signal<string | null>(null);
   readonly vendorSearchText = signal('');
 
+  /** role ไม่ถูกจำกัดพื้นที่ (เห็นได้หลายตำบล) ต้องเลือกตำบลก่อนถึงจะโหลด/แสดงข้อมูล */
+  readonly needsSubdistrictSelection = computed(
+    () => !this.auth.isScopedRole() && this.selectedSubdistrictId() === null,
+  );
   readonly scopedAnnualRisks = computed(() =>
     this.annualRisks().filter(
       (row) => !this.selectedSubdistrictId() || row.subdistrict_id === this.selectedSubdistrictId(),
@@ -433,8 +448,10 @@ export class InsightsPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadSubdistricts();
-    this.loadDashboard();
-    this.loadTimeSeries();
+    if (!this.needsSubdistrictSelection()) {
+      this.loadDashboard();
+      this.loadTimeSeries();
+    }
     this.api.annualRisk().subscribe({
       next: (rows) => this.annualRisks.set(rows),
       error: () => this.error.set('โหลดข้อมูลสุขภาพการคลังไม่สำเร็จ'),
@@ -442,16 +459,22 @@ export class InsightsPageComponent implements OnInit {
   }
   setSubdistrict(value: number | null): void {
     this.selectedSubdistrictId.set(value);
-    this.loadDashboard();
-    this.loadTimeSeries();
+    if (!this.needsSubdistrictSelection()) {
+      this.loadDashboard();
+      this.loadTimeSeries();
+    }
   }
   setYear(value: number | null): void {
     this.selectedYear.set(value);
-    this.loadDashboard();
+    if (!this.needsSubdistrictSelection()) {
+      this.loadDashboard();
+    }
   }
   setRisk(value: string | null): void {
     this.selectedRiskLevel.set(value);
-    this.loadDashboard();
+    if (!this.needsSubdistrictSelection()) {
+      this.loadDashboard();
+    }
   }
   resetFilters(): void {
     this.selectedSubdistrictId.set(null);
@@ -459,8 +482,10 @@ export class InsightsPageComponent implements OnInit {
     this.selectedRiskLevel.set(null);
     this.selectedProjectType.set(null);
     this.vendorSearchText.set('');
-    this.loadDashboard();
-    this.loadTimeSeries();
+    if (!this.needsSubdistrictSelection()) {
+      this.loadDashboard();
+      this.loadTimeSeries();
+    }
   }
   setProjectType(value: string | null): void {
     this.selectedProjectType.set(value === 'all' ? null : value);

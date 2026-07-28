@@ -5,6 +5,7 @@ import { LucideLogIn, LucideShieldAlert } from '@lucide/angular';
 
 import { AuthService } from '../core/auth/auth.service';
 import { I18nService } from '../core/i18n/i18n.service';
+import { firstAccessibleNavPath } from '../layout/nav-groups';
 import { LanguageToggleComponent } from '../shared/ui/language-toggle.component';
 
 @Component({
@@ -95,7 +96,7 @@ export class LoginComponent {
     this.error.set('');
 
     this.auth.login(this.username, this.password).subscribe({
-      next: () => void this.router.navigate(['/project-risk']),
+      next: () => void this.router.navigate([firstAccessibleNavPath(this.auth)]),
       error: () => {
         this.error.set(this.t('login.error'));
         this.loading.set(false);

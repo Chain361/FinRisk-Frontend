@@ -1,10 +1,12 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 
+import { ToastComponent } from './shared/ui/toast.component';
+
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
-  template: '<router-outlet />',
+  imports: [RouterOutlet, ToastComponent],
+  template: '<router-outlet /><app-toast />',
   styleUrl: './app.css',
 })
 export class App {}
