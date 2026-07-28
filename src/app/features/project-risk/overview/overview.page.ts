@@ -1,6 +1,8 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Subject } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 
 import { ApiService } from '../../../core/api/api.service';
 import { AuthService } from '../../../core/auth/auth.service';
@@ -165,6 +167,9 @@ export class OverviewPageComponent implements OnInit {
   private readonly i18n = inject(I18nService);
   protected readonly t = this.i18n.t;
   private readonly auth = inject(AuthService);
+  private readonly destroyRef = inject(DestroyRef);
+  /** ยิงคำขอใหม่ผ่าน switchMap เพื่อยกเลิกคำขอเดิมที่ยังค้างอยู่ (กันผลลัพธ์เก่ามาถึงทีหลังทับของใหม่เวลาสลับปีงบเร็วๆ) */
+  private readonly loadDashboard$ = new Subject<void>();
   readonly fiscalYearLabels = FISCAL_YEARS.map(String);
   readonly error = signal('');
   readonly subdistricts = signal<Subdistrict[]>([]);
@@ -247,6 +252,24 @@ export class OverviewPageComponent implements OnInit {
   );
 
   ngOnInit(): void {
+    this.loadDashboard$
+      .pipe(
+        switchMap(() =>
+          forkJoin({
+            summary: this.api.riskSummary(this.filters()),
+            projects: this.api.projects(this.filters()),
+          }),
+        ),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: ({ summary, projects }) => {
+          this.summary.set(summary);
+          this.projects.set(projects);
+        },
+        error: () => this.error.set('โหลดข้อมูล Project Risk ไม่สำเร็จ'),
+      });
+
     this.loadSubdistricts();
     if (!this.needsSubdistrictSelection()) {
       this.loadDashboard();
@@ -289,16 +312,7 @@ export class OverviewPageComponent implements OnInit {
   }
   private loadDashboard(): void {
     this.error.set('');
-    forkJoin({
-      summary: this.api.riskSummary(this.filters()),
-      projects: this.api.projects(this.filters()),
-    }).subscribe({
-      next: ({ summary, projects }) => {
-        this.summary.set(summary);
-        this.projects.set(projects);
-      },
-      error: () => this.error.set('โหลดข้อมูล Project Risk ไม่สำเร็จ'),
-    });
+    this.loadDashboard$.next();
   }
   private loadTimeSeries(): void {
     const subdistrictId = this.selectedSubdistrictId();
