@@ -38,6 +38,9 @@ export type ManagedUserPatch = Pick<
   'display_name' | 'role' | 'subdistrict_id' | 'status' | 'allowed_features'
 >;
 
+/** body ของ POST /users — เหมือน ManagedUserPatch แต่เพิ่ม username/password (ตั้งได้แค่ตอนสร้าง) */
+export type ManagedUserCreate = ManagedUserPatch & { username: string; password: string };
+
 export interface LoginRequest {
   username: string;
   password: string;

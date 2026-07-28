@@ -2,10 +2,10 @@ import { Injectable, inject, signal } from '@angular/core';
 import { Observable, catchError, of, tap } from 'rxjs';
 
 import { ApiService } from '../api/api.service';
-import { ManagedUser, ManagedUserPatch, UserStatus } from '../models/domain.models';
+import { ManagedUser, ManagedUserCreate, ManagedUserPatch, UserStatus } from '../models/domain.models';
 
 // re-export เพื่อไม่ให้ import path เดิม (`../../core/auth/user-directory.service`) ในหน้าอื่นต้องแก้
-export type { ManagedUser, ManagedUserPatch, UserStatus };
+export type { ManagedUser, ManagedUserCreate, ManagedUserPatch, UserStatus };
 
 /**
  * แหล่งข้อมูลผู้ใช้ทั้งหมด + สิทธิ์เข้าถึงฟีเจอร์ของแต่ละคน — ใช้โดยหน้าจัดการผู้ใช้งาน (admin เท่านั้น)
@@ -39,12 +39,26 @@ export class UserDirectoryService {
     );
   }
 
+  /** สร้างผู้ใช้ใหม่ที่ backend (POST /users) แล้วเพิ่มเข้า signal ทันทีที่สำเร็จ */
+  createUser(body: ManagedUserCreate): Observable<ManagedUser> {
+    return this.api.createUser(body).pipe(
+      tap((created) => this.users.update((list) => [...list, created])),
+    );
+  }
+
   /** บันทึกการแก้ไขไปที่ backend (PUT /users/{user_id}) แล้วอัปเดต signal ด้วยข้อมูลล่าสุดที่ backend ตอบกลับ */
   updateUser(userId: number, patch: ManagedUserPatch): Observable<ManagedUser> {
     return this.api.updateUser(userId, patch).pipe(
       tap((updated) => {
         this.users.update((list) => list.map((u) => (u.user_id === userId ? updated : u)));
       }),
+    );
+  }
+
+  /** ลบผู้ใช้ที่ backend (DELETE /users/{user_id}) แล้วเอาออกจาก signal ทันทีที่สำเร็จ */
+  deleteUser(userId: number): Observable<void> {
+    return this.api.deleteUser(userId).pipe(
+      tap(() => this.users.update((list) => list.filter((u) => u.user_id !== userId))),
     );
   }
 }
