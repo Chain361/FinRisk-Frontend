@@ -1,4 +1,9 @@
-import { ALL_FEATURE_ITEMS, defaultFeaturesForRole, resolveAllowedFeatures } from './features';
+import {
+  ALL_FEATURE_ITEMS,
+  canAccessFeature,
+  defaultFeaturesForRole,
+  resolveAllowedFeatures,
+} from './features';
 import { describe, it, expect } from 'vitest';
 
 describe('resolveAllowedFeatures', () => {
@@ -35,6 +40,21 @@ describe('defaultFeaturesForRole', () => {
   it('never returns duplicate feature codes', () => {
     const codes = defaultFeaturesForRole('admin');
     expect(new Set(codes).size).toBe(codes.length);
+  });
+});
+
+describe('canAccessFeature', () => {
+  it('lets an admin reach user_management even with an empty allowed-features list', () => {
+    expect(canAccessFeature('user_management', 'admin', [])).toBe(true);
+  });
+
+  it('does not grant a non-admin role that same bypass', () => {
+    expect(canAccessFeature('user_management', 'risk_analyst', [])).toBe(false);
+  });
+
+  it('still requires the code to be explicitly allowed for everything else', () => {
+    expect(canAccessFeature('risk_dashboard', 'admin', [])).toBe(false);
+    expect(canAccessFeature('risk_dashboard', 'admin', ['risk_dashboard'])).toBe(true);
   });
 });
 

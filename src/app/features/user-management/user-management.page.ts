@@ -246,12 +246,12 @@ const ROLE_OPTIONS = Object.keys(ROLE_LABELS) as RoleCode[];
                 @for (group of featureGroups; track group.id) {
                   <div>
                     <p
-                      class="m-0 mb-1 text-[16px] font-bold uppercase tracking-wide text-slate-500"
+                      class="m-0 mb-1 text-[19px] font-bold uppercase tracking-wide text-slate-500"
                     >
                       {{ group.label }}
                     </p>
                     @for (item of group.items; track item.code) {
-                      <label class="flex items-center gap-2 py-0.5 text-[15px] text-ink">
+                      <label class="flex items-center gap-2 py-0.5 text-[18px] text-ink">
                         <input
                           type="checkbox"
                           class="size-[20px] shrink-0 accent-navy"

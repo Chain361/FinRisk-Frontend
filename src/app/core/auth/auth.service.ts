@@ -5,7 +5,7 @@ import { Observable, tap } from 'rxjs';
 import { I18nService } from '../i18n/i18n.service';
 import { ApiService } from '../api/api.service';
 import { AppUser, LoginResponse } from '../models/domain.models';
-import { resolveAllowedFeatures } from './features';
+import { canAccessFeature, resolveAllowedFeatures } from './features';
 import { SCOPED_ROLES } from './roles';
 import { TOKEN_KEY, USER_KEY, isTokenExpired } from './auth.constants';
 
@@ -64,7 +64,11 @@ export class AuthService {
 
   /** true เมื่อผู้ใช้ปัจจุบันเข้าถึงฟีเจอร์รหัสนี้ได้ */
   canAccessFeature(code: string): boolean {
-    return this.allowedFeatures().includes(code);
+    const role = this.role();
+    if (!role) {
+      return false;
+    }
+    return canAccessFeature(code, role, this.allowedFeatures());
   }
 
   login(username: string, password: string): Observable<LoginResponse> {
