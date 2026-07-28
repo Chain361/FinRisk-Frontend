@@ -42,7 +42,9 @@ import { FISCAL_YEARS, subdistrictLabel } from '../utils/risk-utils';
             [value]="selectedSubdistrictId() ?? ''"
             (change)="onSubdistrictChange($any($event.target).value)"
           >
-            <option value="" disabled>เลือกตำบล</option>
+            <option value="" [disabled]="!allowAllSubdistricts()">
+              {{ allowAllSubdistricts() ? 'ทุกตำบลที่มีสิทธิ์' : 'เลือกตำบล' }}
+            </option>
             @for (subdistrict of subdistricts(); track subdistrict.subdistrict_id) {
               <option [value]="subdistrict.subdistrict_id">{{ labelFor(subdistrict) }}</option>
             }
@@ -148,6 +150,8 @@ export class FilterBarComponent {
 
   readonly subdistricts = input<Subdistrict[]>([]);
   readonly selectedSubdistrictId = input<number | null>(null);
+  /** ให้ null หมายถึงทุกตำบลใน scope ของผู้ใช้ แทน placeholder ที่บังคับเลือกตำบล */
+  readonly allowAllSubdistricts = input(false);
   readonly selectedYear = input<number | null>(null);
   readonly selectedRiskLevel = input<string | null>(null);
   readonly selectedProjectType = input<string | null>(null);

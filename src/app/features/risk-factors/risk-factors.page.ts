@@ -60,6 +60,7 @@ import { ProjectFeedbackPanelComponent } from './project-feedback-panel.componen
       <app-filter-bar
         [subdistricts]="subdistricts()"
         [selectedSubdistrictId]="selectedSubdistrictId()"
+        [allowAllSubdistricts]="true"
         [selectedYear]="selectedYear()"
         [selectedRiskLevel]="selectedRiskLevel()"
         [selectedProjectType]="selectedProjectType()"
