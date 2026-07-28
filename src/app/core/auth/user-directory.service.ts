@@ -22,6 +22,10 @@ export class UserDirectoryService {
   private readonly api = inject(ApiService);
 
   readonly users = signal<ManagedUser[]>([]);
+  /** true เมื่อโหลดครั้งล่าสุดพลาด — ให้ UI แยกแยะ "ไม่มีผู้ใช้จริงๆ" กับ "โหลดไม่สำเร็จ" ได้
+   * (เช่น backend สะดุดชั่วคราวตอน cold start) แทนที่จะเห็น list ว่างเปล่าเฉยๆ แล้วเข้าใจผิดว่า
+   * ผู้ใช้หายไปหมด */
+  readonly loadError = signal(false);
 
   constructor() {
     this.loadUsers().subscribe();
@@ -30,10 +34,14 @@ export class UserDirectoryService {
   /** โหลดรายชื่อผู้ใช้ + สิทธิ์ฟีเจอร์ล่าสุดจาก backend แล้วอัปเดต signal ทันทีที่โหลดสำเร็จ */
   loadUsers(): Observable<ManagedUser[]> {
     return this.api.getUsers().pipe(
-      tap((users) => this.users.set(users)),
+      tap((users) => {
+        this.users.set(users);
+        this.loadError.set(false);
+      }),
       catchError((error) => {
         console.error('[UserDirectoryService] โหลดรายชื่อผู้ใช้จาก backend ไม่สำเร็จ', error);
         this.users.set([]);
+        this.loadError.set(true);
         return of([]);
       }),
     );
