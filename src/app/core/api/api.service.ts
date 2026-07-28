@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 
@@ -100,6 +100,15 @@ export class ApiService {
         params: this.toParams(filters),
       })
       .pipe(map((response) => this.unwrapList(response)));
+  }
+
+  /** ชุดข้อมูลเปิดโครงการตามสิทธิ์ที่ backend กำหนด (ไม่รวมข้อมูลตรวจสอบ /audit) */
+  downloadPublicProjects(format: 'csv' | 'json'): Observable<HttpResponse<Blob>> {
+    return this.http.get(`${this.baseUrl}/public/projects/export`, {
+      params: new HttpParams().set('format', format),
+      observe: 'response',
+      responseType: 'blob',
+    });
   }
 
   project(projectId: string | number): Observable<ProjectDetail> {

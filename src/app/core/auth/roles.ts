@@ -45,5 +45,8 @@ export const ASSIGNMENT_ROLES = [
   'risk_analyst',
 ] as const;
 
+/** role ที่ดาวน์โหลดชุดข้อมูลเปิดโครงการได้ — mirror EXPORT_ROLES ใน routers/public.py */
+export const PUBLIC_EXPORT_ROLES = ['admin', 'regional_supervisor', 'public_user'] as const;
+
 /** role ที่ใช้ chatbot ได้ — mirror ของ require_roles บน POST /chatbot (routers/chatbot.py) */
 export const CHATBOT_ROLES = ['admin', 'project_auditor', 'risk_analyst'] as const;
