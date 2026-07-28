@@ -25,6 +25,7 @@ import {
   LoginRequest,
   LoginResponse,
   ManagedUser,
+  ManagedUserCreate,
   ManagedUserPatch,
   Project,
   ProjectDetail,
@@ -58,6 +59,11 @@ interface ManagedUserWirePatch {
   allowed_features: string[];
 }
 
+interface ManagedUserWireCreate extends ManagedUserWirePatch {
+  username: string;
+  password: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private readonly http = inject(HttpClient);
@@ -85,11 +91,28 @@ export class ApiService {
       .pipe(map((response) => this.unwrapList(response).map((row) => this.fromWire(row))));
   }
 
+  /** สร้างผู้ใช้ใหม่ (ตั้ง username/password ครั้งเดียวตอนสร้าง) — admin เท่านั้น */
+  createUser(body: ManagedUserCreate): Observable<ManagedUser> {
+    const wire: ManagedUserWireCreate = {
+      ...this.toWire(body),
+      username: body.username,
+      password: body.password,
+    };
+    return this.http
+      .post<ManagedUserWire>(`${this.baseUrl}/users`, wire)
+      .pipe(map((row) => this.fromWire(row)));
+  }
+
   /** แก้ไขข้อมูล + สิทธิ์เข้าถึงฟีเจอร์ของผู้ใช้รายคน — admin เท่านั้น */
   updateUser(userId: number, body: ManagedUserPatch): Observable<ManagedUser> {
     return this.http
       .put<ManagedUserWire>(`${this.baseUrl}/users/${userId}`, this.toWire(body))
       .pipe(map((row) => this.fromWire(row)));
+  }
+
+  /** ลบผู้ใช้ (hard delete) — admin เท่านั้น, ลบบัญชีของตัวเองไม่ได้ (backend คืน 422) */
+  deleteUser(userId: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/users/${userId}`);
   }
 
   subdistricts(): Observable<Subdistrict[]> {
