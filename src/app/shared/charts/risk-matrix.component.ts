@@ -1,8 +1,7 @@
-import { Component, computed, inject, input } from '@angular/core';
+import { Component, computed, input } from '@angular/core';
 
-import { I18nService } from '../../core/i18n/i18n.service';
 import { RiskBand } from '../../core/models/domain.models';
-import { bandColor, bandFromScore } from '../../shared/utils/risk-utils';
+import { bandColor, bandFromScore, bandLabel } from '../../shared/utils/risk-utils';
 
 interface Cell {
   likelihood: number;
@@ -57,14 +56,11 @@ interface Cell {
           <span class="text-center" [style.width.px]="cellSize()">5</span>
         </span>
       </div>
-      <p class="m-0 pl-4 text-[10px] text-muted">{{ t('riskMatrix.axisLabel') }}</p>
+      <p class="m-0 pl-4 text-[10px] text-muted">← โอกาส · ผลกระทบ ↑</p>
     </div>
   `,
 })
 export class RiskMatrixComponent {
-  private readonly i18n = inject(I18nService);
-  protected readonly t = this.i18n.t;
-
   readonly likelihood = input<number | null | undefined>(null);
   readonly impact = input<number | null | undefined>(null);
   readonly cellSize = input<number>(30);
@@ -73,23 +69,13 @@ export class RiskMatrixComponent {
   readonly matrixLabel = computed<string>(() => {
     const active = this.cells().find((cell) => cell.active);
     if (!active) {
-      return this.t('a11y.riskMatrixEmpty');
+      return 'ตารางความเสี่ยง 5 คูณ 5 (ยังไม่มีค่าที่เลือก)';
     }
-    return this.t('a11y.riskMatrixActive', {
-      likelihood: active.likelihood,
-      impact: active.impact,
-      score: active.score,
-      band: this.i18n.bandLabel(active.band),
-    });
+    return `ตารางความเสี่ยง โอกาส ${active.likelihood} ผลกระทบ ${active.impact} คะแนน ${active.score} ระดับ ${bandLabel(active.band)}`;
   });
 
   cellTitle(cell: Cell): string {
-    return this.t('riskMatrix.cellTitle', {
-      likelihood: cell.likelihood,
-      impact: cell.impact,
-      score: cell.score,
-      band: this.i18n.bandLabel(cell.band),
-    });
+    return `โอกาส ${cell.likelihood} × ผลกระทบ ${cell.impact} = ${cell.score} (${bandLabel(cell.band)})`;
   }
 
   readonly cells = computed<Cell[]>(() => {

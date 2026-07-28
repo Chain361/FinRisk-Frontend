@@ -1,6 +1,5 @@
 import { Component, inject, OnInit } from '@angular/core';
 
-import { I18nService } from '../../../core/i18n/i18n.service';
 import { BarChartComponent } from '../../../shared/charts/bar-chart.component';
 import { FilterBarComponent } from '../../../shared/filters/filter-bar.component';
 import { CompositionBarComponent } from '../../../shared/ui/composition-bar.component';
@@ -15,8 +14,10 @@ import { FinancialHealthStateService } from '../financial-health-state.service';
     <section class="page-shell">
       <div>
         <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F2.1</p>
-        <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">{{ t('fhOverview.title') }}</h1>
-        <p class="m-0 mt-1.5 text-sm text-muted">{{ t('fhOverview.subtitle') }}</p>
+        <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">ภาพรวมสุขภาพการคลัง</h1>
+        <p class="m-0 mt-1.5 text-sm text-muted">
+          แสดงภาพรวมรายได้ รายจ่าย สินทรัพย์ หนี้สิน และฐานะการคลัง
+        </p>
       </div>
 
       <app-filter-bar
@@ -39,7 +40,7 @@ import { FinancialHealthStateService } from '../financial-health-state.service';
 
       @if (needsSubdistrictSelection()) {
         <p class="rounded-[4px] border-[1.5px] border-line bg-zebra px-4 py-3 text-sm text-muted">
-          {{ t('filter.selectSubdistrictPrompt') }}
+          กรุณาเลือกตำบลเพื่อแสดงข้อมูล
         </p>
       } @else {
       <div class="grid gap-4 md:grid-cols-3">
@@ -66,24 +67,24 @@ import { FinancialHealthStateService } from '../financial-health-state.service';
 
       <div class="grid gap-4 xl:grid-cols-2">
         <app-composition-bar
-          [title]="t('fh.assetStructure.title')"
-          [subtitle]="t('fh.assetStructure.subtitle')"
+          title="โครงสร้างสินทรัพย์"
+          subtitle="แบ่งเป็นสินทรัพย์หมุนเวียนและไม่หมุนเวียน"
           [segments]="assetComposition()"
         />
         <app-composition-bar
-          [title]="t('fh.liabilityStructure.title')"
-          [subtitle]="t('fh.liabilityStructure.subtitle')"
+          title="โครงสร้างหนี้สิน"
+          subtitle="แบ่งเป็นหนี้สินหมุนเวียนและระยะยาว"
           [segments]="liabilityComposition()"
         />
       </div>
 
       <app-bar-chart
-        [title]="t('fh.revenue.title')"
-        [subtitle]="t('fh.revenue.subtitle')"
+        title="โครงสร้างรายได้"
+        subtitle="เปรียบเทียบรายได้จัดเก็บเองและรัฐจัดสรร กับเงินอุดหนุนของตำบลที่เลือก"
         [categories]="revenueStructureCategories()"
         [series]="revenueStructureSeries()"
-        [unitSuffix]="t('common.unit.baht')"
-        [rowHeader]="t('fh.revenue.rowHeader')"
+        unitSuffix="บาท"
+        rowHeader="ประเภทรายได้"
         [compactValueLabels]="true"
       />
       }
@@ -92,8 +93,6 @@ import { FinancialHealthStateService } from '../financial-health-state.service';
 })
 export class OverviewPageComponent implements OnInit {
   private readonly state = inject(FinancialHealthStateService);
-  private readonly i18n = inject(I18nService);
-  protected readonly t = this.i18n.t;
 
   readonly error = this.state.error;
   readonly subdistricts = this.state.subdistricts;

@@ -107,7 +107,17 @@ const ROLE_OPTIONS = Object.keys(ROLE_LABELS) as RoleCode[];
       <section class="panel p-[18px]">
         <p class="m-0 mb-3 text-[13px] text-muted">พบ {{ filteredUsers().length }} รายการ</p>
 
-        @if (filteredUsers().length === 0) {
+        @if (loadError()) {
+          <app-empty-state
+            title="โหลดรายชื่อผู้ใช้งานไม่สำเร็จ"
+            message="เชื่อมต่อ backend ไม่ได้ชั่วคราว ข้อมูลผู้ใช้งานที่มีอยู่ไม่ได้หายไป ลองใหม่อีกครั้ง"
+          />
+          <div class="mt-3 flex justify-center">
+            <button type="button" class="gov-btn-outline" (click)="retryLoadUsers()">
+              ลองใหม่
+            </button>
+          </div>
+        } @else if (filteredUsers().length === 0) {
           <app-empty-state
             title="ไม่พบผู้ใช้งาน"
             message="ไม่มีผู้ใช้งานที่ตรงกับตัวกรองที่เลือก ลองปรับตัวกรองแล้วลองใหม่อีกครั้ง"
@@ -355,6 +365,7 @@ export class UserManagementPageComponent implements OnInit {
   readonly roleOptions = ROLE_OPTIONS;
   readonly subdistricts = signal<Subdistrict[]>([]);
   readonly users = this.userDirectory.users;
+  readonly loadError = this.userDirectory.loadError;
   /** ใช้จับคู่ ManagedUser.username เพื่อซ่อนปุ่ม "ลบ" ในแถวของผู้ใช้ที่ login อยู่เอง */
   readonly currentUsername = computed(() => this.auth.user()?.username ?? null);
 
@@ -437,6 +448,10 @@ export class UserManagementPageComponent implements OnInit {
       next: (list) => this.subdistricts.set(list),
       error: () => this.subdistricts.set([]),
     });
+  }
+
+  retryLoadUsers(): void {
+    this.userDirectory.loadUsers().subscribe();
   }
 
   roleLabel(role: string): string {

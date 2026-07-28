@@ -26,6 +26,7 @@ import { FilterBarComponent } from '../../shared/filters/filter-bar.component';
 import { ConfirmModalComponent } from '../../shared/ui/confirm-modal.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { FeedbackStatusBadgeComponent } from '../../shared/ui/feedback-status-badge.component';
+import { InfoTooltipComponent } from '../../shared/ui/info-tooltip.component';
 import { activeOf, latestOf } from '../../shared/utils/feedback-utils';
 import {
   bandColor,
@@ -45,6 +46,7 @@ import {
     FeedbackStatusBadgeComponent,
     FilterBarComponent,
     FormsModule,
+    InfoTooltipComponent,
   ],
   template: `
     <section class="page-shell">
@@ -318,9 +320,91 @@ import {
                 <section class="panel p-[18px]">
                   <div class="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <h2 class="m-0 text-[16px] font-bold text-ink">
-                        แบบฟอร์มบันทึกความคิดเห็นด้านความเสี่ยง
-                      </h2>
+                      <div class="flex items-center gap-2">
+                        <h2 class="m-0 text-[16px] font-bold text-ink">
+                          แบบฟอร์มบันทึกความคิดเห็นด้านความเสี่ยง
+                        </h2>
+                        <app-info-tooltip [width]="380">
+                          <p class="m-0 mb-1.5 font-bold">
+                            โอกาสที่จะเกิดเหตุการณ์ต่างๆ (Likelihood)
+                          </p>
+                          <table class="mb-2.5 w-full border-collapse text-[11px]">
+                            <thead>
+                              <tr class="border-b border-white/25 text-left">
+                                <th class="py-1 pr-2 font-bold">ระดับ</th>
+                                <th class="py-1 pr-2 font-bold">โอกาสที่จะเกิด</th>
+                                <th class="py-1 font-bold">คำอธิบาย</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr class="border-b border-white/10">
+                                <td class="py-1 pr-2">5</td>
+                                <td class="py-1 pr-2">สูงมาก</td>
+                                <td class="py-1">มีโอกาสในการเกิดเกือบทุกครั้ง</td>
+                              </tr>
+                              <tr class="border-b border-white/10">
+                                <td class="py-1 pr-2">4</td>
+                                <td class="py-1 pr-2">สูง</td>
+                                <td class="py-1">มีโอกาสในการเกิดค่อนข้างสูงหรือบ่อยๆ</td>
+                              </tr>
+                              <tr class="border-b border-white/10">
+                                <td class="py-1 pr-2">3</td>
+                                <td class="py-1 pr-2">ปานกลาง</td>
+                                <td class="py-1">มีโอกาสเกิดบางครั้ง</td>
+                              </tr>
+                              <tr class="border-b border-white/10">
+                                <td class="py-1 pr-2">2</td>
+                                <td class="py-1 pr-2">น้อย</td>
+                                <td class="py-1">อาจมีโอกาสเกิดแต่นานๆ ครั้ง</td>
+                              </tr>
+                              <tr>
+                                <td class="py-1 pr-2">1</td>
+                                <td class="py-1 pr-2">น้อยมาก</td>
+                                <td class="py-1">มีโอกาสเกิดในกรณียกเว้น</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                          <p class="m-0 mb-1.5 font-bold">
+                            ระดับความรุนแรงของผลกระทบของความเสี่ยง (Impact)
+                          </p>
+                          <table class="w-full border-collapse text-[11px]">
+                            <thead>
+                              <tr class="border-b border-white/25 text-left">
+                                <th class="py-1 pr-2 font-bold">ระดับ</th>
+                                <th class="py-1 pr-2 font-bold">ผลกระทบ</th>
+                                <th class="py-1 font-bold">คำอธิบาย</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr class="border-b border-white/10">
+                                <td class="py-1 pr-2">5</td>
+                                <td class="py-1 pr-2">สูงมาก</td>
+                                <td class="py-1">มากกว่า 50,000 บาท</td>
+                              </tr>
+                              <tr class="border-b border-white/10">
+                                <td class="py-1 pr-2">4</td>
+                                <td class="py-1 pr-2">สูง</td>
+                                <td class="py-1">มากกว่า 10,000 – 50,000 บาท</td>
+                              </tr>
+                              <tr class="border-b border-white/10">
+                                <td class="py-1 pr-2">3</td>
+                                <td class="py-1 pr-2">ปานกลาง</td>
+                                <td class="py-1">มากกว่า 5,000 – 10,000 บาท</td>
+                              </tr>
+                              <tr class="border-b border-white/10">
+                                <td class="py-1 pr-2">2</td>
+                                <td class="py-1 pr-2">น้อย</td>
+                                <td class="py-1">มากกว่า 1,000 – 5,000 บาท</td>
+                              </tr>
+                              <tr>
+                                <td class="py-1 pr-2">1</td>
+                                <td class="py-1 pr-2">น้อยมาก</td>
+                                <td class="py-1">ไม่เกิน 1,000 บาท</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </app-info-tooltip>
+                      </div>
                       <p class="m-0 mt-1 text-[13px] text-muted">
                         {{ projectDetail()?.project_name }} · Project ID
                         {{ projectDetail()?.project_id }}

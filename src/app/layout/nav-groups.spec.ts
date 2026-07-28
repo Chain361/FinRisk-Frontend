@@ -1,11 +1,13 @@
 import { ALL_FEATURE_ITEMS } from '../core/auth/features';
-import { NAV_GROUPS } from './nav-groups';
+import { FOOTER_ONLY_FEATURE_CODES, NAV_GROUPS } from './nav-groups';
 import { describe, it, expect } from 'vitest';
 
 describe('NAV_GROUPS', () => {
-  it('derives exactly the same feature codes, in the same order, as FEATURE_GROUPS', () => {
+  it('derives the sidebar feature codes, excluding links that live in the footer', () => {
     const navCodes = NAV_GROUPS.flatMap((group) => group.items.map((item) => item.code));
-    const featureCodes = ALL_FEATURE_ITEMS.map((item) => item.code);
+    const featureCodes = ALL_FEATURE_ITEMS.map((item) => item.code).filter(
+      (code) => !FOOTER_ONLY_FEATURE_CODES.has(code),
+    );
     expect(navCodes).toEqual(featureCodes);
   });
 
