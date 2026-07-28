@@ -9,6 +9,10 @@ import {
   AccessLogFilters,
   AccessLogPage,
   AssignmentAssignee,
+  AssignmentAttachment,
+  AssignmentClarification,
+  AssignmentDetailResponse,
+  AssignmentStatus,
   AnnualRisk,
   AuditAssignment,
   AuditorFeedback,
@@ -198,8 +202,75 @@ export class ApiService {
     return this.http.post<AuditAssignment>(`${this.baseUrl}/audit/assignments`, body);
   }
 
+  /** รายละเอียดงานตรวจสอบ + ประวัติการเปลี่ยนสถานะทั้งหมด (ใหม่สุดก่อน) */
+  assignmentDetail(assignmentId: number): Observable<AssignmentDetailResponse> {
+    return this.http.get<AssignmentDetailResponse>(
+      `${this.baseUrl}/audit/assignments/${assignmentId}`,
+    );
+  }
+
   deleteAssignment(assignmentId: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/audit/assignments/${assignmentId}`);
+  }
+
+  /** เปลี่ยนสถานะงานตรวจสอบ (accept/submit/approve/reject ฯลฯ) — backend บังคับ transition ที่อนุญาตตาม role อยู่แล้ว */
+  updateAssignmentStatus(
+    assignmentId: number,
+    status: AssignmentStatus,
+    note?: string,
+  ): Observable<AuditAssignment> {
+    return this.http.patch<AuditAssignment>(`${this.baseUrl}/audit/assignments/${assignmentId}/status`, {
+      status,
+      note,
+    });
+  }
+
+  /** ไฟล์หลักฐาน (evidence) แนบกับงานตรวจสอบ — backend เก็บเป็น BYTEA ใน Postgres, จำกัด 10MB/ไฟล์ */
+  assignmentAttachments(assignmentId: number): Observable<AssignmentAttachment[]> {
+    return this.http.get<AssignmentAttachment[]>(
+      `${this.baseUrl}/audit/assignments/${assignmentId}/attachments`,
+    );
+  }
+
+  uploadAssignmentAttachment(assignmentId: number, file: File): Observable<AssignmentAttachment> {
+    const form = new FormData();
+    form.set('file', file);
+    return this.http.post<AssignmentAttachment>(
+      `${this.baseUrl}/audit/assignments/${assignmentId}/attachments`,
+      form,
+    );
+  }
+
+  deleteAssignmentAttachment(assignmentId: number, attachmentId: number): Observable<void> {
+    return this.http.delete<void>(
+      `${this.baseUrl}/audit/assignments/${assignmentId}/attachments/${attachmentId}`,
+    );
+  }
+
+  /** ดาวน์โหลดเป็น blob ผ่าน HttpClient (ไม่ใช้ <a href> ตรงๆ เพราะ browser navigation ไม่แนบ
+   * Authorization header — ต้องผ่าน authInterceptor เหมือน request อื่น) เรียกแล้วสร้าง object URL
+   * เอง (ดู FileSaver util) */
+  downloadAssignmentAttachment(assignmentId: number, attachmentId: number): Observable<Blob> {
+    return this.http.get(
+      `${this.baseUrl}/audit/assignments/${assignmentId}/attachments/${attachmentId}/download`,
+      { responseType: 'blob' },
+    );
+  }
+
+  assignmentClarifications(assignmentId: number): Observable<AssignmentClarification[]> {
+    return this.http.get<AssignmentClarification[]>(
+      `${this.baseUrl}/audit/assignments/${assignmentId}/clarifications`,
+    );
+  }
+
+  postAssignmentClarification(
+    assignmentId: number,
+    messageText: string,
+  ): Observable<AssignmentClarification> {
+    return this.http.post<AssignmentClarification>(
+      `${this.baseUrl}/audit/assignments/${assignmentId}/clarifications`,
+      { message_text: messageText },
+    );
   }
 
   feedbackList(): Observable<AuditorFeedback[]> {

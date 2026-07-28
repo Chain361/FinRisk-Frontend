@@ -109,6 +109,15 @@ export const routes: Routes = [
                 (m) => m.AssignmentProjectAuditorHistoryPageComponent,
               ),
           },
+          {
+            // ตรวจทาน/อนุมัติงาน — project_auditor (ตรวจทาน) + regional_supervisor (อนุมัติขั้นสุดท้าย)
+            path: 'review/:id',
+            canActivate: [roleGuard('admin', 'project_auditor', 'regional_supervisor')],
+            loadComponent: () =>
+              import('./features/assignment-project-auditor/assignment-project-auditor-review.page').then(
+                (m) => m.AssignmentProjectAuditorReviewPageComponent,
+              ),
+          },
         ],
       },
       {

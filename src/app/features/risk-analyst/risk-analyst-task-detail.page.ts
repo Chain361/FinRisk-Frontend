@@ -1,18 +1,27 @@
 /**
  * RiskAnalystTaskDetailPageComponent
  *
- * หน้ารายละเอียดงานสำหรับ Risk Analyst (ผู้รับมอบหมาย) — อ่านอย่างเดียว
- * แสดงเฉพาะข้อมูลที่มาจาก backend จริง (GET /audit/assignments)
- * ฟีเจอร์บันทึกผลตรวจสอบ/แนบหลักฐาน/ขอคำชี้แจง/บันทึกเวลา ยังไม่มี backend รองรับ — อยู่ระหว่างพัฒนา
+ * หน้ารายละเอียดงานสำหรับ Risk Analyst (ผู้รับมอบหมาย) — แสดงข้อมูลจาก backend จริง
+ * (GET /audit/assignments) พร้อมแนบหลักฐาน (evidence) และกระทู้ขอความชัดเจน (clarification thread)
+ * ฟีเจอร์บันทึกผลตรวจสอบ (Working Paper) และบันทึกเวลาทำงาน ยังไม่มี backend รองรับ — อยู่ระหว่างพัฒนา
  */
 
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { catchError, forkJoin, of } from 'rxjs';
 
+import { AuthService } from '../../core/auth/auth.service';
 import { ApiService } from '../../core/api/api.service';
-import { AuditAssignment, Project, Subdistrict } from '../../core/models/domain.models';
+import {
+  AssignmentAttachment,
+  AssignmentClarification,
+  AuditAssignment,
+  Project,
+  Subdistrict,
+} from '../../core/models/domain.models';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
+import { MessageThreadComponent } from '../../shared/ui/message-thread.component';
+import { formatFileSize, triggerBlobDownload } from '../../shared/utils/file-download-utils';
 import {
   assignmentWorkflowStatusBadgeClass,
   assignmentWorkflowStatusLabel,
@@ -21,7 +30,7 @@ import {
 @Component({
   selector: 'app-risk-analyst-task-detail-page',
   standalone: true,
-  imports: [RouterLink, EmptyStateComponent],
+  imports: [RouterLink, EmptyStateComponent, MessageThreadComponent],
   template: `
     <section class="page-shell">
       <!-- Header -->
@@ -130,8 +139,82 @@ import {
             <div
               class="mt-4 rounded-[4px] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700"
             >
-              ฟีเจอร์บันทึกผลตรวจสอบ (Working Paper), แนบหลักฐาน, ขอคำชี้แจง และบันทึกเวลาทำงาน
-              อยู่ระหว่างพัฒนา — ยังไม่พร้อมใช้งานในระบบจริง
+              ฟีเจอร์บันทึกผลตรวจสอบ (Working Paper) และบันทึกเวลาทำงาน อยู่ระหว่างพัฒนา —
+              ยังไม่พร้อมใช้งานในระบบจริง
+            </div>
+
+            <!-- หลักฐานประกอบ (Evidence) -->
+            <div class="mt-4">
+              <h3 class="m-0 mb-2 text-[13px] font-extrabold uppercase tracking-wide text-muted">
+                หลักฐานประกอบ (Evidence)
+              </h3>
+              @if (attachmentError()) {
+                <p class="m-0 mb-2 text-sm text-risk-high">{{ attachmentError() }}</p>
+              }
+              <form class="flex items-center gap-2" (submit)="uploadEvidence($event)">
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.docx,.xlsx"
+                  class="gov-input flex-1 text-sm"
+                  (change)="onFileChange($event)"
+                />
+                <button
+                  type="submit"
+                  [disabled]="!selectedFile() || uploading()"
+                  class="gov-btn-outline shrink-0"
+                >
+                  {{ uploading() ? 'กำลังแนบ...' : 'แนบไฟล์' }}
+                </button>
+              </form>
+              <ul class="m-0 mt-3 list-none space-y-2 p-0">
+                @for (file of attachments(); track file.attachment_id) {
+                  <li
+                    class="flex items-center justify-between rounded-[4px] border border-line-soft bg-zebra px-3 py-2 text-sm"
+                  >
+                    <div>
+                      <p class="m-0 font-bold text-ink">{{ file.file_name }}</p>
+                      <p class="m-0 text-xs text-muted">
+                        {{ formatSize(file.file_size) }} · แนบโดย
+                        {{ file.uploaded_by_display_name || 'ไม่ระบุ' }} ·
+                        {{ formatAssignedAt(file.created_at) }}
+                      </p>
+                    </div>
+                    <div class="flex shrink-0 items-center gap-2">
+                      <button
+                        type="button"
+                        class="gov-btn-outline px-2.5 py-1 text-xs"
+                        (click)="downloadEvidence(file)"
+                      >
+                        ดาวน์โหลด
+                      </button>
+                      @if (file.uploaded_by === currentUserId()) {
+                        <button
+                          type="button"
+                          class="px-2.5 py-1 text-xs font-bold text-risk-high"
+                          (click)="deleteEvidence(file.attachment_id)"
+                        >
+                          ลบ
+                        </button>
+                      }
+                    </div>
+                  </li>
+                } @empty {
+                  <li class="text-sm text-muted">ยังไม่มีไฟล์แนบ</li>
+                }
+              </ul>
+            </div>
+
+            <!-- กระทู้ขอความชัดเจน (Clarification thread) -->
+            <div class="mt-4">
+              <h3 class="m-0 mb-2 text-[13px] font-extrabold uppercase tracking-wide text-muted">
+                กระทู้ขอความชัดเจน
+              </h3>
+              <app-message-thread
+                [messages]="clarifications()"
+                [currentUserId]="currentUserId()"
+                [sending]="sendingMessage()"
+                (send)="sendClarification($event)"
+              />
             </div>
           </div>
 
@@ -176,6 +259,7 @@ import {
 export class RiskAnalystTaskDetailPageComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly route = inject(ActivatedRoute);
+  private readonly auth = inject(AuthService);
 
   readonly assignmentId = signal<number | null>(null);
 
@@ -185,6 +269,16 @@ export class RiskAnalystTaskDetailPageComponent implements OnInit {
   readonly assignment = signal<AuditAssignment | null>(null);
   readonly project = signal<Project | null>(null);
   readonly subdistrict = signal<Subdistrict | null>(null);
+
+  // ── Evidence + Clarification State ──
+  readonly attachments = signal<AssignmentAttachment[]>([]);
+  readonly attachmentError = signal('');
+  readonly uploading = signal(false);
+  readonly selectedFile = signal<File | null>(null);
+  readonly clarifications = signal<AssignmentClarification[]>([]);
+  readonly sendingMessage = signal(false);
+
+  readonly currentUserId = computed(() => this.auth.user()?.user_id ?? -1);
 
   private readonly projects = signal<Project[]>([]);
   private readonly subdistricts = signal<Subdistrict[]>([]);
@@ -267,6 +361,7 @@ export class RiskAnalystTaskDetailPageComponent implements OnInit {
             const sub = subdistricts.find((s) => s.subdistrict_id === project.subdistrict_id);
             this.subdistrict.set(sub ?? null);
           }
+          this.loadEvidenceAndClarifications(assignmentId);
         } else {
           this.error.set('ไม่พบงานที่ระบุ');
         }
@@ -295,5 +390,85 @@ export class RiskAnalystTaskDetailPageComponent implements OnInit {
           timeStyle: 'short',
           timeZone: 'Asia/Bangkok',
         }).format(date);
+  }
+
+  formatSize(bytes: number): string {
+    return formatFileSize(bytes);
+  }
+
+  // ── Evidence + Clarification ──
+
+  private loadEvidenceAndClarifications(assignmentId: number): void {
+    this.api.assignmentAttachments(assignmentId).subscribe({
+      next: (list) => this.attachments.set(list),
+      error: () => this.attachmentError.set('โหลดรายการไฟล์แนบไม่สำเร็จ'),
+    });
+    this.api.assignmentClarifications(assignmentId).subscribe({
+      next: (list) => this.clarifications.set(list),
+    });
+  }
+
+  onFileChange(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0] ?? null;
+    this.selectedFile.set(file);
+  }
+
+  uploadEvidence(event: Event): void {
+    event.preventDefault();
+    const assignmentId = this.assignmentId();
+    const file = this.selectedFile();
+    if (!assignmentId || !file || this.uploading()) {
+      return;
+    }
+    this.uploading.set(true);
+    this.attachmentError.set('');
+    this.api.uploadAssignmentAttachment(assignmentId, file).subscribe({
+      next: () => {
+        this.selectedFile.set(null);
+        this.uploading.set(false);
+        this.loadEvidenceAndClarifications(assignmentId);
+      },
+      error: () => {
+        this.attachmentError.set('แนบไฟล์ไม่สำเร็จ ตรวจสอบนามสกุล/ขนาดไฟล์ (ไม่เกิน 10MB)');
+        this.uploading.set(false);
+      },
+    });
+  }
+
+  deleteEvidence(attachmentId: number): void {
+    const assignmentId = this.assignmentId();
+    if (!assignmentId) {
+      return;
+    }
+    this.api.deleteAssignmentAttachment(assignmentId, attachmentId).subscribe({
+      next: () => this.attachments.update((list) => list.filter((f) => f.attachment_id !== attachmentId)),
+      error: () => this.attachmentError.set('ลบไฟล์ไม่สำเร็จ'),
+    });
+  }
+
+  downloadEvidence(file: AssignmentAttachment): void {
+    const assignmentId = this.assignmentId();
+    if (!assignmentId) {
+      return;
+    }
+    this.api.downloadAssignmentAttachment(assignmentId, file.attachment_id).subscribe({
+      next: (blob) => triggerBlobDownload(blob, file.file_name),
+      error: () => this.attachmentError.set('ดาวน์โหลดไฟล์ไม่สำเร็จ'),
+    });
+  }
+
+  sendClarification(messageText: string): void {
+    const assignmentId = this.assignmentId();
+    if (!assignmentId || this.sendingMessage()) {
+      return;
+    }
+    this.sendingMessage.set(true);
+    this.api.postAssignmentClarification(assignmentId, messageText).subscribe({
+      next: (message) => {
+        this.clarifications.update((list) => [...list, message]);
+        this.sendingMessage.set(false);
+      },
+      error: () => this.sendingMessage.set(false),
+    });
   }
 }
