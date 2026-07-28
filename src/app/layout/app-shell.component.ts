@@ -21,188 +21,7 @@ import { SystemMeta } from '../core/models/domain.models';
 import { ChatbotWidgetComponent } from '../features/chatbot/chatbot-widget.component';
 import { GuardrailBannerComponent } from '../shared/ui/guardrail-banner.component';
 import { PrototypeBannerComponent } from '../shared/ui/prototype-banner.component';
-
-interface NavItem {
-  code: string;
-  label: string;
-  path: string;
-  children?: NavItem[];
-  exact?: boolean;
-  /** จำกัดเมนูเฉพาะบาง role (ตาม roles.md) — ไม่ระบุ = ทุก role เห็น */
-  roles?: string[];
-}
-
-interface NavGroup {
-  id: string;
-  label: string;
-  items: NavItem[];
-}
-
-const NAV_GROUPS: NavGroup[] = [
-  {
-    id: 'overview',
-    label: 'ภาพรวมความเสี่ยง',
-    items: [
-      {
-        code: 'F1',
-        label: 'แดชบอร์ดความเสี่ยงโครงการ',
-        path: '/project-risk',
-        children: [
-          {
-            code: 'F1.1',
-            label: 'ภาพรวมสุขภาพความเสี่ยงโครงการ',
-            path: '/project-risk/overview',
-          },
-          {
-            code: 'F1.2',
-            label: 'วิเคราะห์ข้อมูลโครงการเชิงลึก',
-            path: '/project-risk/insights',
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'finance',
-    label: 'การเงินและปัจจัยเสี่ยง',
-    items: [
-      {
-        code: 'F2',
-        label: 'สถานะและสุขภาพการคลัง',
-        path: '/financial-health',
-        children: [
-          {
-            code: 'F2.1',
-            label: 'ภาพรวมสุขภาพการคลัง',
-            path: '/financial-health/overview',
-          },
-          {
-            code: 'F2.2',
-            label: 'เปรียบเทียบสถานะการคลัง',
-            path: '/financial-health/benchmarking',
-          },
-          {
-            code: 'F2.3',
-            label: 'แนวโน้มการลงทุนและการจัดซื้อจัดจ้าง',
-            path: '/financial-health/investment-trends',
-          },
-          {
-            code: 'F2.4',
-            label: 'ตัวชี้วัดความเสี่ยงทางการคลัง',
-            path: '/financial-health/risk-indicators',
-          },
-        ],
-      },
-      {
-        code: 'F3',
-        label: 'โครงการทั้งหมด',
-        path: '/risk-factors',
-        children: [
-          {
-            code: 'F3.1',
-            label: 'รายละเอียดโครงการ',
-            path: '/risk-factors',
-            exact: true,
-          },
-          {
-            code: 'F3.2',
-            label: 'สถานะโครงการ',
-            path: '/risk-factors/status',
-          },
-        ],
-      },
-      {
-        code: 'F4',
-        label: 'มอบหมายงาน',
-        path: '/assignment-project-auditor',
-        children: [
-          {
-            code: 'F4.1',
-            label: 'มอบหมายงานหลัก',
-            path: '/assignment-project-auditor',
-            exact: true,
-          },
-          {
-            code: 'F4.2',
-            label: 'ประวัติการมอบหมายงาน',
-            path: '/assignment-project-auditor/history',
-          },
-        ],
-      },
-      {
-        code: 'F5',
-        label: 'งานที่ได้รับมอบหมาย',
-        path: '/risk-analyst/my-tasks',
-        roles: [...ASSIGNMENT_ROLES],
-      },
-      {
-        code: 'F6',
-        label: 'แบบฟอร์มบันทึกความคิดเห็น',
-        path: '/risk-analyst-feedback',
-        roles: [
-          'admin',
-          'regional_supervisor',
-          'local_executive',
-          'project_auditor',
-          'risk_analyst',
-        ],
-      },
-    ],
-  },
-  {
-    id: 'audit',
-    label: 'งานตรวจสอบ',
-    items: [
-      {
-        code: 'F7',
-        label: 'ความเห็นผู้ตรวจสอบ',
-        path: '/auditor-feedback',
-        // mirror FEEDBACK_ROLES (core/auth/roles.ts) — ซ่อนจาก public_user
-        roles: [
-          'admin',
-          'regional_supervisor',
-          'local_executive',
-          'project_auditor',
-          'risk_analyst',
-        ],
-      },
-    ],
-  },
-  {
-    id: 'admin',
-    label: 'ผู้ดูแลระบบ',
-    items: [
-      {
-        code: 'A1',
-        label: 'บันทึกการเข้าถึงระบบ',
-        path: '/admin/access-log',
-        roles: ['admin'], // เห็นเฉพาะ admin — ตรงกับ roleGuard('admin') ที่ route
-      },
-      {
-        code: 'A2',
-        label: 'นำเข้าข้อมูล & รัน Risk Engine',
-        path: '/admin/data-upload',
-        roles: ['admin'], // เห็นเฉพาะ admin — ตรงกับ roleGuard('admin') ที่ route
-      },
-    ],
-  },
-  {
-    id: 'transparency',
-    label: 'ความโปร่งใส & ติดต่อ',
-    items: [
-      {
-        code: 'T1',
-        label: 'ที่มาของข้อมูล',
-        path: '/data-sources',
-      },
-      {
-        code: 'T2',
-        label: 'ติดต่อ / แจ้งข้อมูลไม่ถูกต้อง',
-        path: '/contact',
-      },
-    ],
-  },
-];
+import { NAV_GROUPS, NavGroup, NavItem } from './nav-groups';
 
 @Component({
   selector: 'app-shell',
@@ -257,56 +76,56 @@ const NAV_GROUPS: NavGroup[] = [
                         "
                       >
                         @switch (item.code) {
-                          @case ('F1') {
+                          @case ('risk_dashboard') {
                             <svg
                               lucideLayoutDashboard
                               class="size-[18px] shrink-0"
                               aria-hidden="true"
                             ></svg>
                           }
-                          @case ('F2') {
+                          @case ('fiscal_dashboard') {
                             <svg
                               lucideLandmark
                               class="size-[18px] shrink-0"
                               aria-hidden="true"
                             ></svg>
                           }
-                          @case ('F3') {
+                          @case ('projects_view') {
                             <svg
                               lucideFolderKanban
                               class="size-[18px] shrink-0"
                               aria-hidden="true"
                             ></svg>
                           }
-                          @case ('F4') {
+                          @case ('assign_audit_tasks') {
                             <svg
                               lucideClipboardList
                               class="size-[18px] shrink-0"
                               aria-hidden="true"
                             ></svg>
                           }
-                          @case ('F5') {
+                          @case ('team_reports') {
                             <svg
                               lucideFileCheck
                               class="size-[18px] shrink-0"
                               aria-hidden="true"
                             ></svg>
                           }
-                          @case ('F6') {
+                          @case ('audit_feedback') {
                             <svg
                               lucideMessageSquareText
                               class="size-[18px] shrink-0"
                               aria-hidden="true"
                             ></svg>
                           }
-                          @case ('F7') {
+                          @case ('auditor_feedback') {
                             <svg
                               lucideShieldCheck
                               class="size-[18px] shrink-0"
                               aria-hidden="true"
                             ></svg>
                           }
-                          @case ('A1') {
+                          @case ('access_logs') {
                             <svg
                               lucideKeyRound
                               class="size-[18px] shrink-0"
@@ -347,48 +166,48 @@ const NAV_GROUPS: NavGroup[] = [
                       "
                     >
                       @switch (item.code) {
-                        @case ('F1') {
+                        @case ('risk_dashboard') {
                           <svg
                             lucideLayoutDashboard
                             class="size-[18px] shrink-0"
                             aria-hidden="true"
                           ></svg>
                         }
-                        @case ('F2') {
+                        @case ('fiscal_dashboard') {
                           <svg lucideLandmark class="size-[18px] shrink-0" aria-hidden="true"></svg>
                         }
-                        @case ('F3') {
+                        @case ('projects_view') {
                           <svg
                             lucideFolderKanban
                             class="size-[18px] shrink-0"
                             aria-hidden="true"
                           ></svg>
                         }
-                        @case ('F4') {
+                        @case ('assign_audit_tasks') {
                           <svg
                             lucideClipboardList
                             class="size-[18px] shrink-0"
                             aria-hidden="true"
                           ></svg>
                         }
-                        @case ('F5') {
+                        @case ('team_reports') {
                           <svg lucideFileText class="size-[18px] shrink-0" aria-hidden="true"></svg>
                         }
-                        @case ('F6') {
+                        @case ('audit_feedback') {
                           <svg
                             lucideMessageSquareText
                             class="size-[18px] shrink-0"
                             aria-hidden="true"
                           ></svg>
                         }
-                        @case ('F7') {
+                        @case ('auditor_feedback') {
                           <svg
                             lucideShieldCheck
                             class="size-[18px] shrink-0"
                             aria-hidden="true"
                           ></svg>
                         }
-                        @case ('A1') {
+                        @case ('access_logs') {
                           <svg lucideKeyRound class="size-[18px] shrink-0" aria-hidden="true"></svg>
                         }
                       }
@@ -521,15 +340,20 @@ export class AppShellComponent {
       : '';
   });
 
-  /** เมนูที่ role ปัจจุบันเห็นได้ — item ที่ระบุ `roles` จะแสดงเฉพาะ role ในรายการ (รวม children) */
+  /**
+   * เมนูที่ผู้ใช้ปัจจุบันเห็นได้ — item ที่ระบุ `roles` จะแสดงเฉพาะ role ในรายการ (รวม children)
+   * เมนูระดับบนสุด (F1-F7/A1-A3/T1-T2) ต้องอยู่ใน allowedFeatures ของผู้ใช้คนนั้นด้วย
+   * (ปรับรายคนได้จากหน้าจัดการผู้ใช้งาน) — children ไม่มีรหัสฟีเจอร์แยก จึงอิงสิทธิ์ตาม parent
+   */
   readonly visibleNavGroups = computed<NavGroup[]>(() => {
-    const canSee = (item: NavItem): boolean => !item.roles || this.auth.hasRole(...item.roles);
+    const canSeeByRole = (item: NavItem): boolean =>
+      !item.roles || this.auth.hasRole(...item.roles);
     return NAV_GROUPS.map((group) => ({
       ...group,
       items: group.items
-        .filter(canSee)
+        .filter((item) => canSeeByRole(item) && this.auth.canAccessFeature(item.code))
         .map((item) =>
-          item.children ? { ...item, children: item.children.filter(canSee) } : item,
+          item.children ? { ...item, children: item.children.filter(canSeeByRole) } : item,
         ),
     })).filter((group) => group.items.length > 0);
   });

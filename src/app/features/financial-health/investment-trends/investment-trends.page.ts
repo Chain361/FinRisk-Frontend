@@ -36,6 +36,11 @@ import { FinancialHealthStateService } from '../financial-health-state.service';
         </p>
       }
 
+      @if (needsSubdistrictSelection()) {
+        <p class="rounded-[4px] border-[1.5px] border-line bg-zebra px-4 py-3 text-sm text-muted">
+          {{ t('filter.selectSubdistrictPrompt') }}
+        </p>
+      } @else {
       <section class="panel p-[18px]">
         <div class="mb-3">
           <h2 class="m-0 text-[16px] font-bold text-ink">{{ t('fhInvest.sectionTitle') }}</h2>
@@ -84,6 +89,7 @@ import { FinancialHealthStateService } from '../financial-health-state.service';
           [compactValueLabels]="true"
         />
       </section>
+      }
     </section>
   `,
 })
@@ -97,6 +103,7 @@ export class InvestmentTrendsPageComponent implements OnInit {
   readonly error = this.state.error;
   readonly subdistricts = this.state.subdistricts;
   readonly selectedSubdistrictId = this.state.selectedSubdistrictId;
+  readonly needsSubdistrictSelection = this.state.needsSubdistrictSelection;
   readonly selectedYear = this.state.selectedYear;
   readonly fixedAssetFocusYear = this.state.fixedAssetFocusYear;
   readonly fixedAssetPreviousYear = this.state.fixedAssetPreviousYear;

@@ -1,3 +1,5 @@
+import { RoleCode } from '../auth/roles';
+
 export type RiskLevel = 'low' | 'medium' | 'high' | string;
 
 /** ระดับตามกรอบ 5×5 (โอกาส × ผลกระทบ) — ภาษาไทยตามมาตรฐานราชการ */
@@ -10,7 +12,30 @@ export interface AppUser {
   display_name?: string | null;
   full_name?: string | null;
   name?: string | null;
+  /** สิทธิ์ฟีเจอร์ของผู้ใช้คนนี้เอง — /auth/login และ /auth/me ส่งมาให้ตรงๆ ไม่ต้องพึ่ง GET /users (admin เท่านั้น) */
+  allowed_features?: string[];
 }
+
+export type UserStatus = 'active' | 'disabled';
+
+/** ผู้ใช้ตามที่หน้าจัดการผู้ใช้งาน (admin) เห็น — มาจาก GET /users ฝั่ง backend */
+export interface ManagedUser {
+  user_id: number;
+  /** ใช้จับคู่กับ AppUser.username ตอน login เพื่อดึงสิทธิ์ฟีเจอร์ — ไม่แสดงผลใน UI */
+  username: string;
+  display_name: string;
+  role: RoleCode;
+  subdistrict_id: number | null;
+  status: UserStatus;
+  /** หน้า/ฟีเจอร์ที่ผู้ใช้คนนี้เข้าถึงได้ — ค่าเริ่มต้นมาจาก role แต่ปรับเพิ่ม/ลดรายคนได้ */
+  allowed_features: string[];
+}
+
+/** body ของ PUT /users/{user_id} */
+export type ManagedUserPatch = Pick<
+  ManagedUser,
+  'display_name' | 'role' | 'subdistrict_id' | 'status' | 'allowed_features'
+>;
 
 export interface LoginRequest {
   username: string;

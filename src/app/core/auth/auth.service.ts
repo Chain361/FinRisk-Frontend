@@ -5,6 +5,7 @@ import { Observable, tap } from 'rxjs';
 import { I18nService } from '../i18n/i18n.service';
 import { ApiService } from '../api/api.service';
 import { AppUser, LoginResponse } from '../models/domain.models';
+import { resolveAllowedFeatures } from './features';
 import { SCOPED_ROLES } from './roles';
 import { TOKEN_KEY, USER_KEY, isTokenExpired } from './auth.constants';
 
@@ -46,6 +47,24 @@ export class AuthService {
   hasRole(...allowed: string[]): boolean {
     const role = this.role();
     return role !== null && allowed.includes(role);
+  }
+
+  /**
+   * รหัสฟีเจอร์ที่ผู้ใช้ปัจจุบันเข้าถึงได้ — override รายคนจาก user-management ถ้ามี
+   * มาจาก user.allowed_features ที่ /auth/login + /auth/me ส่งมาให้ตรงๆ (ไม่ต้องพึ่ง GET /users
+   * ซึ่งเป็น admin เท่านั้น — ถ้าไปเรียกตรงนี้ ผู้ใช้ role อื่นจะโดน 403 แล้วสิทธิ์รายคนจะหายไปเป็น role default)
+   */
+  readonly allowedFeatures = computed(() => {
+    const user = this.user();
+    if (!user) {
+      return [];
+    }
+    return resolveAllowedFeatures(user.allowed_features, user.role);
+  });
+
+  /** true เมื่อผู้ใช้ปัจจุบันเข้าถึงฟีเจอร์รหัสนี้ได้ */
+  canAccessFeature(code: string): boolean {
+    return this.allowedFeatures().includes(code);
   }
 
   login(username: string, password: string): Observable<LoginResponse> {

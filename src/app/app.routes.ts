@@ -145,6 +145,15 @@ export const routes: Routes = [
           import('./features/admin/data-upload.page').then((m) => m.DataUploadPageComponent),
       },
       {
+        // เพิ่ม/แก้ไข/จัดการบัญชีผู้ใช้งาน — เฉพาะ admin
+        path: 'admin/user-management',
+        canActivate: [roleGuard('admin')],
+        loadComponent: () =>
+          import('./features/user-management/user-management.page').then(
+            (m) => m.UserManagementPageComponent,
+          ),
+      },
+      {
         path: 'risk-analyst-feedback',
         canActivate: [roleGuard(...FEEDBACK_ROLES)],
         loadComponent: () =>

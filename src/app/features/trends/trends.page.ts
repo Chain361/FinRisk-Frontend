@@ -2,6 +2,7 @@ import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { forkJoin } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
+import { AuthService } from '../../core/auth/auth.service';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { AnnualRisk, Project, Subdistrict } from '../../core/models/domain.models';
 import { BarChartComponent, BarChartSeries } from '../../shared/charts/bar-chart.component';
@@ -57,6 +58,11 @@ interface Anomaly {
         <p class="rounded-[4px] border-[1.5px] border-risk-high bg-red-50 px-4 py-3 text-sm text-risk-high">{{ error() }}</p>
       }
 
+      @if (needsSubdistrictSelection()) {
+        <p class="rounded-[4px] border-[1.5px] border-line bg-zebra px-4 py-3 text-sm text-muted">
+          {{ t('filter.selectSubdistrictPrompt') }}
+        </p>
+      } @else {
       <div class="grid gap-4 xl:grid-cols-2">
         <app-bar-chart
           [title]="
@@ -203,11 +209,13 @@ interface Anomaly {
           </div>
         }
       </section>
+      }
     </section>
   `,
 })
 export class TrendsPageComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly auth = inject(AuthService);
   private readonly i18n = inject(I18nService);
   protected readonly t = this.i18n.t;
 
@@ -218,6 +226,11 @@ export class TrendsPageComponent implements OnInit {
   readonly projects = signal<Project[]>([]);
   readonly annualRisks = signal<AnnualRisk[]>([]);
   readonly selectedSubdistrictId = signal<number | null>(null);
+
+  /** role ไม่ถูกจำกัดพื้นที่ (เห็นได้หลายตำบล) ต้องเลือกตำบลก่อนถึงจะแสดงข้อมูล */
+  readonly needsSubdistrictSelection = computed(
+    () => !this.auth.isScopedRole() && this.selectedSubdistrictId() === null,
+  );
 
   readonly scopedProjects = computed(() => {
     const subdistrictId = this.selectedSubdistrictId();
