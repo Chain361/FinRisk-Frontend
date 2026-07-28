@@ -18,13 +18,14 @@ import { I18nService } from '../../core/i18n/i18n.service';
           <p class="m-0 text-[13.5px] text-slate-700">▪ {{ notice }}</p>
         }
         <div class="mt-1.5">
-          <button
-            type="button"
-            class="inline-flex h-[38px] cursor-pointer items-center gap-2 rounded-[3px] border-[1.5px] border-navy bg-white px-4 text-[13px] font-bold text-navy hover:bg-page"
+          <a
+            href="/docs/finrisk-user-manual.pdf"
+            download="คู่มือการใช้งานระบบ FinRisk.pdf"
+            class="inline-flex h-[38px] cursor-pointer items-center gap-2 rounded-[3px] border-[1.5px] border-navy bg-white px-4 text-[13px] font-bold text-navy no-underline hover:bg-page"
           >
             <svg lucideFileText class="size-4" aria-hidden="true"></svg>
             {{ t('announce.downloadManual') }}
-          </button>
+          </a>
         </div>
       </div>
     </div>
