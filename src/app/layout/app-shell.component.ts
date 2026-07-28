@@ -16,7 +16,7 @@ import { catchError, filter, map, of } from 'rxjs';
 import { ApiService } from '../core/api/api.service';
 import { AuthService } from '../core/auth/auth.service';
 import { I18nService } from '../core/i18n/i18n.service';
-import { ASSIGNMENT_ROLES, CHATBOT_ROLES } from '../core/auth/roles';
+import { ASSIGNMENT_ROLES, CHATBOT_ROLES, PUBLIC_EXPORT_ROLES } from '../core/auth/roles';
 import { SystemMeta } from '../core/models/domain.models';
 import { ChatbotWidgetComponent } from '../features/chatbot/chatbot-widget.component';
 import { GuardrailBannerComponent } from '../shared/ui/guardrail-banner.component';
@@ -197,6 +197,12 @@ const NAV_GROUPS: NavGroup[] = [
       },
       {
         code: 'T2',
+        label: 'ดาวน์โหลดข้อมูลเปิด',
+        path: '/open-data',
+        roles: [...PUBLIC_EXPORT_ROLES],
+      },
+      {
+        code: 'T3',
         label: 'ติดต่อ / แจ้งข้อมูลไม่ถูกต้อง',
         path: '/contact',
       },
