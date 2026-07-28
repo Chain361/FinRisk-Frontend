@@ -1,6 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
-import { I18nService } from '../../core/i18n/i18n.service';
 import { formatNumber } from '../utils/risk-utils';
 
 export interface CompositionSegment {
@@ -39,10 +38,10 @@ interface ViewSegment extends CompositionSegment {
           }
         </div>
       } @else {
-        <p class="text-[13px] text-muted">{{ t('common.noData') }}</p>
+        <p class="text-[13px] text-muted">ไม่มีข้อมูล</p>
       }
       <table class="gov-table mt-3.5 text-[13px]">
-        <caption class="sr-only">{{ t('a11y.chartTableCaption', { title: title() }) }}</caption>
+        <caption class="sr-only">ตารางข้อมูลของแผนภูมิ: {{ title() }}</caption>
         <tbody>
           @for (segment of viewSegments(); track segment.label) {
             <tr>
@@ -59,9 +58,6 @@ interface ViewSegment extends CompositionSegment {
   `,
 })
 export class CompositionBarComponent {
-  private readonly i18n = inject(I18nService);
-  protected readonly t = this.i18n.t;
-
   readonly title = input.required<string>();
   readonly subtitle = input<string>('');
   readonly segments = input.required<CompositionSegment[]>();
@@ -73,14 +69,12 @@ export class CompositionBarComponent {
 
   readonly viewSegments = computed<ViewSegment[]>(() => {
     const total = this.total();
-    const unit = this.unit() || this.t('common.unit.baht');
+    const unit = this.unit() || 'บาท';
     return this.segments().map((segment) => ({
       ...segment,
       pct: total > 0 && segment.value !== null ? Math.round((segment.value / total) * 100) : 0,
       valueText:
-        segment.value === null
-          ? this.t('common.cannotEvaluate')
-          : `${formatNumber(segment.value, 0)} ${unit}`,
+        segment.value === null ? 'ประเมินไม่ได้' : `${formatNumber(segment.value, 0)} ${unit}`,
     }));
   });
 }
