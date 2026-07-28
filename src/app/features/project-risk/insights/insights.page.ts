@@ -14,6 +14,7 @@ import {
 import { BarChartComponent, BarChartSeries } from '../../../shared/charts/bar-chart.component';
 import { FilterBarComponent } from '../../../shared/filters/filter-bar.component';
 import { EmptyStateComponent } from '../../../shared/ui/empty-state.component';
+import { InfoTooltipComponent } from '../../../shared/ui/info-tooltip.component';
 import { CHART_SERIES_COLORS, RISK_SERIES } from '../../../shared/utils/design-tokens';
 import {
   FISCAL_YEARS,
@@ -43,15 +44,21 @@ interface RepeatedEntity {
 @Component({
   selector: 'app-insights-page',
   standalone: true,
-  imports: [BarChartComponent, EmptyStateComponent, FilterBarComponent],
+  imports: [BarChartComponent, EmptyStateComponent, FilterBarComponent, InfoTooltipComponent],
   template: `
     <section class="page-shell">
       <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F1.2</p>
-          <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">
-            วิเคราะห์ข้อมูลโครงการเชิงลึก
-          </h1>
+          <div class="mt-1 flex items-center gap-2">
+            <h1 class="m-0 text-[26px] font-extrabold text-ink">
+              วิเคราะห์ข้อมูลโครงการเชิงลึก
+            </h1>
+            <app-info-tooltip
+              text="เกณฑ์ประเมินความเสี่ยงโครงการ — สูตร: (น้ำหนักปัจจัยเสี่ยงที่พบ ÷ น้ำหนักปัจจัยที่ประเมินได้) × 100 · สูง มากกว่า 60% (แดง) พบสัญญาณเตือนหลายประการที่ควรเร่งตรวจสอบ · ปานกลาง 30–60% (เหลือง) พบสัญญาณเตือนเฝ้าระวัง ควรตรวจสอบเอกสารเพิ่มเติม · ต่ำ น้อยกว่า 30% (เขียว) รูปแบบการจัดซื้อจัดจ้างอยู่ในเกณฑ์ปกติ"
+              [width]="320"
+            />
+          </div>
           <p class="m-0 mt-1.5 text-sm text-muted">
             วิเคราะห์ผู้รับจ้าง รายการซ้ำ และแนวโน้มงบประมาณ
           </p>
