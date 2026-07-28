@@ -55,9 +55,12 @@ import { FISCAL_YEARS, subdistrictLabel } from '../utils/risk-utils';
           <span class="text-[12.5px] font-bold text-muted">ปีงบประมาณ</span>
           <select
             class="gov-select mt-[5px]"
-            [value]="selectedYear() ?? 'all'"
+            [value]="hasSelectedYear() ? (selectedYear() ?? 'all') : ''"
             (change)="onYearChange($any($event.target).value)"
           >
+            @if (requireYearSelection()) {
+              <option value="" disabled>เลือกปีงบประมาณ</option>
+            }
             <option value="all">ทุกปี</option>
             @for (year of yearOptions(); track year) {
               <option [value]="year">{{ year }}</option>
@@ -151,6 +154,10 @@ export class FilterBarComponent {
   readonly budgetAmountMin = input('');
   readonly budgetAmountMax = input('');
   readonly showYearFilter = input(true);
+  /** ใช้เมื่อหน้านั้นต้องให้ผู้ใช้เลือกปี (รวมตัวเลือก "ทุกปี") ก่อนแสดงข้อมูล */
+  readonly requireYearSelection = input(false);
+  /** แยก "ยังไม่เลือก" ออกจากการเลือก "ทุกปี" ซึ่งทั้งคู่มี selectedYear เป็น null */
+  readonly hasSelectedYear = input(true);
   readonly showRiskFilter = input(true);
   readonly showProjectTypeFilter = input(false);
   readonly showBudgetScopeFilter = input(false);

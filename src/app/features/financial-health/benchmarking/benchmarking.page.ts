@@ -26,6 +26,8 @@ import {
         [subdistricts]="subdistricts()"
         [selectedSubdistrictId]="selectedSubdistrictId()"
         [selectedYear]="selectedYear()"
+        [requireYearSelection]="true"
+        [hasSelectedYear]="hasSelectedYear()"
         [showRiskFilter]="false"
         (selectedSubdistrictIdChange)="setSubdistrict($event)"
         (selectedYearChange)="setYear($event)"
@@ -40,9 +42,9 @@ import {
         </p>
       }
 
-      @if (needsSubdistrictSelection()) {
+      @if (needsFilterSelection()) {
         <p class="rounded-[4px] border-[1.5px] border-line bg-zebra px-4 py-3 text-sm text-muted">
-          กรุณาเลือกตำบลเพื่อแสดงข้อมูล
+          กรุณาเลือกตำบลและปีงบประมาณก่อนแสดงข้อมูล
         </p>
       } @else {
       <section class="panel p-[18px]">
@@ -112,8 +114,9 @@ export class BenchmarkingPageComponent implements OnInit {
   readonly error = this.state.error;
   readonly subdistricts = this.state.subdistricts;
   readonly selectedSubdistrictId = this.state.selectedSubdistrictId;
-  readonly needsSubdistrictSelection = this.state.needsSubdistrictSelection;
+  readonly needsFilterSelection = this.state.needsFilterSelection;
   readonly selectedYear = this.state.selectedYear;
+  readonly hasSelectedYear = this.state.hasSelectedYear;
   readonly comparisonMetric = this.state.comparisonMetric;
   readonly comparisonFactorCode = this.state.comparisonFactorCode;
   readonly allFactorOptions = this.state.allFactorOptions;

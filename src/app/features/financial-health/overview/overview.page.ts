@@ -24,6 +24,8 @@ import { FinancialHealthStateService } from '../financial-health-state.service';
         [subdistricts]="subdistricts()"
         [selectedSubdistrictId]="selectedSubdistrictId()"
         [selectedYear]="selectedYear()"
+        [requireYearSelection]="true"
+        [hasSelectedYear]="hasSelectedYear()"
         [showRiskFilter]="false"
         (selectedSubdistrictIdChange)="setSubdistrict($event)"
         (selectedYearChange)="setYear($event)"
@@ -38,9 +40,9 @@ import { FinancialHealthStateService } from '../financial-health-state.service';
         </p>
       }
 
-      @if (needsSubdistrictSelection()) {
+      @if (needsFilterSelection()) {
         <p class="rounded-[4px] border-[1.5px] border-line bg-zebra px-4 py-3 text-sm text-muted">
-          กรุณาเลือกตำบลเพื่อแสดงข้อมูล
+          กรุณาเลือกตำบลและปีงบประมาณก่อนแสดงข้อมูล
         </p>
       } @else {
       <div class="grid gap-4 md:grid-cols-3">
@@ -97,8 +99,9 @@ export class OverviewPageComponent implements OnInit {
   readonly error = this.state.error;
   readonly subdistricts = this.state.subdistricts;
   readonly selectedSubdistrictId = this.state.selectedSubdistrictId;
-  readonly needsSubdistrictSelection = this.state.needsSubdistrictSelection;
+  readonly needsFilterSelection = this.state.needsFilterSelection;
   readonly selectedYear = this.state.selectedYear;
+  readonly hasSelectedYear = this.state.hasSelectedYear;
   readonly balanceSheetKpis = this.state.balanceSheetKpis;
   readonly incomeStatementKpis = this.state.incomeStatementKpis;
   readonly assetComposition = this.state.assetComposition;
