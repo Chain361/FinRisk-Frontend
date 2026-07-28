@@ -27,7 +27,10 @@ let tooltipSeq = 0;
           class="absolute left-0 top-[26px] z-20 rounded-[4px] bg-ink px-3 py-2.5 text-xs leading-relaxed text-white"
           [style.width.px]="width()"
         >
-          {{ text() }}
+          @if (text()) {
+            <p class="m-0">{{ text() }}</p>
+          }
+          <ng-content />
         </div>
       }
     </span>
@@ -37,7 +40,7 @@ export class InfoTooltipComponent {
   private readonly host = inject(ElementRef<HTMLElement>);
   protected readonly t = inject(I18nService).t;
 
-  readonly text = input.required<string>();
+  readonly text = input<string>('');
   readonly width = input<number>(260);
 
   readonly open = signal(false);
