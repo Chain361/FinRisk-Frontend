@@ -170,12 +170,39 @@ export const routes: Routes = [
           ),
       },
       {
+        // ทั้งฟอร์มเดี่ยว (?projectId=) และหน้ารวมโครงการ/รายละเอียด (Risk Analyst) อยู่ในโฟลเดอร์เดียวกัน
+        // (risk-analyst-feedback/) — /projects กับ /task/:id จำกัดเฉพาะ risk_analyst เพิ่มจาก
+        // roleGuard(...FEEDBACK_ROLES) ของ path หลัก
+        // หมายเหตุ: ห้ามใส่ loadComponent ตรง node นี้พร้อมกับ children — RiskAnalystFeedbackPageComponent
+        // ไม่มี <router-outlet> จึง render children ไม่ได้ ต้องซ้อนเป็น child path:'' แทน
         path: 'risk-analyst-feedback',
         canActivate: [roleGuard(...FEEDBACK_ROLES)],
-        loadComponent: () =>
-          import('./features/risk-analyst-feedback/risk-analyst-feedback.page').then(
-            (m) => m.RiskAnalystFeedbackPageComponent,
-          ),
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            loadComponent: () =>
+              import('./features/risk-analyst-feedback/risk-analyst-feedback.page').then(
+                (m) => m.RiskAnalystFeedbackPageComponent,
+              ),
+          },
+          {
+            path: 'projects',
+            canActivate: [roleGuard('risk_analyst')],
+            loadComponent: () =>
+              import('./features/risk-analyst-feedback/risk-analyst-feedback-project-list.page').then(
+                (m) => m.FeedbackProjectListPageComponent,
+              ),
+          },
+          {
+            path: 'task/:id',
+            canActivate: [roleGuard('risk_analyst')],
+            loadComponent: () =>
+              import('./features/risk-analyst-feedback/risk-analyst-feedback.page').then(
+                (m) => m.RiskAnalystFeedbackPageComponent,
+              ),
+          },
+        ],
       },
       {
         path: 'auditor-feedback',

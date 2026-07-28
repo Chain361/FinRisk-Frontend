@@ -1,11 +1,13 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { RESOLVE_ROLES } from '../../core/auth/roles';
 import {
+  AuditAssignment,
   AuditorFeedback,
   AuditorFeedbackCreate,
   CONCERN_LEVEL_OPTIONS,
@@ -17,7 +19,6 @@ import {
 import {
   Project,
   ProjectDetail,
-  ProjectFilters,
   ProjectRiskFactor,
   RiskFactorCatalog,
   Subdistrict,
@@ -45,9 +46,19 @@ import {
     FeedbackStatusBadgeComponent,
     FilterBarComponent,
     FormsModule,
+    RouterLink,
   ],
   template: `
     <section class="page-shell">
+      @if (assignmentRouteId()) {
+        <a
+          routerLink="/risk-analyst-feedback/projects"
+          class="inline-flex w-fit items-center gap-1.5 text-sm font-bold text-navy no-underline hover:underline"
+        >
+          &larr; กลับไปรายการโครงการ
+        </a>
+      }
+
       <div>
         <h1 class="m-0 text-[26px] font-extrabold text-ink">
           แบบฟอร์มบันทึกความคิดเห็นด้านความเสี่ยงของโครงการ
@@ -80,108 +91,11 @@ import {
         <div class="panel p-6 text-sm text-muted">กำลังโหลดโครงการ...</div>
       } @else {
         @if (!selectedProjectId()) {
-          <section class="panel overflow-hidden">
-            <div class="border-b-[1.5px] border-line px-4 py-3.5">
-              <div class="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <h2 class="m-0 text-[15px] font-bold text-ink">รายการโครงการทั้งหมด</h2>
-                  <p class="m-0 mt-1 text-[12.5px] text-muted">
-                    คลิกโครงการเพื่อบันทึกความคิดเห็นด้านความเสี่ยง
-                  </p>
-                </div>
-                <label class="block w-full max-w-md">
-                  <span class="sr-only">ค้นหาโครงการ</span>
-                  <input
-                    type="search"
-                    class="gov-input"
-                    placeholder="ค้นหาชื่อโครงการ หรือ Project ID"
-                    [value]="searchQuery()"
-                    (input)="setSearch($any($event.target).value)"
-                  />
-                </label>
-              </div>
-            </div>
-
-            <div class="overflow-x-auto">
-              <table class="min-w-full divide-y divide-slate-200 text-sm">
-                <thead class="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500">
-                  <tr>
-                    <th scope="col" class="px-4 py-3">โครงการ</th>
-                    <th scope="col" class="px-4 py-3">ปี</th>
-                    <th scope="col" class="px-4 py-3 text-right">คะแนนความเสี่ยง</th>
-                    <th scope="col" class="px-4 py-3">สถานะความคิดเห็น</th>
-                    <th scope="col" class="px-4 py-3">วันที่ตรวจล่าสุด</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 bg-white">
-                  @if (!filteredProjects().length) {
-                    <tr>
-                      <td colspan="7" class="px-4 py-12">
-                        <app-empty-state
-                          title="ไม่พบโครงการ"
-                          message="ลองเปลี่ยนคำค้น ปี ตำบล หรือระดับความเสี่ยง"
-                        />
-                      </td>
-                    </tr>
-                  } @else {
-                    @for (project of pagedProjects(); track project.project_id) {
-                      <tr
-                        class="cursor-pointer hover:bg-slate-50"
-                        (click)="selectProject(project.project_id)"
-                      >
-                        <td class="max-w-md px-4 py-3">
-                          <p class="line-clamp-2 font-semibold text-slate-900">
-                            {{ project.project_name }}
-                          </p>
-                          <p class="text-xs text-slate-500">ID {{ project.project_id }}</p>
-                        </td>
-                        <td class="px-4 py-3">{{ project.budget_year }}</td>
-                        <td class="px-4 py-3 text-right font-semibold">
-                          {{ number(project.risk_score, 2) }}
-                        </td>
-                        <td class="px-4 py-3">
-                          <app-feedback-status-badge
-                            [status]="feedbackStatusFor(project.project_id)"
-                          />
-                        </td>
-                        <td class="px-4 py-3">
-                          {{ feedbackUpdatedFor(project.project_id) }}
-                        </td>
-                      </tr>
-                    }
-                  }
-                </tbody>
-              </table>
-            </div>
-
-            @if (filteredProjects().length) {
-              <div
-                class="flex flex-wrap items-center justify-between gap-3 border-t-[1.5px] border-line px-4 py-3"
-              >
-                <p class="m-0 text-[12.5px] text-muted">
-                  หน้า {{ currentPage() }} จาก {{ totalPages() }} · ทั้งหมด
-                  {{ filteredProjects().length }} โครงการ
-                </p>
-                <div class="flex items-center gap-2">
-                  <button
-                    type="button"
-                    class="inline-flex h-9 items-center justify-center rounded-[3px] border-[1.5px] border-line bg-white px-3 text-[13px] font-bold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40 hover:bg-zebra"
-                    [disabled]="currentPage() <= 1"
-                    (click)="prevPage()"
-                  >
-                    ก่อนหน้า
-                  </button>
-                  <button
-                    type="button"
-                    class="inline-flex h-9 items-center justify-center rounded-[3px] border-[1.5px] border-line bg-white px-3 text-[13px] font-bold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40 hover:bg-zebra"
-                    [disabled]="currentPage() >= totalPages()"
-                    (click)="nextPage()"
-                  >
-                    ถัดไป
-                  </button>
-                </div>
-              </div>
-            }
+          <section class="panel p-8">
+            <app-empty-state
+              title="ยังไม่ได้เลือกโครงการ"
+              message="กรุณาเลือกโครงการจากหน้า 'งานที่ได้รับมอบหมาย' เพื่อบันทึกความคิดเห็นด้านความเสี่ยง"
+            />
           </section>
         } @else {
           <div class="grid items-start gap-4 xl:grid-cols-[340px_1fr]">
@@ -610,7 +524,9 @@ import {
 export class RiskAnalystFeedbackPageComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly auth = inject(AuthService);
+  private readonly route = inject(ActivatedRoute);
 
+  readonly assignmentId = signal<number | null>(null);
   protected readonly String = String;
   protected readonly concernLevelOptions = CONCERN_LEVEL_OPTIONS;
   protected readonly likelihoodOptions = LIKELIHOOD_OPTIONS;
@@ -620,7 +536,7 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
   readonly loadingDetail = signal(false);
   readonly subdistricts = signal<Subdistrict[]>([]);
   readonly allProjects = signal<Project[]>([]);
-  readonly projects = signal<Project[]>([]);
+  readonly myAssignments = signal<AuditAssignment[]>([]);
   readonly catalog = signal<RiskFactorCatalog[]>([]);
   readonly allFeedback = signal<AuditorFeedback[]>([]);
   readonly selectedFeedbackHistory = signal<AuditorFeedback[]>([]);
@@ -629,16 +545,19 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
   readonly projectDetail = signal<ProjectDetail | null>(null);
   readonly searchQuery = signal('');
 
+  /** risk_analyst: ไม่จำกัดปีงบเป็นค่าเริ่มต้น เพื่อไม่ให้โครงการที่ตนเองถูกมอบหมาย
+   * (จากปีงบอื่นที่ไม่ใช่ปีปัจจุบัน) หายไปจากรายการโดยไม่ตั้งใจ — role อื่นยังกรองปีปัจจุบันตามเดิม */
+  private readonly defaultYear = this.auth.hasRole('risk_analyst') ? null : 2568;
+
   readonly selectedSubdistrictId = signal<number | null>(null);
-  readonly selectedYear = signal<number | null>(2568);
+  readonly selectedYear = signal<number | null>(this.defaultYear);
   readonly selectedRiskLevel = signal<string | null>(null);
   readonly selectedProjectType = signal<string | null>(null);
   readonly budgetAmountMin = signal('');
   readonly budgetAmountMax = signal('');
   readonly selectedProjectId = signal<string | null>(null);
-
-  private readonly pageSize = 5;
-  readonly currentPage = signal(1);
+  /** assignment_id จาก route param :id (เข้าถึงผ่าน /risk-analyst-feedback/task/:id) — ใช้โชว์ปุ่มย้อนกลับไป /risk-analyst-feedback/projects */
+  readonly assignmentRouteId = signal<string | null>(null);
 
   readonly activeFeedbackId = signal<string | null>(null);
   readonly feedbackText = signal('');
@@ -689,6 +608,15 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
 
   readonly canResolveFeedback = computed(() => this.auth.hasRole(...RESOLVE_ROLES));
 
+  /** risk_analyst เห็นเฉพาะโครงการที่ตนเองถูกมอบหมาย (จาก GET /audit/assignments) —
+   * role อื่นที่เข้าหน้านี้ได้ (FEEDBACK_ROLES) ยังเห็นครบตามสโคปตำบลเดิม ไม่ถูกจำกัดเพิ่ม */
+  private readonly assignedProjectIds = computed<Set<string> | null>(() => {
+    if (!this.auth.hasRole('risk_analyst')) {
+      return null;
+    }
+    return new Set(this.myAssignments().map((a) => a.project_id));
+  });
+
   readonly auditorDisplayName = computed(() => {
     const user = this.auth.user();
     return user?.display_name || user?.full_name || user?.name || user?.username || 'ไม่ระบุ';
@@ -699,7 +627,7 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     const feedback = this.allFeedback();
     const latestUpdate = (project: Project) =>
       latestOf(feedback, project.project_id)?.updated_at ?? '';
-    return [...sortProjectsByRisk(this.projects())].sort((a, b) => {
+    return [...sortProjectsByRisk(this.allProjects())].sort((a, b) => {
       const aDate = latestUpdate(a);
       const bDate = latestUpdate(b);
       if (aDate && bDate) {
@@ -747,16 +675,6 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     });
   });
 
-  readonly totalPages = computed(() =>
-    Math.max(1, Math.ceil(this.filteredProjects().length / this.pageSize)),
-  );
-
-  readonly pagedProjects = computed(() => {
-    const page = this.currentPage();
-    const start = (page - 1) * this.pageSize;
-    return this.filteredProjects().slice(start, start + this.pageSize);
-  });
-
   readonly triggeredFactors = computed(() => {
     const factors = this.projectDetail()?.risk_factors ?? [];
     return factors.filter((factor) => toBool(factor.triggered));
@@ -787,77 +705,80 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadingProjects.set(true);
+    const preselectProjectId = this.route.snapshot.queryParamMap.get('projectId');
+    const assignmentRouteId = this.route.snapshot.paramMap.get('id');
+    this.assignmentRouteId.set(assignmentRouteId);
 
     forkJoin({
       subdistricts: this.api.subdistricts(),
       catalog: this.api.riskFactors(),
       allProjects: this.api.projects(),
       feedback: this.api.feedbackList(),
+      // เฉพาะ risk_analyst ต้องรู้ว่าตัวเองถูกมอบหมายโครงการไหนบ้าง เพื่อจำกัดรายการที่เห็น
+      // (และใช้ resolve project_id จาก assignment_id เมื่อเข้าหน้านี้ผ่าน /risk-analyst-feedback/task/:id)
+      assignments: this.auth.hasRole('risk_analyst')
+        ? this.api.assignments()
+        : of<AuditAssignment[]>([]),
     }).subscribe({
-      next: ({ subdistricts, catalog, allProjects, feedback }) => {
+      next: ({ subdistricts, catalog, allProjects, feedback, assignments }) => {
         this.subdistricts.set(subdistricts);
         this.catalog.set(catalog);
-        this.allProjects.set(allProjects);
+        this.myAssignments.set(assignments);
+        this.allProjects.set(this.scopeToAssignedProjects(allProjects));
         this.allFeedback.set(feedback);
-      },
-      error: () => this.error.set('โหลด catalog หรือรายชื่อตำบลไม่สำเร็จ'),
-    });
+        this.loadingProjects.set(false);
 
-    this.loadProjects();
+        const projectIdFromAssignment = assignmentRouteId
+          ? assignments.find((a) => String(a.assignment_id) === assignmentRouteId)?.project_id
+          : null;
+        const targetProjectId = preselectProjectId || projectIdFromAssignment;
+        if (targetProjectId) {
+          this.selectProject(targetProjectId);
+        }
+      },
+      error: () => {
+        this.error.set('โหลด catalog หรือรายชื่อตำบลไม่สำเร็จ');
+        this.loadingProjects.set(false);
+      },
+    });
   }
 
   setSubdistrict(value: number | null): void {
     this.selectedSubdistrictId.set(value);
-    this.loadProjects();
   }
 
   setYear(value: number | null): void {
     this.selectedYear.set(value);
-    this.loadProjects();
   }
 
   setRisk(value: string | null): void {
     this.selectedRiskLevel.set(value);
-    this.loadProjects();
   }
 
   setProjectType(value: string | null): void {
     this.selectedProjectType.set(value === 'all' ? null : value);
-    this.currentPage.set(1);
   }
 
   setBudgetAmountMin(value: string): void {
     this.budgetAmountMin.set(value);
-    this.currentPage.set(1);
   }
 
   setBudgetAmountMax(value: string): void {
     this.budgetAmountMax.set(value);
-    this.currentPage.set(1);
   }
 
   setSearch(value: string): void {
     this.searchQuery.set(value);
-    this.currentPage.set(1);
-  }
-
-  prevPage(): void {
-    this.currentPage.update((page) => Math.max(1, page - 1));
-  }
-
-  nextPage(): void {
-    this.currentPage.update((page) => Math.min(this.totalPages(), page + 1));
   }
 
   resetFilters(): void {
     this.selectedSubdistrictId.set(null);
-    this.selectedYear.set(2568);
+    this.selectedYear.set(this.defaultYear);
     this.selectedRiskLevel.set(null);
     this.selectedProjectType.set(null);
     this.budgetAmountMin.set('');
     this.budgetAmountMax.set('');
     this.searchQuery.set('');
-    this.loadProjects();
   }
 
   selectProject(projectId: string | number): void {
@@ -872,15 +793,6 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     this.loadingDetail.set(false);
     this.selectedFeedbackHistory.set([]);
     this.resetFeedbackForm();
-  }
-
-  feedbackStatusFor(projectId: string | number): FeedbackStatus | null {
-    return this.asFeedbackStatus(latestOf(this.allFeedback(), projectId)?.status);
-  }
-
-  feedbackUpdatedFor(projectId: string | number): string {
-    const record = latestOf(this.allFeedback(), projectId);
-    return record ? this.dateLabel(record.updated_at) : '-';
   }
 
   asFeedbackStatus(status: string | null | undefined): FeedbackStatus | null {
@@ -1062,16 +974,21 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     });
   }
 
-  /** โหลด allFeedback + ประวัติของโครงการที่เลือกใหม่หลังบันทึก/ลบ/ส่ง/resolve สำเร็จ */
+  /** โหลด allFeedback + ประวัติของโครงการที่เลือกใหม่ พร้อมรีเฟรชสถานะโครงการล่าสุดจาก backend
+   * หลังบันทึก/ลบ/ส่ง/resolve สำเร็จ — กันสถานะโครงการที่แสดงผลค้างจากตอนเข้าเลือกโครงการครั้งแรก */
   private refreshFeedbackLists(onDone?: () => void): void {
     const projectId = this.selectedProjectId();
     forkJoin({
       all: this.api.feedbackList(),
       history: projectId ? this.api.projectFeedback(projectId) : of<AuditorFeedback[]>([]),
+      project: projectId ? this.api.project(projectId) : of<ProjectDetail | null>(null),
     }).subscribe({
-      next: ({ all, history }) => {
+      next: ({ all, history, project }) => {
         this.allFeedback.set(all);
         this.selectedFeedbackHistory.set(history);
+        if (project) {
+          this.projectDetail.set(project);
+        }
         onDone?.();
       },
       error: () => {
@@ -1256,23 +1173,13 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     return factor?.description_th ?? factor?.category ?? '';
   }
 
-  private loadProjects(): void {
-    this.loadingProjects.set(true);
-    this.error.set('');
-    this.selectedProjectId.set(null);
-    this.projectDetail.set(null);
-    this.currentPage.set(1);
-
-    this.api.projects(this.filters()).subscribe({
-      next: (projects) => {
-        this.projects.set(projects);
-        this.loadingProjects.set(false);
-      },
-      error: () => {
-        this.error.set('โหลดรายชื่อโครงการไม่สำเร็จ');
-        this.loadingProjects.set(false);
-      },
-    });
+  /** จำกัดรายการโครงการเหลือเฉพาะที่ risk_analyst ถูกมอบหมาย (role อื่นไม่ถูกกรองเพิ่ม) */
+  private scopeToAssignedProjects(projects: Project[]): Project[] {
+    const ids = this.assignedProjectIds();
+    if (!ids) {
+      return projects;
+    }
+    return projects.filter((project) => ids.has(String(project.project_id)));
   }
 
   private loadProjectDetail(projectId: string | number): void {
@@ -1289,18 +1196,13 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     });
   }
 
-  private filters(): ProjectFilters {
-    return {
-      budget_year: this.selectedYear(),
-      subdistrict_id: this.selectedSubdistrictId(),
-      risk_level: this.selectedRiskLevel(),
-    };
-  }
-
   private projectType(project: Project): string {
     return project.project_type || project.purchase_method_group || 'ไม่ระบุประเภท';
   }
 
+  /** ใช้กรองฝั่ง client ทั้งหมด (ตำบล/ปีงบ/ระดับความเสี่ยง/ประเภท/งบประมาณ) เพราะข้อมูลโครงการ
+   * ดึงมาแบบไม่กรอง (GET /projects เปล่าๆ) เหมือนหน้างานที่ได้รับมอบหมาย — กัน filter ไปบัง
+   * โครงการที่ถูกมอบหมายให้ risk_analyst โดยไม่ตั้งใจ (เช่น ปีงบ/ตำบลไม่ตรง filter ค่าเริ่มต้น) */
   private projectMatchesFilters(
     project: Project,
     selectedType: string | null,
@@ -1311,7 +1213,15 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     const matchesType = !selectedType || this.projectType(project) === selectedType;
     const matchesMin = minBudget === null || (projectBudget !== null && projectBudget >= minBudget);
     const matchesMax = maxBudget === null || (projectBudget !== null && projectBudget <= maxBudget);
-    return matchesType && matchesMin && matchesMax;
+    const matchesSubdistrict =
+      this.selectedSubdistrictId() === null ||
+      project.subdistrict_id === this.selectedSubdistrictId();
+    const matchesYear = this.selectedYear() === null || project.budget_year === this.selectedYear();
+    const matchesRisk =
+      this.selectedRiskLevel() === null || project.risk_level === this.selectedRiskLevel();
+    return (
+      matchesType && matchesMin && matchesMax && matchesSubdistrict && matchesYear && matchesRisk
+    );
   }
 
   private percentageDifference(
