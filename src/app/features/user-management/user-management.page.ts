@@ -242,18 +242,19 @@ const ROLE_OPTIONS = Object.keys(ROLE_LABELS) as RoleCode[];
                 </button>
               </div>
 
-              <div class="grid max-h-[240px] gap-3 overflow-y-auto pr-1 sm:grid-cols-2">
+              <div class="grid max-h-[240px] gap-4 overflow-y-auto pr-1 sm:grid-cols-1">
                 @for (group of featureGroups; track group.id) {
                   <div>
                     <p
-                      class="m-0 mb-1 text-[11.5px] font-bold uppercase tracking-wide text-slate-500"
+                      class="m-0 mb-1 text-[19px] font-bold uppercase tracking-wide text-slate-500"
                     >
                       {{ group.label }}
                     </p>
                     @for (item of group.items; track item.code) {
-                      <label class="flex items-center gap-2 py-0.5 text-[13px] text-ink">
+                      <label class="flex items-center gap-2 py-0.5 text-[18px] text-ink">
                         <input
                           type="checkbox"
+                          class="size-[20px] shrink-0 accent-navy"
                           [checked]="isFeatureChecked(item.code)"
                           (change)="toggleFeature(item.code)"
                         />
