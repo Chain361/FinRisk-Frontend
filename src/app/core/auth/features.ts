@@ -122,3 +122,18 @@ export function resolveAllowedFeatures(
 ): string[] {
   return features === undefined ? defaultFeaturesForRole(role) : features;
 }
+
+/** ฟีเจอร์ที่ admin เข้าถึงได้เสมอไม่ว่า allowed_features จะตั้งไว้ยังไง — กันแอดมินล็อกตัวเองออกจากระบบ */
+const ADMIN_ALWAYS_ALLOWED: readonly string[] = ['user_management'];
+
+/** true เมื่อ role/allowedFeatures นี้เข้าถึงฟีเจอร์รหัส code ได้ */
+export function canAccessFeature(
+  code: string,
+  role: string,
+  allowedFeatures: readonly string[],
+): boolean {
+  if (role === 'admin' && ADMIN_ALWAYS_ALLOWED.includes(code)) {
+    return true;
+  }
+  return allowedFeatures.includes(code);
+}

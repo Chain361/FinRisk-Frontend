@@ -167,7 +167,7 @@ interface ProjectStatusRow {
           </div>
         } @else {
           <div class="overflow-x-auto">
-            <table class="gov-table min-w-[980px]">
+            <table class="gov-table min-w-[1080px]">
               <thead>
                 <tr>
                   <th scope="col">สถานะโครงการโดยรวม</th>
@@ -175,6 +175,7 @@ interface ProjectStatusRow {
                   <th scope="col">ผู้รับมอบหมายล่าสุด</th>
                   <th scope="col">ความเสี่ยง</th>
                   <th scope="col">มอบหมายล่าสุด</th>
+                  <th scope="col" class="w-[110px] text-right">การตรวจสอบ</th>
                 </tr>
               </thead>
               <tbody>
@@ -282,6 +283,21 @@ interface ProjectStatusRow {
                         <p class="m-0 mt-1 text-xs text-muted">
                           Budget {{ row.latestAssignment!.budgetHours }} ชม.
                         </p>
+                      }
+                    </td>
+                    <td class="align-top text-right">
+                      @if (row.latestAssignment) {
+                        <a
+                          [routerLink]="[
+                            '/assignment-project-auditor/review',
+                            row.latestAssignment.assignmentId,
+                          ]"
+                          class="gov-btn-outline inline-flex px-3 py-1.5 text-xs no-underline"
+                        >
+                          ตรวจสอบ
+                        </a>
+                      } @else {
+                        <span class="text-xs italic text-slate-400">-</span>
                       }
                     </td>
                   </tr>

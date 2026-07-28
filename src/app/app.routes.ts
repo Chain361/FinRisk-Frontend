@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 
 import { authGuard } from './core/auth/auth.guard';
 import { roleGuard } from './core/auth/role.guard';
-import { ASSIGNMENT_ROLES, FEEDBACK_ROLES } from './core/auth/roles';
+import { ASSIGNMENT_ROLES, FEEDBACK_ROLES, PUBLIC_EXPORT_ROLES } from './core/auth/roles';
 import { AppShellComponent } from './layout/app-shell.component';
 
 export const routes: Routes = [
@@ -109,6 +109,15 @@ export const routes: Routes = [
                 (m) => m.AssignmentProjectAuditorHistoryPageComponent,
               ),
           },
+          {
+            // ตรวจทาน/อนุมัติงาน — project_auditor (ตรวจทาน) + regional_supervisor (อนุมัติขั้นสุดท้าย)
+            path: 'review/:id',
+            canActivate: [roleGuard('admin', 'project_auditor', 'regional_supervisor')],
+            loadComponent: () =>
+              import('./features/assignment-project-auditor/assignment-project-auditor-review.page').then(
+                (m) => m.AssignmentProjectAuditorReviewPageComponent,
+              ),
+          },
         ],
       },
       {
@@ -123,6 +132,13 @@ export const routes: Routes = [
           import('./features/data-sources/data-sources.page').then(
             (m) => m.DataSourcesPageComponent,
           ),
+      },
+      {
+        // ชุดข้อมูลเปิด — backend อนุญาต admin/regional_supervisor/public_user เท่านั้น
+        path: 'open-data',
+        canActivate: [roleGuard(...PUBLIC_EXPORT_ROLES)],
+        loadComponent: () =>
+          import('./features/open-data/open-data.page').then((m) => m.OpenDataPageComponent),
       },
       {
         // ติดต่อ / แจ้งข้อมูลไม่ถูกต้อง — เข้าถึงได้ทุก role
