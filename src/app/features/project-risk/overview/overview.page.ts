@@ -2,7 +2,8 @@ import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angula
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { forkJoin, Subject } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
+import { finalize, switchMap } from 'rxjs/operators';
+import { LucideDownload } from '@lucide/angular';
 
 import { ApiService } from '../../../core/api/api.service';
 import { AuthService } from '../../../core/auth/auth.service';
@@ -16,6 +17,7 @@ import { BarChartComponent, BarChartSeries } from '../../../shared/charts/bar-ch
 import { FilterBarComponent } from '../../../shared/filters/filter-bar.component';
 import { AnnouncementPanelComponent } from '../../../shared/ui/announcement-panel.component';
 import { KpiCardComponent } from '../../../shared/ui/kpi-card.component';
+import { triggerBlobDownload } from '../../../shared/utils/file-download-utils';
 import { CHART_SERIES_COLORS, RISK_SERIES } from '../../../shared/utils/design-tokens';
 import {
   countByRisk,
@@ -35,7 +37,7 @@ interface CrossTabRow {
 @Component({
   selector: 'app-overview-page',
   standalone: true,
-  imports: [AnnouncementPanelComponent, BarChartComponent, FilterBarComponent, KpiCardComponent],
+  imports: [AnnouncementPanelComponent, BarChartComponent, FilterBarComponent, KpiCardComponent, LucideDownload],
   template: `
     <section class="page-shell">
       <div class="flex flex-wrap items-start justify-between gap-4">
@@ -48,6 +50,15 @@ interface CrossTabRow {
             ภาพรวมจำนวนโครงการ ระดับความเสี่ยง และแนวโน้มงบประมาณ
           </p>
         </div>
+        <button
+          type="button"
+          class="inline-flex items-center gap-2 rounded-[4px] bg-navy px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-navy/90 disabled:cursor-not-allowed disabled:opacity-60"
+          [disabled]="exportingRiskRegister()"
+          (click)="exportRiskRegister()"
+        >
+          <svg lucideDownload class="size-4" aria-hidden="true"></svg>
+          {{ exportingRiskRegister() ? 'กำลังเตรียมไฟล์…' : 'ส่งออกทะเบียนความเสี่ยง' }}
+        </button>
       </div>
 
       <app-announcement-panel />
@@ -169,6 +180,7 @@ export class OverviewPageComponent implements OnInit {
   private readonly loadDashboard$ = new Subject<void>();
   readonly fiscalYearLabels = FISCAL_YEARS.map(String);
   readonly error = signal('');
+  readonly exportingRiskRegister = signal(false);
   readonly subdistricts = signal<Subdistrict[]>([]);
   readonly projects = signal<Project[]>([]);
   readonly multiYearProjects = signal<Project[]>([]);
@@ -303,6 +315,25 @@ export class OverviewPageComponent implements OnInit {
       this.loadTimeSeries();
     }
   }
+  exportRiskRegister(): void {
+    if (this.exportingRiskRegister()) {
+      return;
+    }
+    this.exportingRiskRegister.set(true);
+    this.api
+      .downloadRiskRegister()
+      .pipe(finalize(() => this.exportingRiskRegister.set(false)))
+      .subscribe({
+        next: (response) => {
+          if (!response.body) {
+            this.error.set('ไม่สามารถสร้างไฟล์ทะเบียนความเสี่ยงได้');
+            return;
+          }
+          triggerBlobDownload(response.body, this.downloadFileName(response.headers.get('content-disposition')));
+        },
+        error: () => this.error.set('ส่งออกทะเบียนความเสี่ยงไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'),
+      });
+  }
   private loadSubdistricts(): void {
     this.api.subdistricts().subscribe({
       next: (rows) => this.subdistricts.set(rows),
@@ -330,6 +361,10 @@ export class OverviewPageComponent implements OnInit {
       subdistrict_id: this.selectedSubdistrictId(),
       risk_level: this.selectedRiskLevel(),
     };
+  }
+  private downloadFileName(contentDisposition: string | null): string {
+    const matched = contentDisposition?.match(/filename=([^;]+)/i)?.[1]?.trim();
+    return matched?.replace(/^"|"$/g, '') || 'finrisk_risk_register.xlsx';
   }
   private projectTypeLabel(project: Project): string {
     return project.project_type || project.purchase_method_group || 'ไม่ระบุประเภท';
