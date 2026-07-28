@@ -42,7 +42,9 @@ import { FISCAL_YEARS, subdistrictLabel } from '../utils/risk-utils';
             [value]="selectedSubdistrictId() ?? ''"
             (change)="onSubdistrictChange($any($event.target).value)"
           >
-            <option value="" disabled>เลือกตำบล</option>
+            <option value="" [disabled]="!allowAllSubdistricts()">
+              {{ allowAllSubdistricts() ? 'ทุกตำบลที่มีสิทธิ์' : 'เลือกตำบล' }}
+            </option>
             @for (subdistrict of subdistricts(); track subdistrict.subdistrict_id) {
               <option [value]="subdistrict.subdistrict_id">{{ labelFor(subdistrict) }}</option>
             }
@@ -55,9 +57,12 @@ import { FISCAL_YEARS, subdistrictLabel } from '../utils/risk-utils';
           <span class="text-[12.5px] font-bold text-muted">ปีงบประมาณ</span>
           <select
             class="gov-select mt-[5px]"
-            [value]="selectedYear() ?? 'all'"
+            [value]="hasSelectedYear() ? (selectedYear() ?? 'all') : ''"
             (change)="onYearChange($any($event.target).value)"
           >
+            @if (requireYearSelection()) {
+              <option value="" disabled>เลือกปีงบประมาณ</option>
+            }
             <option value="all">ทุกปี</option>
             @for (year of yearOptions(); track year) {
               <option [value]="year">{{ year }}</option>
@@ -145,12 +150,18 @@ export class FilterBarComponent {
 
   readonly subdistricts = input<Subdistrict[]>([]);
   readonly selectedSubdistrictId = input<number | null>(null);
+  /** ให้ null หมายถึงทุกตำบลใน scope ของผู้ใช้ แทน placeholder ที่บังคับเลือกตำบล */
+  readonly allowAllSubdistricts = input(false);
   readonly selectedYear = input<number | null>(null);
   readonly selectedRiskLevel = input<string | null>(null);
   readonly selectedProjectType = input<string | null>(null);
   readonly budgetAmountMin = input('');
   readonly budgetAmountMax = input('');
   readonly showYearFilter = input(true);
+  /** ใช้เมื่อหน้านั้นต้องให้ผู้ใช้เลือกปี (รวมตัวเลือก "ทุกปี") ก่อนแสดงข้อมูล */
+  readonly requireYearSelection = input(false);
+  /** แยก "ยังไม่เลือก" ออกจากการเลือก "ทุกปี" ซึ่งทั้งคู่มี selectedYear เป็น null */
+  readonly hasSelectedYear = input(true);
   readonly showRiskFilter = input(true);
   readonly showProjectTypeFilter = input(false);
   readonly showBudgetScopeFilter = input(false);

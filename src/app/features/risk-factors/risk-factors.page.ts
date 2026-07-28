@@ -60,6 +60,7 @@ import { ProjectFeedbackPanelComponent } from './project-feedback-panel.componen
       <app-filter-bar
         [subdistricts]="subdistricts()"
         [selectedSubdistrictId]="selectedSubdistrictId()"
+        [allowAllSubdistricts]="true"
         [selectedYear]="selectedYear()"
         [selectedRiskLevel]="selectedRiskLevel()"
         [selectedProjectType]="selectedProjectType()"
@@ -775,7 +776,9 @@ export class RiskFactorsPageComponent implements OnInit {
   readonly searchQuery = signal('');
 
   readonly selectedSubdistrictId = signal<number | null>(null);
-  readonly selectedYear = signal<number | null>(2568);
+  // null แทน "ทุกปี" ตาม FilterBar เพื่อให้รายการโครงการ initial load
+  // ไม่ถูกจำกัดเป็นปีล่าสุดโดยที่ผู้ใช้ยังไม่ได้เลือกตัวกรอง
+  readonly selectedYear = signal<number | null>(null);
   readonly selectedRiskLevel = signal<string | null>(null);
   readonly selectedProjectType = signal<string | null>(null);
   readonly budgetAmountMin = signal('');
@@ -936,7 +939,7 @@ export class RiskFactorsPageComponent implements OnInit {
 
   resetFilters(): void {
     this.selectedSubdistrictId.set(null);
-    this.selectedYear.set(2568);
+    this.selectedYear.set(null);
     this.selectedRiskLevel.set(null);
     this.selectedProjectType.set(null);
     this.budgetAmountMin.set('');

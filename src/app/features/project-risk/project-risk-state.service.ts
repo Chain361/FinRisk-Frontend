@@ -75,7 +75,7 @@ export class ProjectRiskStateService {
   readonly annualRisks = signal<AnnualRisk[]>([]);
 
   readonly selectedSubdistrictId = signal<number | null>(null);
-  readonly selectedYear = signal<number | null>(2568);
+  readonly selectedYear = signal<number | null>(null);
   readonly selectedRiskLevel = signal<string | null>(null);
   readonly selectedProjectType = signal<string | null>(null);
   readonly vendorSearchText = signal('');
@@ -371,7 +371,7 @@ export class ProjectRiskStateService {
 
   resetFilters(): void {
     this.selectedSubdistrictId.set(null);
-    this.selectedYear.set(2568);
+    this.selectedYear.set(null);
     this.selectedRiskLevel.set(null);
     this.selectedProjectType.set(null);
     this.vendorSearchText.set('');

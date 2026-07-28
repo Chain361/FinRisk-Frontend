@@ -174,7 +174,9 @@ export class OverviewPageComponent implements OnInit {
   readonly multiYearProjects = signal<Project[]>([]);
   readonly summary = signal<RiskSummary | null>(null);
   readonly selectedSubdistrictId = signal<number | null>(null);
-  readonly selectedYear = signal<number | null>(2568);
+  // ค่า null คือ "ทุกปี" ตาม FilterBar; อย่าตั้งปีล่าสุดไว้เงียบ ๆ เพราะจะทำให้
+  // จำนวนโครงการ initial load ไม่ตรงกับตัวเลือกที่ผู้ใช้เห็น
+  readonly selectedYear = signal<number | null>(null);
   readonly selectedRiskLevel = signal<string | null>(null);
 
   readonly hasActiveFilter = computed(
@@ -294,7 +296,7 @@ export class OverviewPageComponent implements OnInit {
   }
   resetFilters(): void {
     this.selectedSubdistrictId.set(null);
-    this.selectedYear.set(2568);
+    this.selectedYear.set(null);
     this.selectedRiskLevel.set(null);
     if (!this.needsSubdistrictSelection()) {
       this.loadDashboard();

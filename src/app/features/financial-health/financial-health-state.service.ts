@@ -56,7 +56,9 @@ export class FinancialHealthStateService {
   readonly financialStatements = signal<FinancialStatement[]>([]);
 
   readonly selectedSubdistrictId = signal<number | null>(null);
-  readonly selectedYear = signal<number | null>(2568);
+  // null ใช้แทน "ทุกปี" จึงต้องมี flag แยกสำหรับสถานะ "ยังไม่เลือกปี"
+  readonly selectedYear = signal<number | null>(null);
+  readonly hasSelectedYear = signal(false);
 
   readonly comparisonMetric = signal<ComparisonMetric>('netAssets');
   readonly comparisonFactorCode = signal<string | null>(null);
@@ -64,6 +66,9 @@ export class FinancialHealthStateService {
   /** role ไม่ถูกจำกัดพื้นที่ (เห็นได้หลายตำบล) ต้องเลือกตำบลก่อนถึงจะแสดงข้อมูล */
   readonly needsSubdistrictSelection = computed(
     () => !this.auth.isScopedRole() && this.selectedSubdistrictId() === null,
+  );
+  readonly needsFilterSelection = computed(
+    () => this.needsSubdistrictSelection() || !this.hasSelectedYear(),
   );
 
   readonly scopedRows = computed(() => {
@@ -387,6 +392,7 @@ export class FinancialHealthStateService {
 
   setYear(value: number | null): void {
     this.selectedYear.set(value);
+    this.hasSelectedYear.set(true);
   }
 
   setComparisonMetric(value: ComparisonMetric): void {
@@ -402,7 +408,8 @@ export class FinancialHealthStateService {
 
   resetFilters(): void {
     this.selectedSubdistrictId.set(null);
-    this.selectedYear.set(2568);
+    this.selectedYear.set(null);
+    this.hasSelectedYear.set(false);
     this.comparisonMetric.set('netAssets');
     this.comparisonFactorCode.set(this.allFactorOptions()[0]?.code ?? null);
   }
