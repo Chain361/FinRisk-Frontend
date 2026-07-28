@@ -34,8 +34,8 @@ describe('RiskFactorsPageComponent fiscal-year filter', () => {
           provide: AuthService,
           useValue: {
             hasRole: () => false,
-            isScopedRole: () => true,
-            user: () => ({ subdistrict_id: 1 }),
+            isScopedRole: () => false,
+            user: () => null,
           },
         },
         {
@@ -52,6 +52,10 @@ describe('RiskFactorsPageComponent fiscal-year filter', () => {
   });
 
   it('loads all years initially, then returns to all years after changing the year filter', () => {
+    const subdistrictSelect = fixture.nativeElement.querySelector('select') as HTMLSelectElement;
+    expect(subdistrictSelect.options[0].text).toBe('ทุกตำบลที่มีสิทธิ์');
+    expect(subdistrictSelect.options[0].disabled).toBe(false);
+
     expect(component.selectedYear()).toBeNull();
     expect(api.projects.mock.calls.find(([filters]) => filters !== undefined)?.[0]).toEqual({
       budget_year: null,
