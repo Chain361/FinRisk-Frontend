@@ -6,7 +6,6 @@ import { switchMap } from 'rxjs/operators';
 
 import { ApiService } from '../../../core/api/api.service';
 import { AuthService } from '../../../core/auth/auth.service';
-import { I18nService } from '../../../core/i18n/i18n.service';
 import {
   Project,
   ProjectFilters,
@@ -74,7 +73,7 @@ interface CrossTabRow {
 
       @if (needsSubdistrictSelection()) {
         <p class="rounded-[4px] border-[1.5px] border-line bg-zebra px-4 py-3 text-sm text-muted">
-          {{ t('filter.selectSubdistrictPrompt') }}
+          กรุณาเลือกตำบลเพื่อแสดงข้อมูล
         </p>
       } @else {
         <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -164,8 +163,6 @@ interface CrossTabRow {
 })
 export class OverviewPageComponent implements OnInit {
   private readonly api = inject(ApiService);
-  private readonly i18n = inject(I18nService);
-  protected readonly t = this.i18n.t;
   private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
   /** ยิงคำขอใหม่ผ่าน switchMap เพื่อยกเลิกคำขอเดิมที่ยังค้างอยู่ (กันผลลัพธ์เก่ามาถึงทีหลังทับของใหม่เวลาสลับปีงบเร็วๆ) */

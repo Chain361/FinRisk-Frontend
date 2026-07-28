@@ -1,7 +1,5 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { LucideFlaskConical, LucideX } from '@lucide/angular';
-
-import { I18nService } from '../../core/i18n/i18n.service';
 
 /**
  * แถบแจ้งสถานะ "ระบบต้นแบบ (Prototype)" ระดับ system-wide — แยกจาก guardrail banner
@@ -20,13 +18,13 @@ import { I18nService } from '../../core/i18n/i18n.service';
       >
         <svg lucideFlaskConical class="size-4 shrink-0 text-gold" aria-hidden="true"></svg>
         <p class="m-0 flex-1 text-[12.5px] leading-snug">
-          <span class="font-bold">{{ t('banner.prototype.label') }}</span>
-          {{ t('banner.prototype.text') }}
+          <span class="font-bold">ระบบต้นแบบ (Prototype)</span>
+          — ข้อมูลบางส่วนเป็นข้อมูลจำลอง ยังไม่ใช้สำหรับการตัดสินใจทางการ
         </p>
         <button
           type="button"
           class="grid size-6 shrink-0 cursor-pointer place-items-center rounded-[3px] text-white/70 hover:bg-white/10 hover:text-white"
-          [attr.aria-label]="t('banner.prototype.close')"
+          aria-label="ปิดแถบแจ้งเตือน"
           (click)="visible.set(false)"
         >
           <svg lucideX class="size-4" aria-hidden="true"></svg>
@@ -36,6 +34,5 @@ import { I18nService } from '../../core/i18n/i18n.service';
   `,
 })
 export class PrototypeBannerComponent {
-  protected readonly t = inject(I18nService).t;
   readonly visible = signal(true);
 }
