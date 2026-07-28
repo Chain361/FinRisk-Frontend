@@ -143,6 +143,15 @@ export class ApiService {
     });
   }
 
+  /** ทะเบียนความเสี่ยงตาม scope ที่ backend อนุญาตสำหรับผู้ใช้ปัจจุบัน */
+  downloadRiskRegister(): Observable<HttpResponse<Blob>> {
+    return this.http.get(`${this.baseUrl}/risk/register/export`, {
+      params: new HttpParams().set('format', 'xlsx'),
+      observe: 'response',
+      responseType: 'blob',
+    });
+  }
+
   project(projectId: string | number): Observable<ProjectDetail> {
     return this.http
       .get<ProjectDetailResponse>(`${this.baseUrl}/projects/${projectId}`)
