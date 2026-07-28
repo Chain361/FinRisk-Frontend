@@ -9,7 +9,9 @@ import { FISCAL_YEARS, subdistrictLabel } from '../utils/risk-utils';
   selector: 'app-filter-bar',
   standalone: true,
   template: `
-    <div class="grid gap-3.5 rounded-[4px] border-[1.5px] border-line bg-white px-[18px] py-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div
+      class="grid gap-3.5 rounded-[4px] border-[1.5px] border-line bg-white px-[18px] py-4 sm:grid-cols-2 lg:grid-cols-4"
+    >
       @if (showSearch()) {
         <label class="block sm:col-span-2">
           <span class="text-[12.5px] font-bold text-muted">{{ t('filter.searchLabel') }}</span>
@@ -38,10 +40,10 @@ import { FISCAL_YEARS, subdistrictLabel } from '../utils/risk-utils';
         } @else {
           <select
             class="gov-select mt-[5px]"
-            [value]="selectedSubdistrictId() ?? 'all'"
+            [value]="selectedSubdistrictId() ?? ''"
             (change)="onSubdistrictChange($any($event.target).value)"
           >
-            <option value="all">{{ t('filter.allSubdistricts') }}</option>
+            <option value="" disabled>{{ t('filter.selectSubdistrict') }}</option>
             @for (subdistrict of subdistricts(); track subdistrict.subdistrict_id) {
               <option [value]="subdistrict.subdistrict_id">{{ labelFor(subdistrict) }}</option>
             }
@@ -179,13 +181,19 @@ export class FilterBarComponent {
     return this.auth.isScopedRole();
   }
 
+  /** ยึดตาม subdistrict_id ของผู้ใช้ที่ login จริง — ไม่พึ่งลำดับของ rows[0] เพราะ /subdistricts อาจไม่ถูก scope (หรือ scope ผิดพลาด) */
   lockedSubdistrictLabel(): string {
+    const ownId = this.auth.user()?.subdistrict_id;
     const rows = this.subdistricts();
+    const own = ownId != null ? rows.find((r) => r.subdistrict_id === ownId) : undefined;
+    if (own) {
+      return subdistrictLabel(own);
+    }
     return rows.length ? subdistrictLabel(rows[0]) : this.t('filter.yourSubdistrict');
   }
 
   onSubdistrictChange(value: string): void {
-    this.selectedSubdistrictIdChange.emit(value === 'all' ? null : Number(value));
+    this.selectedSubdistrictIdChange.emit(value ? Number(value) : null);
   }
 
   onYearChange(value: string): void {

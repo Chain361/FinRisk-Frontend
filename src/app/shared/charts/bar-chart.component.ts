@@ -55,7 +55,7 @@ interface ViewRow {
         <div class="flex h-[200px] items-end gap-6 border-b-2 border-ink px-1" style="min-width: 100%;">
           @for (cat of viewCategories(); track cat.label) {
             <div class="flex h-full min-w-[60px] flex-1 flex-col items-center justify-end">
-              <div class="flex h-full items-end gap-[5px]">
+              <div class="flex h-full items-end gap-5">
                 @for (bar of cat.bars; track $index) {
                   <div class="flex h-full w-7 flex-col items-center justify-end">
                     <span class="mb-[3px] whitespace-nowrap text-[11px] font-bold" [class]="bar.missing ? 'text-muted' : 'text-ink'">

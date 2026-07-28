@@ -3,6 +3,8 @@ import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
+import { resolveAllowedFeatures } from '../auth/features';
+import { RoleCode } from '../auth/roles';
 import {
   AccessLogFilters,
   AccessLogPage,
@@ -18,6 +20,8 @@ import {
   FinancialStatement,
   LoginRequest,
   LoginResponse,
+  ManagedUser,
+  ManagedUserPatch,
   Project,
   ProjectDetail,
   ProjectDetailResponse,
@@ -28,7 +32,27 @@ import {
   RiskSummary,
   Subdistrict,
   SystemMeta,
+  UserStatus,
 } from '../models/domain.models';
+
+/** shape จริงที่ GET/PUT /users ส่งมา — backend ใช้ snake_case (allowed_features) ต่างจาก ManagedUser ฝั่ง frontend */
+interface ManagedUserWire {
+  user_id: number;
+  username: string;
+  display_name: string | null;
+  role: string;
+  subdistrict_id: number | null;
+  status: UserStatus;
+  allowed_features: string[];
+}
+
+interface ManagedUserWirePatch {
+  display_name: string;
+  role: string;
+  subdistrict_id: number | null;
+  status: UserStatus;
+  allowed_features: string[];
+}
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -48,6 +72,20 @@ export class ApiService {
     return this.http.get<{ user?: LoginResponse['user'] } & LoginResponse['user']>(
       `${this.baseUrl}/auth/me`,
     );
+  }
+
+  /** รายชื่อผู้ใช้ + สิทธิ์เข้าถึงฟีเจอร์ (allowedFeatures) — admin เท่านั้น (หน้าจัดการผู้ใช้งาน) */
+  getUsers(): Observable<ManagedUser[]> {
+    return this.http
+      .get<{ value?: ManagedUserWire[] } | ManagedUserWire[]>(`${this.baseUrl}/users`)
+      .pipe(map((response) => this.unwrapList(response).map((row) => this.fromWire(row))));
+  }
+
+  /** แก้ไขข้อมูล + สิทธิ์เข้าถึงฟีเจอร์ของผู้ใช้รายคน — admin เท่านั้น */
+  updateUser(userId: number, body: ManagedUserPatch): Observable<ManagedUser> {
+    return this.http
+      .put<ManagedUserWire>(`${this.baseUrl}/users/${userId}`, this.toWire(body))
+      .pipe(map((row) => this.fromWire(row)));
   }
 
   subdistricts(): Observable<Subdistrict[]> {
@@ -217,6 +255,29 @@ export class ApiService {
       return response;
     }
     return response.value ?? [];
+  }
+
+  /** GET/PUT /users คืน field เป็น snake_case (allowed_features) → แปลงเป็น ManagedUser (camelCase) ที่ frontend ใช้ */
+  private fromWire(row: ManagedUserWire): ManagedUser {
+    return {
+      user_id: row.user_id,
+      username: row.username,
+      display_name: row.display_name ?? row.username,
+      role: row.role as RoleCode,
+      subdistrict_id: row.subdistrict_id,
+      status: row.status,
+      allowed_features: resolveAllowedFeatures(row.allowed_features, row.role),
+    };
+  }
+
+  private toWire(body: ManagedUserPatch): ManagedUserWirePatch {
+    return {
+      display_name: body.display_name,
+      role: body.role,
+      subdistrict_id: body.subdistrict_id,
+      status: body.status,
+      allowed_features: body.allowed_features,
+    };
   }
 
   private unwrapProjectDetail(response: ProjectDetailResponse): ProjectDetail {

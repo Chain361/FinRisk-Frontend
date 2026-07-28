@@ -37,6 +37,11 @@ import { FinancialHealthStateService } from '../financial-health-state.service';
         </p>
       }
 
+      @if (needsSubdistrictSelection()) {
+        <p class="rounded-[4px] border-[1.5px] border-line bg-zebra px-4 py-3 text-sm text-muted">
+          {{ t('filter.selectSubdistrictPrompt') }}
+        </p>
+      } @else {
       <div class="grid gap-4 md:grid-cols-3">
         @for (card of balanceSheetKpis(); track card.label) {
           <app-kpi-card
@@ -81,6 +86,7 @@ import { FinancialHealthStateService } from '../financial-health-state.service';
         [rowHeader]="t('fh.revenue.rowHeader')"
         [compactValueLabels]="true"
       />
+      }
     </section>
   `,
 })
@@ -92,6 +98,7 @@ export class OverviewPageComponent implements OnInit {
   readonly error = this.state.error;
   readonly subdistricts = this.state.subdistricts;
   readonly selectedSubdistrictId = this.state.selectedSubdistrictId;
+  readonly needsSubdistrictSelection = this.state.needsSubdistrictSelection;
   readonly selectedYear = this.state.selectedYear;
   readonly balanceSheetKpis = this.state.balanceSheetKpis;
   readonly incomeStatementKpis = this.state.incomeStatementKpis;
