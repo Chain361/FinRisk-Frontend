@@ -123,15 +123,8 @@ import { triggerBlobDownload } from '../../shared/utils/file-download-utils';
               {{ saving() ? 'กำลังบันทึก...' : 'บันทึกผลตรวจโครงการ' }}
             </button>
           } @else {
-            <button type="button" class="gov-btn-outline" (click)="download(item.report_id, 'pdf')">
+            <button type="button" class="gov-btn-outline" (click)="download(item)">
               ดาวน์โหลด PDF
-            </button>
-            <button
-              type="button"
-              class="gov-btn-outline"
-              (click)="download(item.report_id, 'xlsx')"
-            >
-              ดาวน์โหลด Excel
             </button>
           }
         </div>
@@ -198,9 +191,10 @@ export class AuditReportPageComponent implements OnInit {
     });
   }
 
-  download(reportId: number, format: 'pdf' | 'xlsx'): void {
-    this.api.downloadAuditReport(reportId, format).subscribe({
-      next: (blob) => triggerBlobDownload(blob, `finrisk_audit_report_${reportId}.${format}`),
+  download(item: AuditReport): void {
+    if (item.report_id === null) return;
+    this.api.downloadAuditReport(item.report_id).subscribe({
+      next: (blob) => triggerBlobDownload(blob, `${item.project_id}_report.pdf`),
       error: () => this.error.set('ดาวน์โหลดรายงานไม่สำเร็จ'),
     });
   }
