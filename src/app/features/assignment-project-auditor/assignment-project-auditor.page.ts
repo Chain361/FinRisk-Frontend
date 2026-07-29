@@ -380,7 +380,7 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
     return this.projects()
       .filter((project) => {
         const text =
-          `${project.project_name ?? ''} ${project.dept_name ?? ''} ${project.project_type ?? ''}`.toLocaleLowerCase(
+          `${project.project_id} ${project.project_name ?? ''} ${project.dept_name ?? ''} ${project.project_type ?? ''}`.toLocaleLowerCase(
             'th',
           );
         return (
