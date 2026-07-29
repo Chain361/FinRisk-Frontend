@@ -281,12 +281,10 @@ import {
           </label>
 
           <label class="mt-4 block">
-            <span class="mb-1.5 block text-sm font-bold text-ink"
-              >คำแนะนำหรือรายละเอียดการตรวจสอบ <span class="text-risk-high">*</span></span
-            >
+            <span class="mb-1.5 block text-sm font-bold text-ink">คำแนะนำ</span>
             <textarea
               class="min-h-[112px] w-full rounded-[3px] border-[1.5px] border-line bg-white p-2.5 text-sm"
-              placeholder="ระบุประเด็นที่ต้องการให้นักวิเคราะห์ตรวจสอบ…"
+              placeholder="ระบุคำแนะนำเพิ่มเติมสำหรับผู้รับมอบหมาย (ถ้ามี)…"
               [ngModel]="assignmentNote()"
               (ngModelChange)="assignmentNote.set($event)"
             ></textarea>
@@ -497,10 +495,6 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
     }
     if (!this.workObjective().trim()) {
       this.formError.set('กรุณาระบุวัตถุประสงค์ของกระบวนงาน');
-      return;
-    }
-    if (!this.assignmentNote().trim()) {
-      this.formError.set('กรุณาระบุคำแนะนำหรือรายละเอียดการตรวจสอบ');
       return;
     }
     this.confirmOpen.set(true);
