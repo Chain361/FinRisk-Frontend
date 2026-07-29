@@ -15,6 +15,7 @@ import { ApiService } from '../../core/api/api.service';
 import {
   AssignmentAttachment,
   AssignmentClarification,
+  AssignmentStatus,
   AuditAssignment,
   Project,
   Subdistrict,
@@ -193,6 +194,25 @@ import {
                   formatAssignedAt(assignment()!.created_at)
                 }}</span>
               </div>
+              @if (nextWorkflowStatus()) {
+                <div class="border-t border-line-soft pt-3">
+                  <p class="m-0 text-xs leading-5 text-muted">
+                    {{ workflowActionHint() }}
+                  </p>
+                  <button
+                    type="button"
+                    class="gov-btn mt-2 w-full"
+                    [disabled]="updatingStatus()"
+                    (click)="advanceWorkflow()"
+                  >
+                    {{ updatingStatus() ? 'กำลังบันทึก...' : workflowActionLabel() }}
+                  </button>
+                </div>
+              } @else if (assignment()!.status === 'under_review') {
+                <p class="m-0 border-t border-line-soft pt-3 text-xs leading-5 text-muted">
+                  งานอยู่ระหว่างสอบทานโดยผู้ตรวจสอบโครงการ
+                </p>
+              }
             </div>
           </div>
         </div>
@@ -221,6 +241,7 @@ export class RiskAnalystTaskDetailPageComponent implements OnInit {
   readonly selectedFile = signal<File | null>(null);
   readonly clarifications = signal<AssignmentClarification[]>([]);
   readonly sendingMessage = signal(false);
+  readonly updatingStatus = signal(false);
 
   readonly currentUserId = computed(() => this.auth.user()?.user_id ?? -1);
 
@@ -272,6 +293,27 @@ export class RiskAnalystTaskDetailPageComponent implements OnInit {
     return p === 'high' ? 'สำคัญ' : p === 'normal' ? 'ปกติ' : p === 'low' ? 'ต่ำ' : 'ไม่ระบุ';
   });
 
+  readonly nextWorkflowStatus = computed<AssignmentStatus | null>(() => {
+    switch (this.assignment()?.status) {
+      case 'waiting_acceptance':
+        return 'in_progress';
+      case 'in_progress':
+        return 'under_review';
+      default:
+        return null;
+    }
+  });
+
+  readonly workflowActionLabel = computed(() =>
+    this.nextWorkflowStatus() === 'in_progress' ? 'เริ่มดำเนินการ' : 'ส่งให้สอบทาน',
+  );
+
+  readonly workflowActionHint = computed(() =>
+    this.nextWorkflowStatus() === 'in_progress'
+      ? 'ยืนยันการรับงานและเริ่มดำเนินการตรวจสอบ'
+      : 'ส่งงานให้ผู้ตรวจสอบโครงการสอบทาน',
+  );
+
   // ── Lifecycle ──
 
   ngOnInit(): void {
@@ -321,6 +363,27 @@ export class RiskAnalystTaskDetailPageComponent implements OnInit {
   reloadData(): void {
     const id = this.assignment()?.assignment_id;
     if (id) this.loadData(id);
+  }
+
+  advanceWorkflow(): void {
+    const assignment = this.assignment();
+    const nextStatus = this.nextWorkflowStatus();
+    if (!assignment || !nextStatus || this.updatingStatus()) {
+      return;
+    }
+
+    this.updatingStatus.set(true);
+    this.error.set('');
+    this.api.updateAssignmentStatus(assignment.assignment_id, nextStatus).subscribe({
+      next: (updated) => {
+        this.assignment.set(updated);
+        this.updatingStatus.set(false);
+      },
+      error: (err) => {
+        this.error.set(err?.error?.detail ?? 'เปลี่ยนสถานะงานไม่สำเร็จ');
+        this.updatingStatus.set(false);
+      },
+    });
   }
 
   // ── Helpers ──

@@ -293,10 +293,11 @@ interface ProjectStatusRow {
                     <td class="align-top text-right">
                       @if (row.latestAssignment) {
                         <a
-                          [routerLink]="[
-                            '/assignment-project-auditor/review',
-                            row.latestAssignment.assignmentId,
-                          ]"
+                          routerLink="/risk-factors"
+                          [queryParams]="{
+                            projectId: row.project.project_id,
+                            from: '/risk-factors/status',
+                          }"
                           class="gov-btn-outline inline-flex px-3 py-1.5 text-xs no-underline"
                         >
                           ตรวจสอบ
