@@ -979,14 +979,23 @@ export class RiskFactorsPageComponent implements OnInit {
     return this.auth.hasRole(...ASSIGNMENT_ROLES);
   }
 
+  /** backend มาสก์ vendor_id ให้ public_user เป็น null และมาสก์ชื่อบุคคลธรรมดาแล้ว
+   * (PUBLIC_PROJECT_REDACTED_FIELDS + mask_person_name ใน privacy.py — ชื่อนิติบุคคล/บริษัท
+   * ยังโชว์ได้ตามนโยบายความโปร่งใสจัดซื้อจัดจ้าง)
+   * กันซ้ำฝั่งนี้ไว้ด้วย เผื่อ backend ที่ deploy อยู่ยังไม่มี fix นี้ — ไม่ให้ public_user เห็นเลข
+   * vendor_id ภายในตรงๆ ไม่ว่ากรณีใด แต่ยังโชว์ชื่อผู้ขาย/ผู้รับจ้าง (ที่มาสก์แล้ว) ได้ */
   vendorLabel(): string {
     const detail = this.projectDetail();
     if (!detail) {
       return '-';
     }
+    const name = detail.vendor_name;
+    if (this.auth.role() === 'public_user') {
+      return name || '-';
+    }
     return (
       (detail.vendor_id !== null && detail.vendor_id !== undefined
-        ? `${detail.vendor_name} #${detail.vendor_id}`
+        ? `${name} #${detail.vendor_id}`
         : '-')
     );
   }
