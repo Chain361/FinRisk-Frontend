@@ -1,6 +1,6 @@
 import { Component, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { LucideMessageCircle, LucideSend, LucideX } from '@lucide/angular';
+import { LucideMessageCircle, LucidePaperclip, LucideSend, LucideX } from '@lucide/angular';
 import { HttpErrorResponse } from '@angular/common/http';
 
 import { ApiService } from '../../core/api/api.service';
@@ -17,10 +17,13 @@ interface DisplayMessage {
  * ประวัติแชทอยู่ใน signal ของ component นี้เท่านั้น (ไม่ persist ข้าม reload)
  * เพราะ backend เป็น stateless เช่นกัน (ดู FinRisk-Backend src/services/chatbot.py)
  */
+const MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024; // 10MB — ต้องตรงกับ backend (routers/chatbot.py)
+const ALLOWED_ATTACHMENT_TYPES = ['.pdf', '.jpg', '.jpeg', '.png'];
+
 @Component({
   selector: 'app-chatbot-widget',
   standalone: true,
-  imports: [FormsModule, LucideMessageCircle, LucideSend, LucideX],
+  imports: [FormsModule, LucideMessageCircle, LucidePaperclip, LucideSend, LucideX],
   template: `
     @if (open()) {
       <div
@@ -74,7 +77,41 @@ interface DisplayMessage {
           }
         </div>
 
-        <form class="flex items-center gap-2 border-t border-line p-2.5" (submit)="send($event)">
+        @if (selectedFile(); as file) {
+          <div class="flex items-center gap-2 border-t border-line px-2.5 pt-2 text-[12px] text-ink">
+            <span class="truncate rounded bg-zebra px-2 py-1">{{ file.name }}</span>
+            <button
+              type="button"
+              class="cursor-pointer text-muted hover:text-red-700"
+              aria-label="เอาไฟล์แนบออก"
+              (click)="clearFile()"
+            >
+              <svg lucideX class="size-3.5" aria-hidden="true"></svg>
+            </button>
+          </div>
+        }
+
+        <form
+          class="flex items-center gap-2 p-2.5"
+          [class]="selectedFile() ? '' : 'border-t border-line'"
+          (submit)="send($event)"
+        >
+          <input
+            #fileInput
+            type="file"
+            class="hidden"
+            [accept]="acceptedFileTypes"
+            (change)="onFileSelected($event)"
+          />
+          <button
+            type="button"
+            [disabled]="loading()"
+            class="flex h-9 w-9 shrink-0 items-center justify-center rounded border border-line text-muted hover:bg-page disabled:opacity-40"
+            aria-label="แนบไฟล์"
+            (click)="fileInput.click()"
+          >
+            <svg lucidePaperclip class="size-4" aria-hidden="true"></svg>
+          </button>
           <input
             type="text"
             name="message"
@@ -86,7 +123,7 @@ interface DisplayMessage {
           />
           <button
             type="submit"
-            [disabled]="loading() || !draft().trim()"
+            [disabled]="loading() || (!draft().trim() && !selectedFile())"
             class="flex h-9 w-9 shrink-0 items-center justify-center rounded bg-navy text-white disabled:opacity-40"
             aria-label="ส่งข้อความ"
           >
@@ -115,22 +152,54 @@ export class ChatbotWidgetComponent {
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
   readonly draft = signal('');
+  readonly selectedFile = signal<File | null>(null);
+  readonly acceptedFileTypes = ALLOWED_ATTACHMENT_TYPES.join(',');
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    input.value = ''; // ให้เลือกไฟล์เดิมซ้ำได้อีกครั้งถ้าลบแล้วเลือกใหม่
+    if (!file) {
+      return;
+    }
+    const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
+    if (!ALLOWED_ATTACHMENT_TYPES.includes(ext)) {
+      this.error.set(`ไม่รองรับไฟล์นามสกุล ${ext || '(ไม่ทราบ)'} — แนบได้เฉพาะ PDF หรือรูปภาพ`);
+      return;
+    }
+    if (file.size > MAX_ATTACHMENT_SIZE) {
+      this.error.set('ไฟล์ต้องมีขนาดไม่เกิน 10MB');
+      return;
+    }
+    this.error.set(null);
+    this.selectedFile.set(file);
+  }
+
+  clearFile(): void {
+    this.selectedFile.set(null);
+  }
 
   send(event: Event): void {
     event.preventDefault();
     const text = this.draft().trim();
-    if (!text || this.loading()) {
+    const file = this.selectedFile();
+    if ((!text && !file) || this.loading()) {
       return;
     }
+    const effectiveText = text || 'สรุปเนื้อหาไฟล์นี้ให้หน่อย';
 
     const history: ChatTurn[] = this.messages().map((m) => ({ role: m.role, text: m.text }));
-    this.messages.update((list) => [...list, { role: 'user', text }]);
+    this.messages.update((list) => [
+      ...list,
+      { role: 'user', text: file ? `${effectiveText} 📎 ${file.name}` : effectiveText },
+    ]);
     this.draft.set('');
+    this.selectedFile.set(null);
     this.error.set(null);
     this.loading.set(true);
     this.scrollToBottom();
 
-    this.api.chatbotMessage(text, history).subscribe({
+    this.api.chatbotMessage(effectiveText, history, file).subscribe({
       next: (response) => {
         this.messages.update((list) => [
           ...list,
@@ -143,7 +212,9 @@ export class ChatbotWidgetComponent {
         this.error.set(
           err.status === 503
             ? 'ระบบ chatbot ยังไม่พร้อมใช้งาน กรุณาติดต่อผู้ดูแลระบบ'
-            : 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง',
+            : err.status === 422 || err.status === 413
+              ? (err.error?.detail ?? 'ไฟล์แนบไม่ถูกต้อง')
+              : 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง',
         );
         this.loading.set(false);
       },
