@@ -47,13 +47,29 @@ import { NAV_GROUPS, NavGroup, NavItem } from './nav-groups';
     <app-prototype-banner />
     <div class="flex min-h-screen bg-page text-ink">
       <aside class="hidden w-[264px] shrink-0 flex-col bg-navy text-white lg:flex">
-        <div class="border-b border-white/20 px-5 py-[22px]">
-          <p class="m-0 text-[16px] font-bold leading-normal">
-            ระบบวิเคราะห์ความเสี่ยง<br />งบประมาณตำบล
-          </p>
-          <p class="m-0 mt-2 text-xs tracking-wide text-[#c9d4e3]">
-            Local Budget Financial Risk System
-          </p>
+        <div class="flex items-center gap-3 border-b border-white/20 px-5 py-[18px]">
+          <div class="flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-white">
+            <svg viewBox="0 0 160 177" class="size-7" aria-hidden="true">
+              <path
+                d="M80 8 C 45 8 18 22 18 22 L 18 88 C 18 138 46 165 80 178 C 114 165 142 138 142 88 L 142 22 C 142 22 115 8 80 8 Z"
+                fill="#0b3164"
+              />
+              <circle cx="72" cy="82" r="26" fill="none" stroke="#ffffff" stroke-width="9" />
+              <line x1="90" y1="100" x2="108" y2="118" stroke="#ffffff" stroke-width="10" stroke-linecap="round" />
+              <rect x="61" y="82" width="7" height="14" fill="#ffffff" />
+              <rect x="71" y="72" width="7" height="24" fill="#ffffff" />
+              <rect x="81" y="88" width="7" height="8" fill="#ffffff" />
+              <circle cx="132" cy="26" r="12" fill="#c98a3a" />
+            </svg>
+          </div>
+          <div>
+            <p class="m-0 text-[16px] font-bold leading-normal">
+              ระบบวิเคราะห์ความเสี่ยง<br />งบประมาณตำบล
+            </p>
+            <p class="m-0 mt-2 text-xs tracking-wide text-[#c9d4e3]">
+              Local Budget Financial Risk System
+            </p>
+          </div>
         </div>
 
         <nav
