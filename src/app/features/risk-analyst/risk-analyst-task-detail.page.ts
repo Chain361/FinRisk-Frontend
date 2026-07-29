@@ -20,7 +20,6 @@ import {
   Subdistrict,
 } from '../../core/models/domain.models';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
-import { MessageThreadComponent } from '../../shared/ui/message-thread.component';
 import { formatFileSize, triggerBlobDownload } from '../../shared/utils/file-download-utils';
 import {
   assignmentWorkflowStatusBadgeClass,
@@ -30,7 +29,7 @@ import {
 @Component({
   selector: 'app-risk-analyst-task-detail-page',
   standalone: true,
-  imports: [RouterLink, EmptyStateComponent, MessageThreadComponent],
+  imports: [RouterLink, EmptyStateComponent],
   template: `
     <section class="page-shell">
       <!-- Header -->
@@ -133,14 +132,29 @@ import {
               </div>
             }
 
-            @if (assignment()!.audit_steps) {
-              <div class="mt-3 rounded-[4px] border border-blue-100 bg-blue-50 px-4 py-3">
-                <p class="m-0 text-[11px] font-extrabold uppercase tracking-wide text-navy">
-                  Audit Steps
-                </p>
-                <p class="m-0 mt-1 text-sm leading-6 text-ink">{{ assignment()!.audit_steps }}</p>
+            <div class="mt-3 rounded-[4px] border border-blue-100 bg-blue-50 px-4 py-3">
+              <p class="m-0 text-[11px] font-extrabold uppercase tracking-wide text-navy">
+                ขอบเขตงานตรวจสอบ
+              </p>
+              <div class="mt-1 grid gap-3 text-sm leading-6 sm:grid-cols-2">
+                <div>
+                  <p class="m-0 text-xs font-bold text-navy">กระบวนการงาน</p>
+                  @if (assignment()!.work_process) {
+                    <p class="m-0 text-ink">{{ assignment()!.work_process }}</p>
+                  } @else {
+                    <p class="m-0 italic text-muted">ยังไม่มีข้อมูล</p>
+                  }
+                </div>
+                <div>
+                  <p class="m-0 text-xs font-bold text-navy">วัตถุประสงค์</p>
+                  @if (assignment()!.work_objective) {
+                    <p class="m-0 text-ink">{{ assignment()!.work_objective }}</p>
+                  } @else {
+                    <p class="m-0 italic text-muted">ยังไม่มีข้อมูล</p>
+                  }
+                </div>
               </div>
-            }
+            </div>
 
             <div
               class="mt-4 rounded-[4px] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700"

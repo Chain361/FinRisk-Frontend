@@ -239,24 +239,32 @@ interface AssignmentHistoryRow {
                       } @else {
                         <p class="m-0 text-sm italic text-slate-400">ยังไม่มีข้อมูล</p>
                       }
-                      @if (row.assignment.budgetHours || row.assignment.auditSteps) {
-                        <div
-                          class="mt-2 max-w-[320px] rounded-[4px] bg-slate-50 p-2 text-xs leading-5 text-muted"
-                        >
-                          @if (row.assignment.budgetHours) {
-                            <p class="m-0">
-                              <span class="font-bold text-ink">Budget:</span>
-                              {{ row.assignment.budgetHours }} ชม.
-                            </p>
+                      <div
+                        class="mt-2 max-w-[320px] rounded-[4px] bg-slate-50 p-2 text-xs leading-5 text-muted"
+                      >
+                        @if (row.assignment.budgetHours) {
+                          <p class="m-0">
+                            <span class="font-bold text-ink">Budget:</span>
+                            {{ row.assignment.budgetHours }} ชม.
+                          </p>
+                        }
+                        <p class="m-0">
+                          <span class="font-bold text-ink">กระบวนการงาน:</span>
+                          @if (row.assignment.workProcess) {
+                            {{ row.assignment.workProcess }}
+                          } @else {
+                            <span class="italic text-slate-400">ยังไม่มีข้อมูล</span>
                           }
-                          @if (row.assignment.auditSteps) {
-                            <p class="m-0">
-                              <span class="font-bold text-ink">Audit steps:</span>
-                              {{ row.assignment.auditSteps }}
-                            </p>
+                        </p>
+                        <p class="m-0">
+                          <span class="font-bold text-ink">วัตถุประสงค์:</span>
+                          @if (row.assignment.workObjective) {
+                            {{ row.assignment.workObjective }}
+                          } @else {
+                            <span class="italic text-slate-400">ยังไม่มีข้อมูล</span>
                           }
-                        </div>
-                      }
+                        </p>
+                      </div>
                     </td>
                     @if (canDeleteHistory()) {
                       <td class="align-top text-right">
@@ -509,6 +517,8 @@ export class AssignmentProjectAuditorHistoryPageComponent implements OnInit {
       dueDate: assignment.due_date ?? undefined,
       budgetHours: assignment.budget_hours ?? undefined,
       auditSteps: assignment.audit_steps,
+      workProcess: assignment.work_process,
+      workObjective: assignment.work_objective,
       workflowStatus: assignment.status,
       assignedBy:
         assignment.assigned_by_display_name || assignment.assigned_by_username || undefined,

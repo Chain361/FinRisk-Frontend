@@ -61,6 +61,8 @@ export interface SavedAssignment {
   dueDate?: string;
   budgetHours?: number;
   auditSteps?: string;
+  workProcess?: string;
+  workObjective?: string;
   workflowStatus?: AssignmentWorkflowStatus;
   assignedBy?: string;
   reviewNote?: string;

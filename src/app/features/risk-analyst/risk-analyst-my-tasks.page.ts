@@ -229,14 +229,22 @@ interface MyTaskRow {
                             {{ row.assignment.budget_hours }} ชม.
                           </p>
                         }
-                        @if (row.assignment.audit_steps) {
-                          <p class="m-0">
-                            <span class="font-bold text-ink">Audit steps:</span>
-                            {{ row.assignment.audit_steps }}
-                          </p>
-                        } @else {
-                          <p class="m-0 italic text-slate-400">ยังไม่มี Audit steps</p>
-                        }
+                        <p class="m-0">
+                          <span class="font-bold text-ink">กระบวนการงาน:</span>
+                          @if (row.assignment.work_process) {
+                            {{ row.assignment.work_process }}
+                          } @else {
+                            <span class="italic text-slate-400">ยังไม่มีข้อมูล</span>
+                          }
+                        </p>
+                        <p class="m-0">
+                          <span class="font-bold text-ink">วัตถุประสงค์:</span>
+                          @if (row.assignment.work_objective) {
+                            {{ row.assignment.work_objective }}
+                          } @else {
+                            <span class="italic text-slate-400">ยังไม่มีข้อมูล</span>
+                          }
+                        </p>
                         @if (row.assignment.note) {
                           <p class="m-0">
                             <span class="font-bold text-ink">หมายเหตุ:</span>

@@ -327,6 +327,8 @@ export interface AuditAssignment {
   due_date?: string | null;
   budget_hours?: number | null;
   audit_steps: string;
+  work_process?: string;
+  work_objective?: string;
   status: AssignmentStatus;
   created_at: string;
   updated_at: string;
@@ -359,6 +361,8 @@ export interface CreateAssignmentRequest {
   due_date?: string;
   budget_hours?: number;
   audit_steps?: string;
+  work_process?: string;
+  work_objective?: string;
 }
 
 export interface AssignmentStatusHistoryEntry {
