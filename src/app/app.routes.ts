@@ -80,7 +80,10 @@ export const routes: Routes = [
         ],
       },
       {
+        // สถานะงานตรวจสอบภายใน (มอบหมาย/waiting/in-progress ฯลฯ) — backend อนุญาตเฉพาะ ASSIGNMENT_ROLES
+        // บน GET /audit/assignments (route นี้เคยไม่มี guard เลย ทำให้ public_user เข้าตรงๆ ได้แล้วเจอ 403)
         path: 'risk-factors/status',
+        canActivate: [roleGuard(...ASSIGNMENT_ROLES)],
         loadComponent: () =>
           import('./features/assignment-project-auditor/assignment-project-auditor-status.page').then(
             (m) => m.AssignmentProjectAuditorStatusPageComponent,
