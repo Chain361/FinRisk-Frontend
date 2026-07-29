@@ -5,10 +5,13 @@ import { HttpErrorResponse } from '@angular/common/http';
 
 import { ApiService } from '../../core/api/api.service';
 import { ChatToolCall, ChatTurn } from '../../core/models/domain.models';
+import { renderMarkdown } from './markdown';
 
 interface DisplayMessage {
   role: 'user' | 'model';
   text: string;
+  /** HTML ที่แปลงจาก markdown แล้ว — เฉพาะข้อความฝั่ง model (แปลงครั้งเดียวตอนรับคำตอบ) */
+  html?: string;
   toolCalls?: ChatToolCall[];
 }
 
@@ -27,7 +30,7 @@ const ALLOWED_ATTACHMENT_TYPES = ['.pdf', '.jpg', '.jpeg', '.png'];
   template: `
     @if (open()) {
       <div
-        class="fixed bottom-24 right-5 z-50 flex h-[520px] w-[360px] flex-col rounded-lg border border-line bg-white shadow-xl"
+        class="fixed bottom-24 right-5 z-50 flex h-[min(640px,calc(100vh-8.5rem))] w-[min(560px,calc(100vw-2.5rem))] flex-col rounded-lg border border-line bg-white shadow-xl"
         role="dialog"
         aria-label="ผู้ช่วยตอบคำถาม FinRisk"
       >
@@ -53,10 +56,19 @@ const ALLOWED_ATTACHMENT_TYPES = ['.pdf', '.jpg', '.jpeg', '.png'];
           @for (m of messages(); track $index) {
             <div class="flex" [class]="m.role === 'user' ? 'justify-end' : 'justify-start'">
               <div
-                class="max-w-[85%] whitespace-pre-wrap rounded-lg px-3 py-2 text-[13px]"
-                [class]="m.role === 'user' ? 'bg-navy text-white' : 'bg-zebra text-ink'"
+                class="rounded-lg px-3 py-2 text-[13px]"
+                [class]="
+                  m.role === 'user'
+                    ? 'max-w-[85%] whitespace-pre-wrap bg-navy text-white'
+                    : 'chat-md max-w-[92%] min-w-0 bg-zebra text-ink'
+                "
               >
-                {{ m.text }}
+                @if (m.role === 'user') {
+                  {{ m.text }}
+                } @else {
+                  <!-- คำตอบจาก LLM เป็น markdown — Angular sanitize HTML นี้ให้อัตโนมัติ (ดู markdown.ts) -->
+                  <div [innerHTML]="m.html"></div>
+                }
                 @if (m.toolCalls?.length) {
                   <div class="mt-1.5 flex flex-wrap gap-1 border-t border-black/10 pt-1.5">
                     @for (tc of m.toolCalls; track tc.name) {
@@ -78,7 +90,9 @@ const ALLOWED_ATTACHMENT_TYPES = ['.pdf', '.jpg', '.jpeg', '.png'];
         </div>
 
         @if (selectedFile(); as file) {
-          <div class="flex items-center gap-2 border-t border-line px-2.5 pt-2 text-[12px] text-ink">
+          <div
+            class="flex items-center gap-2 border-t border-line px-2.5 pt-2 text-[12px] text-ink"
+          >
             <span class="truncate rounded bg-zebra px-2 py-1">{{ file.name }}</span>
             <button
               type="button"
@@ -203,7 +217,12 @@ export class ChatbotWidgetComponent {
       next: (response) => {
         this.messages.update((list) => [
           ...list,
-          { role: 'model', text: response.reply, toolCalls: response.tool_calls },
+          {
+            role: 'model',
+            text: response.reply,
+            html: renderMarkdown(response.reply),
+            toolCalls: response.tool_calls,
+          },
         ]);
         this.loading.set(false);
         this.scrollToBottom();
