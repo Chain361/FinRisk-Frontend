@@ -258,6 +258,30 @@ import {
 
           <label class="mt-4 block">
             <span class="mb-1.5 block text-sm font-bold text-ink"
+              >กระบวนการงาน <span class="text-risk-high">*</span></span
+            >
+            <textarea
+              class="min-h-[96px] w-full rounded-[3px] border-[1.5px] border-line bg-white p-2.5 text-sm"
+              placeholder="ระบุกระบวนการงานหรือกิจกรรมที่จะตรวจสอบ…"
+              [ngModel]="workProcess()"
+              (ngModelChange)="workProcess.set($event)"
+            ></textarea>
+          </label>
+
+          <label class="mt-4 block">
+            <span class="mb-1.5 block text-sm font-bold text-ink"
+              >วัตถุประสงค์ของกระบวนงาน <span class="text-risk-high">*</span></span
+            >
+            <textarea
+              class="min-h-[96px] w-full rounded-[3px] border-[1.5px] border-line bg-white p-2.5 text-sm"
+              placeholder="ระบุวัตถุประสงค์ที่ต้องการประเมินหรือทดสอบ…"
+              [ngModel]="workObjective()"
+              (ngModelChange)="workObjective.set($event)"
+            ></textarea>
+          </label>
+
+          <label class="mt-4 block">
+            <span class="mb-1.5 block text-sm font-bold text-ink"
               >คำแนะนำหรือรายละเอียดการตรวจสอบ <span class="text-risk-high">*</span></span
             >
             <textarea
@@ -345,6 +369,8 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
   readonly selectedProjectId = signal<string | null>(null);
   readonly selectedAnalystId = signal<string | null>(null);
   readonly dueDate = signal('');
+  readonly workProcess = signal('');
+  readonly workObjective = signal('');
   readonly assignmentNote = signal('');
   readonly formError = signal('');
   readonly confirmOpen = signal(false);
@@ -465,6 +491,14 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
       this.formError.set('กรุณาระบุ Due date');
       return;
     }
+    if (!this.workProcess().trim()) {
+      this.formError.set('กรุณาระบุกระบวนการงาน');
+      return;
+    }
+    if (!this.workObjective().trim()) {
+      this.formError.set('กรุณาระบุวัตถุประสงค์ของกระบวนงาน');
+      return;
+    }
     if (!this.assignmentNote().trim()) {
       this.formError.set('กรุณาระบุคำแนะนำหรือรายละเอียดการตรวจสอบ');
       return;
@@ -482,10 +516,13 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
         assignee_id: Number(analystId),
         note: this.assignmentNote().trim(),
         due_date: this.dueDate(),
+        audit_steps: this.auditSteps(),
       })
       .subscribe({
         next: (created) => {
           this.dueDate.set('');
+          this.workProcess.set('');
+          this.workObjective.set('');
           this.assignmentNote.set('');
           this.confirmOpen.set(false);
           this.successOpen.set(true);
@@ -561,6 +598,15 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
   private dateValue(value: string): number {
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+  }
+
+  /**
+   * Backend currently persists one `audit_steps` field. Store both requested
+   * form values in that field with stable headings so they remain available to
+   * the assignment detail and report-export flows without a backend migration.
+   */
+  private auditSteps(): string {
+    return `กระบวนการงาน: ${this.workProcess().trim()}\nวัตถุประสงค์ของกระบวนงาน: ${this.workObjective().trim()}`;
   }
 
   private reloadAssignments(): void {
