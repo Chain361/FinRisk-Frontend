@@ -355,16 +355,27 @@ export class AppShellComponent {
   readonly visibleNavGroups = computed<NavGroup[]>(() => {
     const canSeeByRole = (item: NavItem): boolean =>
       !item.roles || this.auth.hasRole(...item.roles);
+
+    const canSeeItem = (item: NavItem): boolean => {
+      if (item.code === 'public_projects_export') {
+        return (
+          this.auth.hasRole(...PUBLIC_EXPORT_ROLES) ||
+          this.auth.canAccessFeature('public_projects_export')
+        );
+      }
+
+      return canSeeByRole(item) && this.auth.canAccessFeature(item.code);
+    };
+
     return NAV_GROUPS.map((group) => ({
       ...group,
       items: group.items
-        .filter((item) => canSeeByRole(item) && this.auth.canAccessFeature(item.code))
+        .filter(canSeeItem)
         .map((item) =>
           item.children ? { ...item, children: item.children.filter(canSeeByRole) } : item,
-        ),
-    })).filter((group) => group.items.length > 0);
+       ),
+   })).filter((group) => group.items.length > 0);
   });
-
   private readonly currentUrl = toSignal(
     this.router.events.pipe(
       filter((event) => event instanceof NavigationEnd),

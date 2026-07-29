@@ -1,4 +1,4 @@
-import { ASSIGNMENT_ROLES, FEEDBACK_ROLES } from './roles';
+import { ASSIGNMENT_ROLES, FEEDBACK_ROLES, PUBLIC_EXPORT_ROLES } from './roles';
 
 export interface FeatureItem {
   code: string;
@@ -93,6 +93,11 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
       {
         code: 'public_audit_info',
         label: 'ที่มาของข้อมูล',
+      },
+      {
+      code: 'public_projects_export',
+      label: 'อัปโหลดข้อมูลสาธารณะ',
+      roles: PUBLIC_EXPORT_ROLES,
       },
       {
         code: 'contact_report',

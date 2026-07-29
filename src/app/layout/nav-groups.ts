@@ -1,5 +1,6 @@
 import { AuthService } from '../core/auth/auth.service';
 import { FEATURE_GROUPS } from '../core/auth/features';
+import { PUBLIC_EXPORT_ROLES } from '../core/auth/roles';
 
 export interface NavItem {
   code: string;
@@ -121,6 +122,9 @@ const NAV_ROUTES: Record<string, NavRoute> = {
   },
   public_audit_info: {
     path: '/data-sources',
+  },
+  public_projects_export: {
+  path: '/open-data',
   },
   contact_report: {
     path: '/contact',
