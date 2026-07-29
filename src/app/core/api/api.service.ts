@@ -359,9 +359,19 @@ export class ApiService {
     );
   }
 
-  /** ส่งข้อความไปยัง chatbot — history เป็น turn ก่อนหน้าที่ client ถืออยู่เอง (backend ไม่เก็บ state) */
-  chatbotMessage(message: string, history: ChatTurn[]): Observable<ChatResponse> {
-    return this.http.post<ChatResponse>(`${this.baseUrl}/chatbot`, { message, history });
+  /**
+   * ส่งข้อความไปยัง chatbot — history เป็น turn ก่อนหน้าที่ client ถืออยู่เอง (backend ไม่เก็บ state)
+   * ส่งเป็น FormData เสมอ (แม้ไม่มีไฟล์) เพราะ backend endpoint เป็น multipart form เพื่อรองรับไฟล์แนบ
+   * ต่อเทิร์น — HttpClient ตั้ง Content-Type: multipart/form-data ให้เองเมื่อ body เป็น FormData
+   */
+  chatbotMessage(message: string, history: ChatTurn[], file?: File | null): Observable<ChatResponse> {
+    const form = new FormData();
+    form.append('message', message);
+    form.append('history', JSON.stringify(history));
+    if (file) {
+      form.append('file', file);
+    }
+    return this.http.post<ChatResponse>(`${this.baseUrl}/chatbot`, form);
   }
 
   private toParams(filters: ProjectFilters): HttpParams {
