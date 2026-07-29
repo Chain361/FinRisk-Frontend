@@ -48,6 +48,12 @@ import {
             รีเฟรชข้อมูล
           </button>
           <a
+            routerLink="/risk-analyst-feedback"
+            class="gov-btn-outline inline-flex items-center justify-center text-center no-underline"
+          >
+            เพิ่มบันทึกความเห็น
+          </a>
+          <a
             routerLink="/risk-analyst/my-tasks"
             class="gov-btn-outline inline-flex items-center justify-center text-center no-underline"
           >
@@ -141,80 +147,6 @@ import {
             >
               ฟีเจอร์บันทึกผลตรวจสอบ (Working Paper) และบันทึกเวลาทำงาน อยู่ระหว่างพัฒนา —
               ยังไม่พร้อมใช้งานในระบบจริง
-            </div>
-
-            <!-- หลักฐานประกอบ (Evidence) -->
-            <div class="mt-4">
-              <h3 class="m-0 mb-2 text-[13px] font-extrabold uppercase tracking-wide text-muted">
-                หลักฐานประกอบ (Evidence)
-              </h3>
-              @if (attachmentError()) {
-                <p class="m-0 mb-2 text-sm text-risk-high">{{ attachmentError() }}</p>
-              }
-              <form class="flex items-center gap-2" (submit)="uploadEvidence($event)">
-                <input
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png,.docx,.xlsx"
-                  class="gov-input flex-1 text-sm"
-                  (change)="onFileChange($event)"
-                />
-                <button
-                  type="submit"
-                  [disabled]="!selectedFile() || uploading()"
-                  class="gov-btn-outline shrink-0"
-                >
-                  {{ uploading() ? 'กำลังแนบ...' : 'แนบไฟล์' }}
-                </button>
-              </form>
-              <ul class="m-0 mt-3 list-none space-y-2 p-0">
-                @for (file of attachments(); track file.attachment_id) {
-                  <li
-                    class="flex items-center justify-between rounded-[4px] border border-line-soft bg-zebra px-3 py-2 text-sm"
-                  >
-                    <div>
-                      <p class="m-0 font-bold text-ink">{{ file.file_name }}</p>
-                      <p class="m-0 text-xs text-muted">
-                        {{ formatSize(file.file_size) }} · แนบโดย
-                        {{ file.uploaded_by_display_name || 'ไม่ระบุ' }} ·
-                        {{ formatAssignedAt(file.created_at) }}
-                      </p>
-                    </div>
-                    <div class="flex shrink-0 items-center gap-2">
-                      <button
-                        type="button"
-                        class="gov-btn-outline px-2.5 py-1 text-xs"
-                        (click)="downloadEvidence(file)"
-                      >
-                        ดาวน์โหลด
-                      </button>
-                      @if (file.uploaded_by === currentUserId()) {
-                        <button
-                          type="button"
-                          class="px-2.5 py-1 text-xs font-bold text-risk-high"
-                          (click)="deleteEvidence(file.attachment_id)"
-                        >
-                          ลบ
-                        </button>
-                      }
-                    </div>
-                  </li>
-                } @empty {
-                  <li class="text-sm text-muted">ยังไม่มีไฟล์แนบ</li>
-                }
-              </ul>
-            </div>
-
-            <!-- กระทู้ขอความชัดเจน (Clarification thread) -->
-            <div class="mt-4">
-              <h3 class="m-0 mb-2 text-[13px] font-extrabold uppercase tracking-wide text-muted">
-                กระทู้ขอความชัดเจน
-              </h3>
-              <app-message-thread
-                [messages]="clarifications()"
-                [currentUserId]="currentUserId()"
-                [sending]="sendingMessage()"
-                (send)="sendClarification($event)"
-              />
             </div>
           </div>
 
@@ -441,7 +373,8 @@ export class RiskAnalystTaskDetailPageComponent implements OnInit {
       return;
     }
     this.api.deleteAssignmentAttachment(assignmentId, attachmentId).subscribe({
-      next: () => this.attachments.update((list) => list.filter((f) => f.attachment_id !== attachmentId)),
+      next: () =>
+        this.attachments.update((list) => list.filter((f) => f.attachment_id !== attachmentId)),
       error: () => this.attachmentError.set('ลบไฟล์ไม่สำเร็จ'),
     });
   }
