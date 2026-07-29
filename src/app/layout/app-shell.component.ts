@@ -15,7 +15,12 @@ import { catchError, filter, map, of } from 'rxjs';
 
 import { ApiService } from '../core/api/api.service';
 import { AuthService } from '../core/auth/auth.service';
-import { ASSIGNMENT_ROLES, CHATBOT_ROLES, PUBLIC_EXPORT_ROLES } from '../core/auth/roles';
+import {
+  ASSIGNMENT_ROLES,
+  CHATBOT_ROLES,
+  NOTIFICATION_ROLES,
+  PUBLIC_EXPORT_ROLES,
+} from '../core/auth/roles';
 import { SystemMeta } from '../core/models/domain.models';
 import { ChatbotWidgetComponent } from '../features/chatbot/chatbot-widget.component';
 import { GuardrailBannerComponent } from '../shared/ui/guardrail-banner.component';
@@ -287,7 +292,9 @@ import { NAV_GROUPS, NavGroup, NavItem } from './nav-groups';
           </div>
 
           <div class="flex items-center gap-3.5">
-            <app-notification-bell />
+            @if (auth.hasRole(...notificationRoles)) {
+              <app-notification-bell />
+            }
             <div class="rounded-[3px] border-[1.5px] border-line px-3.5 py-[7px] text-right">
               <p class="m-0 text-[13px] font-bold text-ink">
                 {{ auth.user()?.display_name ?? auth.user()?.username ?? auth.token() }}
@@ -336,6 +343,8 @@ export class AppShellComponent {
   readonly navGroups = NAV_GROUPS;
   /** mirror ของ require_roles บน POST /chatbot (FinRisk-Backend routers/chatbot.py) */
   readonly chatbotRoles = CHATBOT_ROLES;
+  /** mirror ของ NOTIFICATION_ROLES ฝั่ง backend */
+  readonly notificationRoles = NOTIFICATION_ROLES;
 
   /** เมทาดาทาระบบจาก /meta — data-as-of จริง (ไม่ใช่วันที่เครื่องผู้ใช้) */
   private readonly meta = toSignal<SystemMeta | null>(

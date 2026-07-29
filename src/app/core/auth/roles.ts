@@ -28,6 +28,9 @@ export const FEEDBACK_ROLES = [
 /** role ที่อนุมัติ (resolve) และจัดการความเห็นของคนอื่นได้ — mirror ของ RESOLVE_ROLES ฝั่ง backend */
 export const RESOLVE_ROLES = ['admin', 'project_auditor'] as const;
 
+/** ผู้ที่เห็นกระดิ่งแจ้งเตือนได้ — mirror ของ NOTIFICATION_ROLES ฝั่ง backend */
+export const NOTIFICATION_ROLES = ['project_auditor', 'risk_analyst'] as const;
+
 export const ROLE_LABELS: Record<string, string> = {
   admin: 'ผู้ดูแลระบบ',
   regional_supervisor: 'ผู้กำกับดูแลระดับภูมิภาค',
