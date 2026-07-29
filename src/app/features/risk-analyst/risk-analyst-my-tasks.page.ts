@@ -72,9 +72,9 @@ interface MyTaskRow {
           <p class="m-0 mt-1 text-[26px] font-extrabold text-navy">{{ inProgressCount() }}</p>
         </div>
         <div class="panel p-4">
-          <p class="m-0 text-xs font-bold text-muted">ส่งตรวจทานแล้ว</p>
+          <p class="m-0 text-xs font-bold text-muted">อยู่ระหว่างสอบทาน</p>
           <p class="m-0 mt-1 text-[26px] font-extrabold text-purple-700">
-            {{ readyForReviewCount() }}
+            {{ underReviewCount() }}
           </p>
         </div>
         <div class="panel p-4">
@@ -120,12 +120,8 @@ interface MyTaskRow {
               >
                 <option value="all">ทุกสถานะ</option>
                 <option value="waiting_acceptance">รอผู้รับงานตอบรับ</option>
-                <option value="accepted">รับงานแล้ว</option>
                 <option value="in_progress">กำลังดำเนินการ</option>
-                <option value="clarification_needed">ขอคำชี้แจง</option>
-                <option value="ready_for_review">ส่งงานให้ตรวจทาน</option>
                 <option value="under_review">อยู่ระหว่างสอบทาน</option>
-                <option value="revision_requested">ส่งกลับแก้ไข</option>
                 <option value="completed">เสร็จสิ้น</option>
               </select>
             </label>
@@ -305,8 +301,8 @@ export class RiskAnalystMyTasksPageComponent implements OnInit {
   readonly inProgressCount = computed(
     () => this.assignments().filter((a) => a.status === 'in_progress').length,
   );
-  readonly readyForReviewCount = computed(
-    () => this.assignments().filter((a) => a.status === 'ready_for_review').length,
+  readonly underReviewCount = computed(
+    () => this.assignments().filter((a) => a.status === 'under_review').length,
   );
 
   // ── Lifecycle ──

@@ -1,38 +1,23 @@
 export type AssignmentPriority = 'high' | 'normal' | 'low';
 export type AssignmentWorkflowStatus =
   | 'waiting_acceptance'
-  | 'accepted'
   | 'in_progress'
-  | 'clarification_needed'
-  | 'ready_for_review'
   | 'under_review'
-  | 'pending_approval'
-  | 'revision_requested'
   | 'completed';
 
 export const DEFAULT_ASSIGNMENT_WORKFLOW_STATUS: AssignmentWorkflowStatus = 'waiting_acceptance';
 
 export const ASSIGNMENT_WORKFLOW_STATUS_LABELS: Record<AssignmentWorkflowStatus, string> = {
   waiting_acceptance: 'รอผู้รับงานตอบรับ',
-  accepted: 'รับงานแล้ว',
   in_progress: 'กำลังดำเนินการ',
-  clarification_needed: 'ขอคำชี้แจง',
-  ready_for_review: 'ส่งงานให้ตรวจทาน',
   under_review: 'อยู่ระหว่างสอบทาน',
-  pending_approval: 'รอการอนุมัติ',
-  revision_requested: 'ส่งกลับแก้ไข',
   completed: 'เสร็จสิ้น',
 };
 
 export const PROJECT_WORKFLOW_STATUS_LABELS: Record<AssignmentWorkflowStatus, string> = {
   waiting_acceptance: 'รอผู้รับงานตอบรับ',
-  accepted: 'อยู่ระหว่างตรวจสอบ',
   in_progress: 'อยู่ระหว่างตรวจสอบ',
-  clarification_needed: 'รอคำชี้แจง',
-  ready_for_review: 'รอสอบทาน',
   under_review: 'รอสอบทาน',
-  pending_approval: 'รอการอนุมัติ',
-  revision_requested: 'ส่งกลับแก้ไข',
   completed: 'ตรวจสอบเสร็จสิ้น',
 };
 
@@ -82,15 +67,9 @@ export function assignmentWorkflowStatusBadgeClass(
   switch (status ?? DEFAULT_ASSIGNMENT_WORKFLOW_STATUS) {
     case 'waiting_acceptance':
       return 'bg-orange-100 text-risk-medium';
-    case 'accepted':
     case 'in_progress':
       return 'bg-blue-100 text-navy';
-    case 'clarification_needed':
-    case 'revision_requested':
-      return 'bg-red-100 text-risk-high';
-    case 'ready_for_review':
     case 'under_review':
-    case 'pending_approval':
       return 'bg-purple-100 text-purple-700';
     case 'completed':
       return 'bg-green-100 text-risk-low';
@@ -106,15 +85,9 @@ export function projectWorkflowStatusBadgeClass(status?: AssignmentWorkflowStatu
   switch (status) {
     case 'waiting_acceptance':
       return 'bg-orange-100 text-risk-medium';
-    case 'accepted':
     case 'in_progress':
       return 'bg-blue-100 text-navy';
-    case 'clarification_needed':
-    case 'revision_requested':
-      return 'bg-red-100 text-risk-high';
-    case 'ready_for_review':
     case 'under_review':
-    case 'pending_approval':
       return 'bg-purple-100 text-purple-700';
     case 'completed':
       return 'bg-green-100 text-risk-low';

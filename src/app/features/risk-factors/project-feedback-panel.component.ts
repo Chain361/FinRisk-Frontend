@@ -456,9 +456,8 @@ export class ProjectFeedbackPanelComponent {
     });
   }
 
-  /** อนุมัติความเห็นแล้ว → ปิดงานตรวจสอบ (assignment) ของโครงการนี้เป็น completed ไปเลย
-   * ข้ามขั้น pending_approval/regional_supervisor ตามปกติของ workflow — เป็นทางลัดที่ตกลงกันไว้
-   * ต้องมี endpoint ฝั่ง backend รองรับ transition นี้ด้วย (ไม่ใช่แค่ฝั่ง UI) */
+  /** อนุมัติความเห็นแล้ว → ปิดงานตรวจสอบ (assignment) ของโครงการนี้เป็น completed
+   * Workflow นี้ไม่มีขั้น approve งาน จึงให้ backend รองรับ transition นี้โดยตรง */
   private completeAssignmentForProject(): void {
     const projectId = this.projectId();
     this.api.assignments().subscribe({

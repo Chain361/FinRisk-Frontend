@@ -113,12 +113,8 @@ interface ProjectStatusRow {
                 <option value="all">ทุกสถานะโครงการ</option>
                 <option value="unassigned">ยังไม่มอบหมาย</option>
                 <option value="waiting_acceptance">รอผู้รับงานตอบรับ</option>
-                <option value="accepted">รับงานแล้ว</option>
                 <option value="in_progress">กำลังดำเนินการ</option>
-                <option value="clarification_needed">ขอคำชี้แจง</option>
-                <option value="ready_for_review">ส่งงานให้ตรวจทาน</option>
                 <option value="under_review">อยู่ระหว่างสอบทาน</option>
-                <option value="revision_requested">ส่งกลับแก้ไข</option>
                 <option value="completed">เสร็จสิ้น</option>
               </select>
             </label>
