@@ -48,6 +48,7 @@ import {
           </button>
           <a
             routerLink="/risk-analyst-feedback"
+            [queryParams]="assignment() ? { projectId: assignment()!.project_id } : {}"
             class="gov-btn-outline inline-flex items-center justify-center text-center no-underline"
           >
             เพิ่มบันทึกความเห็น
