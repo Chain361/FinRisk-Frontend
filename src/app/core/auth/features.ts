@@ -60,7 +60,7 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
     items: [
       {
         code: 'auditor_feedback',
-        label: 'ความเห็นผู้ตรวจสอบ',
+        label: 'ความเห็นนักวิเคราะห์ความเสี่ยง',
         roles: FEEDBACK_ROLES,
       },
     ],
@@ -95,9 +95,9 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
         label: 'ที่มาของข้อมูล',
       },
       {
-      code: 'public_projects_export',
-      label: 'อัปโหลดข้อมูลสาธารณะ',
-      roles: PUBLIC_EXPORT_ROLES,
+        code: 'public_projects_export',
+        label: 'อัปโหลดข้อมูลสาธารณะ',
+        roles: PUBLIC_EXPORT_ROLES,
       },
       {
         code: 'contact_report',
@@ -121,10 +121,7 @@ export function defaultFeaturesForRole(role: string): string[] {
  * - `undefined` (field ไม่ถูกส่งมาเลย, backward-compat กับ response เก่า) → ยังไม่เคยตั้งค่า ใช้ default ของ role
  * - `[]` (ส่งมาเป็น array ว่างตรงๆ) → แอดมินตั้งใจเพิกถอนสิทธิ์ทั้งหมด ต้องเก็บไว้ตามนั้น ห้าม fallback
  */
-export function resolveAllowedFeatures(
-  features: string[] | undefined,
-  role: string,
-): string[] {
+export function resolveAllowedFeatures(features: string[] | undefined, role: string): string[] {
   return features === undefined ? defaultFeaturesForRole(role) : features;
 }
 

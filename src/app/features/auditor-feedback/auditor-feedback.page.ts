@@ -2,7 +2,12 @@ import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { catchError, forkJoin, of } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
-import { AuditAssignment, AuditorFeedback, ProjectDetail } from '../../core/models/domain.models';
+import {
+  AuditAssignment,
+  AuditorFeedback,
+  Project,
+  ProjectDetail,
+} from '../../core/models/domain.models';
 import { ProjectFeedbackPanelComponent } from '../risk-factors/project-feedback-panel.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { formatMoney } from '../../shared/utils/risk-utils';
@@ -28,7 +33,7 @@ import {
     <section class="page-shell">
       <div>
         <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F6</p>
-        <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">ความเห็นผู้ตรวจสอบ</h1>
+        <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">ความเห็นนักวิเคราะห์ความเสี่ยง</h1>
         <p class="m-0 mt-1.5 text-sm text-muted">
           รวมความเห็นทุกโครงการในขอบเขตของท่าน — ติดตามสถานะ ฉบับร่าง / ส่งแล้ว / อนุมัติแล้ว
         </p>
@@ -78,7 +83,7 @@ import {
                 <input
                   type="search"
                   class="gov-input mt-1 w-24"
-                  placeholder="ค้นหา Project ID ผู้ให้ความเห็น หรือข้อความ"
+                  placeholder="ค้นหาชื่อโครงการ, Project ID, ผู้ให้ความเห็น หรือข้อความ"
                   [value]="searchQuery()"
                   (input)="searchQuery.set($any($event.target).value)"
                 />
@@ -115,6 +120,9 @@ import {
                       (click)="openProject(item.project_id)"
                     >
                       <td class="max-w-md px-4 py-3">
+                        <p class="m-0 line-clamp-2 text-[13px] font-bold text-slate-900">
+                          {{ projectName(item.project_id) }}
+                        </p>
                         <p class="m-0 text-xs font-bold text-muted">ID {{ item.project_id }}</p>
                         <p class="m-0 mt-0.5 line-clamp-2 text-[13px] text-slate-800">
                           <span class="font-bold text-slate-900">ความคิดเห็น:</span>
@@ -283,6 +291,7 @@ export class AuditorFeedbackPageComponent implements OnInit {
   readonly statusFilter = signal('');
   readonly concernFilter = signal('');
   readonly searchQuery = signal('');
+  readonly projectNamesById = signal<ReadonlyMap<string, string>>(new Map());
 
   readonly selectedProjectId = signal<string | null>(null);
   readonly projectDetail = signal<ProjectDetail | null>(null);
@@ -297,9 +306,11 @@ export class AuditorFeedbackPageComponent implements OnInit {
     return this.items().filter((item) => {
       const matchesStatus = !status || item.status === status;
       const matchesConcern = !concern || item.concern_level === concern;
+      const projectName = this.projectNamesById().get(String(item.project_id)) ?? '';
       const matchesQuery =
         !query ||
         item.project_id.toLowerCase().includes(query) ||
+        projectName.toLowerCase().includes(query) ||
         (item.auditor_name ?? '').toLowerCase().includes(query) ||
         item.auditor_username.toLowerCase().includes(query) ||
         item.feedback_text.toLowerCase().includes(query);
@@ -314,11 +325,23 @@ export class AuditorFeedbackPageComponent implements OnInit {
   readonly date = formatFeedbackDate;
   readonly money = formatMoney;
 
+  projectName(projectId: string): string {
+    return this.projectNamesById().get(String(projectId)) || 'ไม่พบชื่อโครงการ';
+  }
+
   ngOnInit(): void {
     this.loading.set(true);
-    this.api.feedbackList().subscribe({
-      next: (rows) => {
-        this.items.set(rows);
+    forkJoin({
+      feedback: this.api.feedbackList(),
+      projects: this.api.projects().pipe(catchError(() => of<Project[]>([]))),
+    }).subscribe({
+      next: ({ feedback, projects }) => {
+        this.items.set(feedback);
+        this.projectNamesById.set(
+          new Map(
+            projects.map((project) => [String(project.project_id), project.project_name ?? '']),
+          ),
+        );
         this.loading.set(false);
       },
       error: () => {
