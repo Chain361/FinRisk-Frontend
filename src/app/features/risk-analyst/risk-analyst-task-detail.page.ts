@@ -123,16 +123,7 @@ import {
               </div>
             </div>
 
-            @if (assignment()!.note) {
-              <div class="mt-4 rounded-[4px] border-l-4 border-navy bg-[#edf4fb] px-4 py-3">
-                <p class="m-0 text-[11px] font-extrabold uppercase tracking-wide text-navy">
-                  คำแนะนำจากผู้ตรวจสอบโครงการ
-                </p>
-                <p class="m-0 mt-1 text-sm leading-6 text-ink">{{ assignment()!.note }}</p>
-              </div>
-            }
-
-            <div class="mt-3 rounded-[4px] border border-blue-100 bg-blue-50 px-4 py-3">
+            <div class="mt-4 border-t border-line-soft pt-4">
               <p class="m-0 text-[11px] font-extrabold uppercase tracking-wide text-navy">
                 ขอบเขตงานตรวจสอบ
               </p>
@@ -145,7 +136,9 @@ import {
                     <p class="m-0 italic text-muted">ยังไม่มีข้อมูล</p>
                   }
                 </div>
-                <div>
+                <div
+                  class="border-t border-line-soft pt-3 sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0"
+                >
                   <p class="m-0 text-xs font-bold text-navy">วัตถุประสงค์</p>
                   @if (assignment()!.work_objective) {
                     <p class="m-0 text-ink">{{ assignment()!.work_objective }}</p>
@@ -156,12 +149,16 @@ import {
               </div>
             </div>
 
-            <div
-              class="mt-4 rounded-[4px] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700"
-            >
-              ฟีเจอร์บันทึกผลตรวจสอบ (Working Paper) และบันทึกเวลาทำงาน อยู่ระหว่างพัฒนา —
-              ยังไม่พร้อมใช้งานในระบบจริง
-            </div>
+            @if (assignment()!.note) {
+              <div class="mt-4 border-t border-line-soft pt-4">
+                <p class="m-0 text-[11px] font-extrabold uppercase tracking-wide text-navy">
+                  คำแนะนำ
+                </p>
+                <p class="m-0 mt-1 whitespace-pre-line text-sm leading-6 text-ink">
+                  {{ assignment()!.note }}
+                </p>
+              </div>
+            }
           </div>
 
           <!-- Right: Status Summary -->

@@ -49,12 +49,6 @@ interface MyTaskRow {
         </div>
         <div class="flex gap-2">
           <button type="button" class="gov-btn-outline" (click)="reloadAll()">รีเฟรชรายการ</button>
-          <a
-            routerLink="/risk-analyst-feedback"
-            class="gov-btn-outline inline-flex items-center justify-center text-center no-underline"
-          >
-            เพิ่มบันทึกความเห็น
-          </a>
         </div>
       </div>
 
