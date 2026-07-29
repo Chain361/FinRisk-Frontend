@@ -229,27 +229,39 @@ import {
                 </div>
               </div>
 
-              <div class="mt-4 rounded-[4px] border-l-4 border-gold bg-gold-bg px-4 py-3">
-                <p class="m-0 text-[11px] font-extrabold uppercase tracking-wide text-[#66511b]">
+              <div class="mt-4 border-t border-line-soft pt-4">
+                <p class="m-0 text-[11px] font-extrabold uppercase tracking-wide text-navy">
                   ขอบเขตงานตรวจสอบ
                 </p>
                 <div class="mt-1 grid gap-3 text-sm leading-6 sm:grid-cols-2">
                   <div>
-                    <p class="m-0 text-xs font-bold text-[#66511b]">กระบวนการงาน</p>
+                    <p class="m-0 text-xs font-bold text-navy">กระบวนการงาน</p>
                     @if (selectedAssignment()?.work_process) {
                       <p class="m-0 text-ink">{{ selectedAssignment()!.work_process }}</p>
                     } @else {
                       <p class="m-0 italic text-muted">ยังไม่มีข้อมูล</p>
                     }
                   </div>
-                  <div>
-                    <p class="m-0 text-xs font-bold text-[#66511b]">วัตถุประสงค์</p>
+                  <div
+                    class="border-t border-line-soft pt-3 sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0"
+                  >
+                    <p class="m-0 text-xs font-bold text-navy">วัตถุประสงค์</p>
                     @if (selectedAssignment()?.work_objective) {
                       <p class="m-0 text-ink">{{ selectedAssignment()!.work_objective }}</p>
                     } @else {
                       <p class="m-0 italic text-muted">ยังไม่มีข้อมูล</p>
                     }
                   </div>
+                </div>
+                <div class="mt-3 border-t border-line-soft pt-3">
+                  <p class="m-0 text-xs font-bold text-navy">คำแนะนำ</p>
+                  @if (selectedAssignment()?.note) {
+                    <p class="m-0 mt-0.5 whitespace-pre-line text-sm leading-6 text-ink">
+                      {{ selectedAssignment()!.note }}
+                    </p>
+                  } @else {
+                    <p class="m-0 mt-0.5 text-sm italic text-muted">ยังไม่มีคำแนะนำ</p>
+                  }
                 </div>
               </div>
             </article>
