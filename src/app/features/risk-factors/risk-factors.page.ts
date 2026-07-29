@@ -43,9 +43,7 @@ import { ProjectFeedbackPanelComponent } from './project-feedback-panel.componen
     FilterBarComponent,
     InfoTooltipComponent,
     RouterLink,
-    ProjectFeedbackPanelComponent,
     RiskBadgeComponent,
-    RiskMatrixComponent,
   ],
   template: `
     <section class="page-shell">
@@ -480,90 +478,6 @@ import { ProjectFeedbackPanelComponent } from './project-feedback-panel.componen
                 </article>
 
                 <section class="panel p-[18px]">
-                  <div class="flex items-center gap-2">
-                    <h2 class="m-0 text-[16px] font-bold text-ink">
-                      ข้อมูลประกอบการวิเคราะห์ (โอกาส × ผลกระทบ 5×5)
-                    </h2>
-                    <app-info-tooltip
-                      text="ใช้วิเคราะห์ความรุนแรงของปัจจัยตามโอกาส × ผลกระทบ (1–25) ไม่ใช่ป้ายระดับความเสี่ยงของโครงการ"
-                      [width]="300"
-                    />
-                  </div>
-                  <p class="m-0 mt-1 text-[12.5px] text-muted">
-                    ป้ายระดับความเสี่ยงของโครงการด้านบนอ้างอิง
-                    <span class="font-bold">Risk Score</span> และ
-                    <span class="font-bold">risk_level</span> จาก backend เท่านั้น
-                  </p>
-                  <div class="mt-3.5 grid items-start gap-5 lg:grid-cols-[auto_1fr]">
-                    <app-risk-matrix
-                      [likelihood]="scoreInfo().matrix_likelihood"
-                      [impact]="scoreInfo().matrix_impact"
-                    />
-                    <div class="grid gap-2.5">
-                      <div class="grid grid-cols-3 gap-2.5">
-                        <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
-                          <p class="m-0 text-[11.5px] font-bold text-muted">โอกาสรวม</p>
-                          <p class="m-0 mt-1 text-[19px] font-extrabold text-ink">
-                            {{ number(scoreInfo().matrix_likelihood, 0)
-                            }}<span class="text-[12px] font-bold text-muted">/5</span>
-                          </p>
-                        </div>
-                        <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
-                          <p class="m-0 text-[11.5px] font-bold text-muted">ผลกระทบสูงสุด</p>
-                          <p class="m-0 mt-1 text-[19px] font-extrabold text-ink">
-                            {{ number(scoreInfo().matrix_impact, 0)
-                            }}<span class="text-[12px] font-bold text-muted">/5</span>
-                          </p>
-                        </div>
-                        <div
-                          class="rounded-[3px] border border-line-soft p-[11px]"
-                          [style.background]="bandColor(scoreInfo().matrix_level) + '14'"
-                        >
-                          <p class="m-0 text-[11.5px] font-bold text-muted">
-                            คะแนน 5×5 (ประกอบการวิเคราะห์)
-                          </p>
-                          <p
-                            class="m-0 mt-1 text-[19px] font-extrabold"
-                            [style.color]="bandColor(scoreInfo().matrix_level)"
-                          >
-                            {{ number(scoreInfo().matrix_score, 0) }} ·
-                            {{ scoreInfo().matrix_level || '-' }}
-                          </p>
-                        </div>
-                      </div>
-                      <div class="rounded-[3px] border border-line-soft bg-[#fbfcfd] p-3">
-                        <p class="m-0 text-[12px] font-bold text-slate-700">การประกอบคะแนน</p>
-                        <p class="m-0 mt-1 text-[12.5px] leading-relaxed text-muted">
-                          พบสัญญาณเสี่ยง
-                          <span class="font-bold text-ink">{{
-                            number(scoreInfo().factors_triggered, 0)
-                          }}</span>
-                          ปัจจัย
-                          @if (scoreInfo().factors_not_computable) {
-                            · ประเมินไม่ได้
-                            <span class="font-bold text-[#8a2a1f]">{{
-                              number(scoreInfo().factors_not_computable, 0)
-                            }}</span>
-                            ปัจจัย
-                          }
-                          · คะแนนสัดส่วน {{ number(scoreInfo().risk_score, 0) }}/100
-                        </p>
-                        @if (scoreInfo().summary_text) {
-                          <p class="m-0 mt-1.5 text-[12.5px] leading-relaxed text-slate-700">
-                            {{ scoreInfo().summary_text }}
-                          </p>
-                        }
-                        @if ((scoreInfo().factors_triggered ?? 0) >= 3) {
-                          <p class="m-0 mt-1.5 text-[11.5px] text-muted">
-                            * มีสัญญาณยืนยันกัน ≥3 ตัว → เพิ่มโอกาสรวม +1 (corroboration)
-                          </p>
-                        }
-                      </div>
-                    </div>
-                  </div>
-                </section>
-
-                <section class="panel p-[18px]">
                   <h2 class="m-0 mb-3.5 text-[16px] font-bold text-ink">ปัจจัยที่ทำให้เสี่ยง</h2>
 
                   @if (!triggeredFactors().length) {
@@ -582,14 +496,6 @@ import { ProjectFeedbackPanelComponent } from './project-feedback-panel.componen
                                 {{ factor.factor_code }}
                               </p>
                             </div>
-                            @if (factor.risk_band) {
-                              <span
-                                class="shrink-0 rounded-[3px] px-2.5 py-1 text-[11.5px] font-extrabold text-white"
-                                [style.background]="bandColor(factor.risk_band)"
-                                [title]="matrixChip(factor)"
-                                >{{ matrixChip(factor) }} · {{ factor.risk_band }}</span
-                              >
-                            }
                           </div>
 
                           <!-- เทียบค่าที่วัดได้ ↔ เกณฑ์ (audit line) -->
@@ -688,10 +594,6 @@ import { ProjectFeedbackPanelComponent } from './project-feedback-panel.componen
                     </div>
                   }
                 </section>
-
-                @if (canSeeFeedback()) {
-                  <app-project-feedback-panel [projectId]="String(selectedProjectId())" />
-                }
 
                 <section class="panel p-[18px]">
                   <div class="flex flex-wrap items-start justify-between gap-3">

@@ -12,6 +12,7 @@ import {
   AuditorFeedbackCreate,
   ConcernLevel,
 } from '../../core/models/domain.models';
+import { RiskMatrixComponent } from '../../shared/charts/risk-matrix.component';
 import { ConfirmModalComponent } from '../../shared/ui/confirm-modal.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import {
@@ -34,7 +35,7 @@ type ModalMode = 'submit' | 'delete' | 'resolve' | null;
 @Component({
   selector: 'app-project-feedback-panel',
   standalone: true,
-  imports: [EmptyStateComponent, ConfirmModalComponent],
+  imports: [EmptyStateComponent, ConfirmModalComponent, RiskMatrixComponent],
   template: `
     <section class="panel p-[18px]">
       <div class="flex flex-wrap items-start justify-between gap-3">
@@ -102,14 +103,36 @@ type ModalMode = 'submit' | 'delete' | 'resolve' | null;
                 </div>
 
                 @if (item.risk_score !== null && item.risk_score !== undefined) {
-                  <p class="m-0 mt-2 text-[12px] font-bold text-slate-700">
-                    โอกาส {{ item.likelihood_score }} × ผลกระทบ {{ item.impact_score }} = คะแนน
-                    {{ item.risk_score }}/25
-                  </p>
+                  <div
+                    class="mt-2.5 grid items-start gap-3 rounded-[3px] border border-line-soft bg-zebra p-2.5 sm:grid-cols-[auto_1fr]"
+                  >
+                    <app-risk-matrix
+                      [likelihood]="item.likelihood_score"
+                      [impact]="item.impact_score"
+                      [cellSize]="20"
+                    />
+                    <div class="grid gap-1">
+                      <p class="m-0 text-[12px] font-bold text-slate-700">
+                        โอกาส {{ item.likelihood_score }} × ผลกระทบ {{ item.impact_score }} = คะแนน
+                        {{ item.risk_score }}/25
+                      </p>
+                      <p class="m-0 text-[11px] text-muted">
+                        ข้อมูลจากแบบฟอร์มความคิดเห็นที่ผู้วิเคราะห์ส่ง — ไม่ใช่คะแนนที่คำนวณอัตโนมัติจากปัจจัยเสี่ยง
+                      </p>
+                      @if (item.concern_level) {
+                        <p class="m-0 text-[11.5px] text-muted">
+                          ระดับความกังวลจากผู้วิเคราะห์:
+                          <span class="font-bold text-slate-700">{{
+                            concernLabel(item.concern_level)
+                          }}</span>
+                        </p>
+                      }
+                    </div>
+                  </div>
                 }
 
                 <p class="m-0 mt-2 text-[15px] leading-relaxed text-slate-800">
-                  {{ item.feedback_text }}
+                  <span class="font-bold text-slate-600">ความคิดเห็น:</span> {{ item.feedback_text }}
                 </p>
                 @if (item.suggestions) {
                   <p class="m-0 mt-1.5 text-[12.5px] leading-relaxed text-muted">

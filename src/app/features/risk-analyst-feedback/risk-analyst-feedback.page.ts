@@ -873,6 +873,7 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     this.submitFeedbackPayload(payload).subscribe({
       next: () => {
         this.resetFeedbackFields();
+        this.advanceAssignmentToUnderReview();
         this.refreshFeedbackLists(() => {
           this.feedbackSaving.set(false);
           this.feedbackSuccessMessage.set('ส่งความคิดเห็นเรียบร้อยแล้ว');
@@ -883,6 +884,32 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
         this.feedbackValidationError.set('ส่งความคิดเห็นไม่สำเร็จ');
       },
     });
+  }
+
+  /** ส่งความคิดเห็นแล้ว → งานตรวจสอบเข้าสู่ขั้นสอบทาน (under_review) ไปเลย ข้ามขั้นตอน
+   * ready_for_review ตามปกติของ workflow — เป็นทางลัดที่ตกลงกันไว้ (คล้ายกับ completeAssignmentForProject
+   * ใน project-feedback-panel.component.ts) ต้องมี endpoint ฝั่ง backend รองรับ transition นี้ด้วย */
+  private advanceAssignmentToUnderReview(): void {
+    const assignmentId = this.currentAssignmentId();
+    if (!assignmentId) {
+      return;
+    }
+    const current = this.myAssignments().find((a) => a.assignment_id === assignmentId);
+    if (current?.status === 'under_review') {
+      return;
+    }
+    this.api
+      .updateAssignmentStatus(assignmentId, 'under_review', 'เริ่มสอบทานหลังผู้วิเคราะห์ส่งความคิดเห็น')
+      .subscribe({
+        next: (updated) =>
+          this.myAssignments.update((list) =>
+            list.map((a) => (a.assignment_id === assignmentId ? updated : a)),
+          ),
+        error: () =>
+          this.feedbackValidationError.set(
+            'ส่งความคิดเห็นสำเร็จ แต่เปลี่ยนสถานะงานตรวจสอบเป็นอยู่ระหว่างสอบทานไม่สำเร็จ',
+          ),
+      });
   }
 
   canDeleteFeedback(entry: AuditorFeedback): boolean {
