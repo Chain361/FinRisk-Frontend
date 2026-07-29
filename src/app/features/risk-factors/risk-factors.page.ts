@@ -913,7 +913,12 @@ export class RiskFactorsPageComponent implements OnInit {
     );
   }
 
+  /** backend มาสก์ project_status ให้ public_user แล้ว (PUBLIC_PROJECT_REDACTED_FIELDS ใน privacy.py)
+   * แต่กันซ้ำฝั่งนี้ไว้ด้วย เผื่อ backend ที่ deploy อยู่ยังไม่มี fix นี้ (เช่นระหว่างรอ merge/deploy) */
   projectStatus(): string {
+    if (this.auth.role() === 'public_user') {
+      return 'ไม่ระบุ';
+    }
     const detail = this.projectDetail();
     return detail?.project_status || detail?.status || 'ไม่ระบุ';
   }
