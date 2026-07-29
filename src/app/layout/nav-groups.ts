@@ -99,11 +99,6 @@ const NAV_ROUTES: Record<string, NavRoute> = {
         label: 'ประวัติการมอบหมายงาน',
         path: '/assignment-project-auditor/history',
       },
-      {
-        code: 'F4.3',
-        label: 'ตรวจทานงานที่ส่งกลับมา',
-        path: '/assignment-project-auditor/review',
-      },
     ],
   },
   team_reports: {

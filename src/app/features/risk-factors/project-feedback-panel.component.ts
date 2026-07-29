@@ -1,9 +1,13 @@
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 import { ApiService } from '../../core/api/api.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { FEEDBACK_ROLES, RESOLVE_ROLES } from '../../core/auth/roles';
 import {
+  AssignmentAttachment,
+  AuditAssignment,
   AuditorFeedback,
   AuditorFeedbackCreate,
   ConcernLevel,
@@ -18,6 +22,7 @@ import {
   feedbackStatusLabel,
   formatFeedbackDate,
 } from '../../shared/utils/feedback-utils';
+import { triggerBlobDownload } from '../../shared/utils/file-download-utils';
 
 type ModalMode = 'submit' | 'delete' | 'resolve' | null;
 
@@ -112,6 +117,28 @@ type ModalMode = 'submit' | 'delete' | 'resolve' | null;
                   </p>
                 }
 
+                @if (attachmentsFor(item).length) {
+                  <div class="mt-2.5 grid gap-1.5 border-t border-line-soft pt-2.5">
+                    <span class="text-[11px] font-bold uppercase tracking-wide text-muted"
+                      >เอกสารประกอบ</span
+                    >
+                    @for (file of attachmentsFor(item); track file.attachment_id) {
+                      <div
+                        class="flex items-center justify-between rounded-[3px] border border-line-soft bg-zebra px-2.5 py-1.5 text-xs"
+                      >
+                        <span class="truncate font-bold text-ink">{{ file.file_name }}</span>
+                        <button
+                          type="button"
+                          class="shrink-0 px-2 py-0.5 text-[11.5px] font-bold text-navy hover:underline"
+                          (click)="downloadAttachment(file)"
+                        >
+                          ดาวน์โหลด
+                        </button>
+                      </div>
+                    }
+                  </div>
+                }
+
                 @if (canEdit(item) || canResolve(item)) {
                   <div class="mt-2.5 flex gap-2 border-t border-line-soft pt-2.5">
                     @if (canEdit(item)) {
@@ -170,6 +197,11 @@ export class ProjectFeedbackPanelComponent {
   readonly loading = signal(false);
   readonly error = signal('');
   readonly saving = signal(false);
+
+  /** ไฟล์แนบของความเห็นแต่ละรายการ — ผูกผ่าน assignment ของโครงการนี้ที่มอบหมายให้ auditor_username
+   * ของความเห็นนั้น (backend ยังไม่มี field เชื่อม attachment ↔ feedback_id ตรงๆ) */
+  private readonly assignmentIdByUsername = signal<Map<string, number>>(new Map());
+  private readonly attachmentsByAssignment = signal<Map<number, AssignmentAttachment[]>>(new Map());
 
   readonly formText = signal('');
   readonly formConcern = signal<ConcernLevel | null>(null);
@@ -252,6 +284,22 @@ export class ProjectFeedbackPanelComponent {
   /** ปุ่มอนุมัติ — แสดงเฉพาะรายการที่ส่งแล้ว (design choice ฝั่ง UI; backend ไม่บังคับสถานะ) */
   canResolve(item: AuditorFeedback): boolean {
     return item.status === 'submitted' && this.auth.hasRole(...RESOLVE_ROLES);
+  }
+
+  /** ไฟล์แนบของ assignment ที่มอบหมายให้ auditor_username ของความเห็นนี้ในโครงการนี้ */
+  attachmentsFor(item: AuditorFeedback): AssignmentAttachment[] {
+    const assignmentId = this.assignmentIdByUsername().get(item.auditor_username);
+    if (assignmentId === undefined) {
+      return [];
+    }
+    return this.attachmentsByAssignment().get(assignmentId) ?? [];
+  }
+
+  downloadAttachment(file: AssignmentAttachment): void {
+    this.api.downloadAssignmentAttachment(file.assignment_id, file.attachment_id).subscribe({
+      next: (blob) => triggerBlobDownload(blob, file.file_name),
+      error: () => this.error.set('ดาวน์โหลดไฟล์ไม่สำเร็จ'),
+    });
   }
 
   setConcern(value: string): void {
@@ -410,6 +458,41 @@ export class ProjectFeedbackPanelComponent {
         this.loading.set(false);
       },
     });
+    this.loadAttachments(projectId);
+  }
+
+  /** หา assignment ของโครงการนี้ที่มอบหมายให้แต่ละ auditor_username แล้วโหลดไฟล์แนบของ assignment นั้นๆ */
+  private loadAttachments(projectId: string): void {
+    this.api
+      .assignments()
+      .pipe(catchError(() => of<AuditAssignment[]>([])))
+      .subscribe((assignments) => {
+        const matching = assignments.filter((a) => String(a.project_id) === projectId);
+        this.assignmentIdByUsername.set(
+          new Map(
+            matching
+              .filter((a): a is AuditAssignment & { assignee_username: string } =>
+                Boolean(a.assignee_username),
+              )
+              .map((a) => [a.assignee_username, a.assignment_id]),
+          ),
+        );
+        if (!matching.length) {
+          this.attachmentsByAssignment.set(new Map());
+          return;
+        }
+        forkJoin(
+          matching.map((a) =>
+            this.api
+              .assignmentAttachments(a.assignment_id)
+              .pipe(catchError(() => of<AssignmentAttachment[]>([]))),
+          ),
+        ).subscribe((lists) => {
+          const map = new Map<number, AssignmentAttachment[]>();
+          matching.forEach((a, index) => map.set(a.assignment_id, lists[index]));
+          this.attachmentsByAssignment.set(map);
+        });
+      });
   }
 
   private resetForm(): void {

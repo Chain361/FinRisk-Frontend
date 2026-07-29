@@ -1,6 +1,6 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
@@ -24,6 +24,7 @@ import {
   Subdistrict,
 } from '../../core/models/domain.models';
 import { FilterBarComponent } from '../../shared/filters/filter-bar.component';
+import { AssignmentEvidenceUploaderComponent } from '../../shared/ui/assignment-evidence-uploader.component';
 import { ConfirmModalComponent } from '../../shared/ui/confirm-modal.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { FeedbackStatusBadgeComponent } from '../../shared/ui/feedback-status-badge.component';
@@ -41,6 +42,7 @@ import {
   selector: 'app-risk-analyst-feedback-page',
   standalone: true,
   imports: [
+    AssignmentEvidenceUploaderComponent,
     ConfirmModalComponent,
     EmptyStateComponent,
     FeedbackStatusBadgeComponent,
@@ -368,6 +370,8 @@ import {
                         [disabled]="isFeedbackLocked()"
                       ></textarea>
                     </label>
+
+                    <app-assignment-evidence-uploader [assignmentId]="currentAssignmentId()" />
                   </div>
 
                   <div class="mt-4 flex flex-wrap items-center justify-start gap-2.5">
@@ -544,6 +548,22 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
   readonly selectedProjectId = signal<string | null>(null);
   /** assignment_id จาก route param :id (เข้าถึงผ่าน /risk-analyst-feedback/task/:id) — ใช้โชว์ปุ่มย้อนกลับไป /risk-analyst-feedback/projects */
   readonly assignmentRouteId = signal<string | null>(null);
+
+  /** assignment ของโครงการที่กำลังเลือกอยู่ — ใช้เป็น scope ของกล่องแนบไฟล์เอกสารประกอบ
+   * (ยึด route :id ก่อนถ้ามี ไม่งั้นหาใน myAssignments ด้วย project_id — ไม่มี assignment ก็ไม่ให้แนบ) */
+  readonly currentAssignmentId = computed<number | null>(() => {
+    const routeId = this.assignmentRouteId();
+    if (routeId) {
+      return Number(routeId);
+    }
+    const projectId = this.selectedProjectId();
+    if (!projectId) {
+      return null;
+    }
+    return (
+      this.myAssignments().find((a) => String(a.project_id) === projectId)?.assignment_id ?? null
+    );
+  });
 
   readonly activeFeedbackId = signal<string | null>(null);
   readonly feedbackText = signal('');
