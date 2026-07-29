@@ -307,14 +307,8 @@ export interface DataUploadResult {
 
 export type AssignmentPriority = 'low' | 'normal' | 'high';
 export type AssignmentStatus =
-  | 'waiting_acceptance'
-  | 'accepted'
   | 'in_progress'
-  | 'clarification_needed'
-  | 'ready_for_review'
   | 'under_review'
-  | 'pending_approval'
-  | 'revision_requested'
   | 'completed';
 
 export interface AuditAssignment {
@@ -327,6 +321,8 @@ export interface AuditAssignment {
   due_date?: string | null;
   budget_hours?: number | null;
   audit_steps: string;
+  work_process?: string;
+  work_objective?: string;
   status: AssignmentStatus;
   created_at: string;
   updated_at: string;
@@ -359,6 +355,8 @@ export interface CreateAssignmentRequest {
   due_date?: string;
   budget_hours?: number;
   audit_steps?: string;
+  work_process?: string;
+  work_objective?: string;
 }
 
 export interface AssignmentStatusHistoryEntry {
@@ -469,6 +467,26 @@ export interface AuditorFeedbackCreate {
   impact_score?: number | null;
   suggestions?: string | null;
   status: 'draft' | 'submitted';
+}
+
+/** รายงานผลตรวจ 1 รายการต่อความเห็นที่ได้รับอนุมัติ 1 รายการ */
+export interface AuditReport {
+  report_id: number | null;
+  feedback_id: number;
+  assignment_id: number;
+  project_id: string;
+  project_name: string;
+  dept_name?: string | null;
+  work_process?: string | null;
+  objective?: string | null;
+  findings: string;
+  suggestions?: string | null;
+  likelihood?: number | null;
+  impact?: number | null;
+  impact_score?: number | null;
+  risk_level?: number | null;
+  concern_level?: ConcernLevel | string | null;
+  submitted_at?: string | null;
 }
 
 /** ประวัติแชท — ฝั่ง client ถืออยู่ ไม่เก็บใน backend (ส่งไปทุกครั้งพร้อมข้อความใหม่) */

@@ -1,7 +1,7 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { forkJoin, of } from 'rxjs';
+import { catchError, forkJoin, of } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
 import { AuthService } from '../../core/auth/auth.service';
@@ -215,6 +215,42 @@ import {
                     <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
                       <p class="m-0 text-[11.5px] font-bold text-muted">สถานะโครงการ</p>
                       <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">{{ projectStatus() }}</p>
+                    </div>
+                  </div>
+
+                  <div class="mt-4 border-t border-line-soft pt-4">
+                    <p class="m-0 text-[11px] font-extrabold uppercase tracking-wide text-navy">
+                      ขอบเขตงานตรวจสอบ
+                    </p>
+                    <div class="mt-2 grid gap-3 text-sm leading-6 sm:grid-cols-2">
+                      <div>
+                        <p class="m-0 text-xs font-bold text-navy">กระบวนการงาน</p>
+                        @if (selectedAssignment()?.work_process) {
+                          <p class="m-0 text-ink">{{ selectedAssignment()!.work_process }}</p>
+                        } @else {
+                          <p class="m-0 italic text-muted">ยังไม่มีข้อมูล</p>
+                        }
+                      </div>
+                      <div
+                        class="border-t border-line-soft pt-3 sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0"
+                      >
+                        <p class="m-0 text-xs font-bold text-navy">วัตถุประสงค์</p>
+                        @if (selectedAssignment()?.work_objective) {
+                          <p class="m-0 text-ink">{{ selectedAssignment()!.work_objective }}</p>
+                        } @else {
+                          <p class="m-0 italic text-muted">ยังไม่มีข้อมูล</p>
+                        }
+                      </div>
+                    </div>
+                    <div class="mt-3 border-t border-line-soft pt-3">
+                      <p class="m-0 text-xs font-bold text-navy">คำแนะนำ</p>
+                      @if (selectedAssignment()?.note) {
+                        <p class="m-0 mt-0.5 whitespace-pre-line text-sm leading-6 text-ink">
+                          {{ selectedAssignment()!.note }}
+                        </p>
+                      } @else {
+                        <p class="m-0 mt-0.5 text-sm italic text-muted">ยังไม่มีคำแนะนำ</p>
+                      }
                     </div>
                   </div>
                 </article>
@@ -651,6 +687,20 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     );
   });
 
+  readonly selectedAssignment = computed<AuditAssignment | null>(() => {
+    const assignmentId = this.currentAssignmentId();
+    if (assignmentId) {
+      return (
+        this.myAssignments().find((assignment) => assignment.assignment_id === assignmentId) ?? null
+      );
+    }
+    const projectId = this.selectedProjectId();
+    return projectId
+      ? (this.myAssignments().find((assignment) => String(assignment.project_id) === projectId) ??
+          null)
+      : null;
+  });
+
   readonly activeFeedbackId = signal<string | null>(null);
   readonly feedbackText = signal('');
   readonly concernLevel = signal<ConcernLevel | null>(null);
@@ -806,9 +856,9 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
       // role อื่นที่เข้าหน้านี้ได้ ยังเห็นครบตามสโคปตำบลเดิม จึงยังต้องโหลด GET /projects ตามเดิม
       allProjects: isRiskAnalyst ? of<Project[]>([]) : this.api.projects(),
       feedback: this.api.feedbackList(),
-      // เฉพาะ risk_analyst ต้องรู้ว่าตัวเองถูกมอบหมายโครงการไหนบ้าง เพื่อสร้างรายการ
-      // (และใช้ resolve project_id จาก assignment_id เมื่อเข้าหน้านี้ผ่าน /risk-analyst-feedback/task/:id)
-      assignments: isRiskAnalyst ? this.api.assignments() : of<AuditAssignment[]>([]),
+      // ใช้แสดงขอบเขตงานของโครงการที่เลือก; ถ้า role ไม่มีสิทธิ์ endpoint นี้
+      // ฟอร์มยังทำงานได้ตามปกติ แต่แสดงว่าไม่มีข้อมูลขอบเขตงานแทน
+      assignments: this.api.assignments().pipe(catchError(() => of<AuditAssignment[]>([]))),
     }).subscribe({
       next: ({ subdistricts, catalog, allProjects, feedback, assignments }) => {
         this.subdistricts.set(subdistricts);
@@ -957,7 +1007,6 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
     this.submitFeedbackPayload(payload).subscribe({
       next: () => {
         this.resetFeedbackFields();
-        this.advanceAssignmentToUnderReview();
         this.refreshFeedbackLists(() => {
           this.feedbackSaving.set(false);
           this.feedbackSuccessMessage.set('ส่งความคิดเห็นเรียบร้อยแล้ว');
@@ -968,32 +1017,6 @@ export class RiskAnalystFeedbackPageComponent implements OnInit {
         this.feedbackValidationError.set('ส่งความคิดเห็นไม่สำเร็จ');
       },
     });
-  }
-
-  /** ส่งความคิดเห็นแล้ว → งานตรวจสอบเข้าสู่ขั้นสอบทาน (under_review) ไปเลย ข้ามขั้นตอน
-   * ready_for_review ตามปกติของ workflow — เป็นทางลัดที่ตกลงกันไว้ (คล้ายกับ completeAssignmentForProject
-   * ใน project-feedback-panel.component.ts) ต้องมี endpoint ฝั่ง backend รองรับ transition นี้ด้วย */
-  private advanceAssignmentToUnderReview(): void {
-    const assignmentId = this.currentAssignmentId();
-    if (!assignmentId) {
-      return;
-    }
-    const current = this.myAssignments().find((a) => a.assignment_id === assignmentId);
-    if (current?.status === 'under_review') {
-      return;
-    }
-    this.api
-      .updateAssignmentStatus(assignmentId, 'under_review', 'เริ่มสอบทานหลังผู้วิเคราะห์ส่งความคิดเห็น')
-      .subscribe({
-        next: (updated) =>
-          this.myAssignments.update((list) =>
-            list.map((a) => (a.assignment_id === assignmentId ? updated : a)),
-          ),
-        error: () =>
-          this.feedbackValidationError.set(
-            'ส่งความคิดเห็นสำเร็จ แต่เปลี่ยนสถานะงานตรวจสอบเป็นอยู่ระหว่างสอบทานไม่สำเร็จ',
-          ),
-      });
   }
 
   canDeleteFeedback(entry: AuditorFeedback): boolean {

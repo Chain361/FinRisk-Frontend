@@ -1,7 +1,8 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { catchError, forkJoin, of } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
-import { AuditorFeedback, ProjectDetail } from '../../core/models/domain.models';
+import { AuditAssignment, AuditorFeedback, ProjectDetail } from '../../core/models/domain.models';
 import { ProjectFeedbackPanelComponent } from '../risk-factors/project-feedback-panel.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { formatMoney } from '../../shared/utils/risk-utils';
@@ -227,6 +228,42 @@ import {
                   <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">{{ projectStatus() }}</p>
                 </div>
               </div>
+
+              <div class="mt-4 border-t border-line-soft pt-4">
+                <p class="m-0 text-[11px] font-extrabold uppercase tracking-wide text-navy">
+                  ขอบเขตงานตรวจสอบ
+                </p>
+                <div class="mt-1 grid gap-3 text-sm leading-6 sm:grid-cols-2">
+                  <div>
+                    <p class="m-0 text-xs font-bold text-navy">กระบวนการงาน</p>
+                    @if (selectedAssignment()?.work_process) {
+                      <p class="m-0 text-ink">{{ selectedAssignment()!.work_process }}</p>
+                    } @else {
+                      <p class="m-0 italic text-muted">ยังไม่มีข้อมูล</p>
+                    }
+                  </div>
+                  <div
+                    class="border-t border-line-soft pt-3 sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0"
+                  >
+                    <p class="m-0 text-xs font-bold text-navy">วัตถุประสงค์</p>
+                    @if (selectedAssignment()?.work_objective) {
+                      <p class="m-0 text-ink">{{ selectedAssignment()!.work_objective }}</p>
+                    } @else {
+                      <p class="m-0 italic text-muted">ยังไม่มีข้อมูล</p>
+                    }
+                  </div>
+                </div>
+                <div class="mt-3 border-t border-line-soft pt-3">
+                  <p class="m-0 text-xs font-bold text-navy">คำแนะนำ</p>
+                  @if (selectedAssignment()?.note) {
+                    <p class="m-0 mt-0.5 whitespace-pre-line text-sm leading-6 text-ink">
+                      {{ selectedAssignment()!.note }}
+                    </p>
+                  } @else {
+                    <p class="m-0 mt-0.5 text-sm italic text-muted">ยังไม่มีคำแนะนำ</p>
+                  }
+                </div>
+              </div>
             </article>
 
             <app-project-feedback-panel [projectId]="selectedProjectId()!" />
@@ -249,6 +286,7 @@ export class AuditorFeedbackPageComponent implements OnInit {
 
   readonly selectedProjectId = signal<string | null>(null);
   readonly projectDetail = signal<ProjectDetail | null>(null);
+  readonly selectedAssignment = signal<AuditAssignment | null>(null);
   readonly loadingDetail = signal(false);
 
   readonly filteredItems = computed(() => {
@@ -293,9 +331,21 @@ export class AuditorFeedbackPageComponent implements OnInit {
   openProject(projectId: string): void {
     this.selectedProjectId.set(projectId);
     this.loadingDetail.set(true);
-    this.api.project(projectId).subscribe({
-      next: (detail) => {
+    this.error.set('');
+    forkJoin({
+      detail: this.api.project(projectId),
+      assignments: this.api.assignments().pipe(catchError(() => of<AuditAssignment[]>([]))),
+    }).subscribe({
+      next: ({ detail, assignments }) => {
         this.projectDetail.set(detail);
+        this.selectedAssignment.set(
+          assignments
+            .filter((assignment) => assignment.project_id === projectId)
+            .sort(
+              (first, second) =>
+                new Date(second.created_at).getTime() - new Date(first.created_at).getTime(),
+            )[0] ?? null,
+        );
         this.loadingDetail.set(false);
       },
       error: () => {
@@ -308,6 +358,7 @@ export class AuditorFeedbackPageComponent implements OnInit {
   backToList(): void {
     this.selectedProjectId.set(null);
     this.projectDetail.set(null);
+    this.selectedAssignment.set(null);
   }
 
   deptName(): string {
