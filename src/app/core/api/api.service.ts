@@ -397,9 +397,9 @@ export class ApiService {
     );
   }
 
-  downloadAuditReport(reportId: number, format: 'pdf' | 'xlsx'): Observable<Blob> {
+  downloadAuditReport(reportId: number): Observable<Blob> {
     return this.http.get(`${this.baseUrl}/audit/reports/${reportId}/export`, {
-      params: { format },
+      params: { format: 'pdf' },
       responseType: 'blob',
     });
   }
