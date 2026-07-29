@@ -194,6 +194,14 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'audit-reports/:feedbackId',
+        canActivate: [roleGuard('project_auditor')],
+        loadComponent: () =>
+          import('./features/audit-report/audit-report.page').then(
+            (m) => m.AuditReportPageComponent,
+          ),
+      },
+      {
         // งานที่ได้รับมอบหมาย (Risk Analyst) — เฉพาะ role ที่ backend อนุญาตบน GET /audit/assignments
         path: 'risk-analyst',
         canActivate: [roleGuard(...ASSIGNMENT_ROLES)],
