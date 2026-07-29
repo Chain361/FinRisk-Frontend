@@ -405,6 +405,9 @@ import { ProjectFeedbackPanelComponent } from './project-feedback-panel.componen
                     <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
                       <p class="m-0 text-[11.5px] font-bold text-muted">ผู้ขาย/ผู้รับจ้าง</p>
                       <p class="m-0 mt-1 text-[13.5px] font-bold text-ink">{{ vendorLabel() }}</p>
+                      @if (vendorTinLabel() !== '-') {
+                        <p class="m-0 mt-1 text-xs text-muted">เลขผู้เสียภาษี {{ vendorTinLabel() }}</p>
+                      }
                     </div>
                     <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
                       <p class="m-0 text-[11.5px] font-bold text-muted">ประเภทจัดซื้อจัดจ้าง</p>
@@ -968,14 +971,22 @@ export class RiskFactorsPageComponent implements OnInit {
       return '-';
     }
     return (
-      detail.vendor_name ||
-      detail.contractor_name ||
-      detail.supplier_name ||
-      detail.bidder_name ||
       (detail.vendor_id !== null && detail.vendor_id !== undefined
-        ? `Vendor #${detail.vendor_id}`
+        ? `${detail.vendor_name} #${detail.vendor_id}`
         : '-')
     );
+  }
+
+  /** เลขประจำตัวผู้เสียภาษีของผู้ชนะ/คู่สัญญา — มาจาก JOIN vendors.tin ใน GET /projects/:id
+   * (ไม่ได้ type ไว้ใน ProjectDetail เพราะเป็น field เสริมจาก backend, ไม่ใช่คอลัมน์ projects ตรงๆ) */
+  vendorTinLabel(): string {
+    const detail = this.projectDetail() as (ProjectDetail & Record<string, unknown>) | null;
+    if (!detail) {
+      return '-';
+    }
+    const tin = detail['vendor_tin'] ?? detail['winner_tin'];
+    const text = tin === null || tin === undefined ? '' : String(tin).trim();
+    return text || '-';
   }
 
   purchaseMethodLabel(): string {
