@@ -382,9 +382,11 @@ export class AssignmentProjectAuditorHistoryPageComponent implements OnInit {
         this.deletingAssignmentId.set(null);
         this.reloadAssignments();
       },
-      error: () => {
+      error: (err) => {
         this.deletingAssignmentId.set(null);
-        this.error.set('ลบประวัติจากระบบไม่สำเร็จ กรุณาตรวจสิทธิ์หรือโหลดข้อมูลใหม่อีกครั้ง');
+        this.error.set(
+          err?.error?.detail ?? 'ลบประวัติจากระบบไม่สำเร็จ กรุณาตรวจสิทธิ์หรือโหลดข้อมูลใหม่อีกครั้ง',
+        );
       },
     });
   }
