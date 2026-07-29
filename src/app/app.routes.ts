@@ -93,6 +93,15 @@ export const routes: Routes = [
           ),
       },
       {
+        // เอกสารประกอบโครงการ + checklist/ผล OCR (issue #35) — เข้าถึงได้ทุก role ที่ login
+        // (backend endpoint ไม่มี require_roles จำกัด แค่ scope guard ตามตำบล)
+        path: 'document-intelligence/:projectId',
+        loadComponent: () =>
+          import('./features/document-intelligence/document-intelligence.page').then(
+            (m) => m.DocumentIntelligencePageComponent,
+          ),
+      },
+      {
         path: 'assignment-project-auditor',
         children: [
           {

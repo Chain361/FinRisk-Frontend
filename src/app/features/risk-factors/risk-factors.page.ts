@@ -265,6 +265,12 @@ import { ProjectFeedbackPanelComponent } from './project-feedback-panel.componen
                       <span class="text-[11px] font-bold text-muted"
                         >Risk Score {{ number(scoreInfo().risk_score, 0) }}/100</span
                       >
+                      <a
+                        [routerLink]="['/document-intelligence', projectDetail()?.project_id]"
+                        class="mt-1 text-[11.5px] font-bold text-navy underline"
+                      >
+                        เอกสารประกอบโครงการ
+                      </a>
                     </div>
                   </div>
 
