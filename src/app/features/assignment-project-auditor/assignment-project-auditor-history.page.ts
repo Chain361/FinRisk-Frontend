@@ -138,7 +138,7 @@ interface AssignmentHistoryRow {
                   <th scope="col" class="w-[128px]">Due date</th>
                   <th scope="col" class="w-[140px]">ผู้รับมอบหมาย</th>
                   <th scope="col" class="w-[112px]">ความเสี่ยง</th>
-                  <th scope="col">คำแนะนำ</th>
+                  <th scope="col">ขอบเขตงาน</th>
                   @if (canDeleteHistory()) {
                     <th scope="col" class="w-[92px] text-right">จัดการ</th>
                   }
@@ -232,39 +232,44 @@ interface AssignmentHistoryRow {
                       </span>
                     </td>
                     <td class="align-top">
-                      @if (row.assignment.note) {
-                        <p class="m-0 max-w-[280px] text-sm leading-6 text-ink">
-                          {{ row.assignment.note }}
+                      <div class="max-w-[320px] text-sm leading-5 text-ink">
+                        <p class="m-0 text-[11px] font-extrabold uppercase tracking-wide text-navy">
+                          กระบวนการงาน
                         </p>
-                      } @else {
-                        <p class="m-0 text-sm italic text-slate-400">ยังไม่มีข้อมูล</p>
-                      }
-                      <div
-                        class="mt-2 max-w-[320px] rounded-[4px] bg-slate-50 p-2 text-xs leading-5 text-muted"
-                      >
-                        @if (row.assignment.budgetHours) {
-                          <p class="m-0">
-                            <span class="font-bold text-ink">Budget:</span>
-                            {{ row.assignment.budgetHours }} ชม.
-                          </p>
-                        }
-                        <p class="m-0">
-                          <span class="font-bold text-ink">กระบวนการงาน:</span>
-                          @if (row.assignment.workProcess) {
+                        @if (row.assignment.workProcess) {
+                          <p class="m-0 mt-0.5 whitespace-pre-line">
                             {{ row.assignment.workProcess }}
-                          } @else {
-                            <span class="italic text-slate-400">ยังไม่มีข้อมูล</span>
-                          }
-                        </p>
-                        <p class="m-0">
-                          <span class="font-bold text-ink">วัตถุประสงค์:</span>
+                          </p>
+                        } @else {
+                          <p class="m-0 mt-0.5 italic text-muted">ยังไม่มีข้อมูล</p>
+                        }
+                        <div class="mt-2 border-t border-line-soft pt-2">
+                          <p
+                            class="m-0 text-[11px] font-extrabold uppercase tracking-wide text-navy"
+                          >
+                            วัตถุประสงค์
+                          </p>
                           @if (row.assignment.workObjective) {
-                            {{ row.assignment.workObjective }}
+                            <p class="m-0 mt-0.5 whitespace-pre-line">
+                              {{ row.assignment.workObjective }}
+                            </p>
                           } @else {
-                            <span class="italic text-slate-400">ยังไม่มีข้อมูล</span>
+                            <p class="m-0 mt-0.5 italic text-muted">ยังไม่มีข้อมูล</p>
                           }
-                        </p>
+                        </div>
                       </div>
+                      @if (row.assignment.note) {
+                        <div class="mt-3 max-w-[320px] text-xs leading-5 text-muted">
+                          <p class="m-0 font-bold text-ink">คำแนะนำ</p>
+                          <p class="m-0 mt-0.5 whitespace-pre-line">{{ row.assignment.note }}</p>
+                        </div>
+                      }
+                      @if (row.assignment.budgetHours) {
+                        <p class="m-0 mt-2 text-xs leading-5 text-muted">
+                          <span class="font-bold text-ink">Budget:</span>
+                          {{ row.assignment.budgetHours }} ชม.
+                        </p>
+                      }
                     </td>
                     @if (canDeleteHistory()) {
                       <td class="align-top text-right">
