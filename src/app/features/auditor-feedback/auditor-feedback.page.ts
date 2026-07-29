@@ -116,6 +116,7 @@ import {
                       <td class="max-w-md px-4 py-3">
                         <p class="m-0 text-xs font-bold text-muted">ID {{ item.project_id }}</p>
                         <p class="m-0 mt-0.5 line-clamp-2 text-[13px] text-slate-800">
+                          <span class="font-bold text-slate-900">ความคิดเห็น:</span>
                           {{ item.feedback_text }}
                         </p>
                       </td>
