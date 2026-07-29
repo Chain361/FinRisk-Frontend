@@ -193,6 +193,11 @@ import {
                   formatAssignedAt(assignment()!.created_at)
                 }}</span>
               </div>
+              @if (assignment()!.status === 'under_review') {
+                <p class="m-0 border-t border-line-soft pt-3 text-xs leading-5 text-muted">
+                  งานอยู่ระหว่างสอบทานโดยผู้ตรวจสอบโครงการ
+                </p>
+              }
             </div>
           </div>
         </div>

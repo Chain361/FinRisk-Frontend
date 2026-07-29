@@ -307,14 +307,8 @@ export interface DataUploadResult {
 
 export type AssignmentPriority = 'low' | 'normal' | 'high';
 export type AssignmentStatus =
-  | 'waiting_acceptance'
-  | 'accepted'
   | 'in_progress'
-  | 'clarification_needed'
-  | 'ready_for_review'
   | 'under_review'
-  | 'pending_approval'
-  | 'revision_requested'
   | 'completed';
 
 export interface AuditAssignment {

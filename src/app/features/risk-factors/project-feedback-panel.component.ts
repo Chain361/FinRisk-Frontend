@@ -450,35 +450,8 @@ export class ProjectFeedbackPanelComponent {
     this.api.resolveFeedback(feedbackId).subscribe({
       next: () => {
         this.reload(this.projectId());
-        this.completeAssignmentForProject();
       },
       error: (err) => this.error.set(err?.error?.detail ?? 'อนุมัติไม่สำเร็จ'),
-    });
-  }
-
-  /** อนุมัติความเห็นแล้ว → ปิดงานตรวจสอบ (assignment) ของโครงการนี้เป็น completed ไปเลย
-   * ข้ามขั้น pending_approval/regional_supervisor ตามปกติของ workflow — เป็นทางลัดที่ตกลงกันไว้
-   * ต้องมี endpoint ฝั่ง backend รองรับ transition นี้ด้วย (ไม่ใช่แค่ฝั่ง UI) */
-  private completeAssignmentForProject(): void {
-    const projectId = this.projectId();
-    this.api.assignments().subscribe({
-      next: (assignments) => {
-        const target = assignments.find(
-          (a) => String(a.project_id) === String(projectId) && a.status !== 'completed',
-        );
-        if (!target) {
-          return;
-        }
-        this.api
-          .updateAssignmentStatus(
-            target.assignment_id,
-            'completed',
-            'ปิดอัตโนมัติหลังอนุมัติความเห็นผู้ตรวจสอบ',
-          )
-          .subscribe({
-            error: () => this.error.set('อนุมัติความเห็นสำเร็จ แต่ปิดสถานะงานตรวจสอบไม่สำเร็จ'),
-          });
-      },
     });
   }
 

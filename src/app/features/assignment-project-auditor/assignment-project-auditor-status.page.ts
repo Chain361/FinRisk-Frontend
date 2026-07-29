@@ -112,13 +112,8 @@ interface ProjectStatusRow {
               >
                 <option value="all">ทุกสถานะโครงการ</option>
                 <option value="unassigned">ยังไม่มอบหมาย</option>
-                <option value="waiting_acceptance">รอผู้รับงานตอบรับ</option>
-                <option value="accepted">รับงานแล้ว</option>
                 <option value="in_progress">กำลังดำเนินการ</option>
-                <option value="clarification_needed">ขอคำชี้แจง</option>
-                <option value="ready_for_review">ส่งงานให้ตรวจทาน</option>
                 <option value="under_review">อยู่ระหว่างสอบทาน</option>
-                <option value="revision_requested">ส่งกลับแก้ไข</option>
                 <option value="completed">เสร็จสิ้น</option>
               </select>
             </label>
@@ -297,10 +292,11 @@ interface ProjectStatusRow {
                     <td class="align-top text-right">
                       @if (row.latestAssignment) {
                         <a
-                          [routerLink]="[
-                            '/assignment-project-auditor/review',
-                            row.latestAssignment.assignmentId,
-                          ]"
+                          routerLink="/risk-factors"
+                          [queryParams]="{
+                            projectId: row.project.project_id,
+                            from: '/risk-factors/status',
+                          }"
                           class="gov-btn-outline inline-flex px-3 py-1.5 text-xs no-underline"
                         >
                           ตรวจสอบ
@@ -373,12 +369,9 @@ export class AssignmentProjectAuditorStatusPageComponent implements OnInit {
     return this.projectRows().filter(
       (row) =>
         (!search || row.searchText.includes(search)) &&
-        (workflowStatus === 'all' ||
+          (workflowStatus === 'all' ||
           (workflowStatus === 'unassigned' && !row.latestAssignment) ||
-          row.latestAssignment?.workflowStatus === workflowStatus ||
-          (!row.latestAssignment?.workflowStatus &&
-            workflowStatus === 'waiting_acceptance' &&
-            Boolean(row.latestAssignment))) &&
+          row.latestAssignment?.workflowStatus === workflowStatus) &&
         (risk === 'all' || normalizeRiskLevel(row.project.risk_level) === risk) &&
         (analystId === 'all' || row.latestAssignment?.analystId === analystId),
     );
