@@ -9,7 +9,7 @@ export function feedbackStatusLabel(status: string | null | undefined): string {
     case 'submitted':
       return 'ส่งแล้ว';
     case 'resolved':
-      return 'ปิดเรื่องแล้ว';
+      return 'อนุมัติแล้ว';
     default:
       return 'ไม่ระบุ';
   }

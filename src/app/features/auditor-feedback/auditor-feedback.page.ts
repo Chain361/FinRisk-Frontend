@@ -29,7 +29,7 @@ import {
         <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F6</p>
         <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">ความเห็นผู้ตรวจสอบ</h1>
         <p class="m-0 mt-1.5 text-sm text-muted">
-          รวมความเห็นทุกโครงการในขอบเขตของท่าน — ติดตามสถานะ ฉบับร่าง / ส่งแล้ว / ปิดเรื่องแล้ว
+          รวมความเห็นทุกโครงการในขอบเขตของท่าน — ติดตามสถานะ ฉบับร่าง / ส่งแล้ว / อนุมัติแล้ว
         </p>
       </div>
 
@@ -56,7 +56,7 @@ import {
                     <option value="">ทุกสถานะ</option>
                     <option value="draft">ฉบับร่าง</option>
                     <option value="submitted">ส่งแล้ว</option>
-                    <option value="resolved">ปิดเรื่องแล้ว</option>
+                    <option value="resolved">อนุมัติแล้ว</option>
                   </select>
                 </label>
                 <label class="block">
