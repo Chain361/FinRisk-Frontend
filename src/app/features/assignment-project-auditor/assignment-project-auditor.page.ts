@@ -516,7 +516,8 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
         assignee_id: Number(analystId),
         note: this.assignmentNote().trim(),
         due_date: this.dueDate(),
-        audit_steps: this.auditSteps(),
+        work_process: this.workProcess().trim(),
+        work_objective: this.workObjective().trim(),
       })
       .subscribe({
         next: (created) => {
@@ -600,15 +601,6 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
     return Number.isNaN(date.getTime()) ? 0 : date.getTime();
   }
 
-  /**
-   * Backend currently persists one `audit_steps` field. Store both requested
-   * form values in that field with stable headings so they remain available to
-   * the assignment detail and report-export flows without a backend migration.
-   */
-  private auditSteps(): string {
-    return `กระบวนการงาน: ${this.workProcess().trim()}\nวัตถุประสงค์ของกระบวนงาน: ${this.workObjective().trim()}`;
-  }
-
   private reloadAssignments(): void {
     this.api.assignments().subscribe({
       next: (assignments) =>
@@ -645,6 +637,8 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
       dueDate: assignment.due_date ?? undefined,
       budgetHours: assignment.budget_hours ?? undefined,
       auditSteps: assignment.audit_steps,
+      workProcess: assignment.work_process,
+      workObjective: assignment.work_objective,
       workflowStatus: assignment.status,
       assignedBy:
         assignment.assigned_by_display_name || assignment.assigned_by_username || undefined,
