@@ -176,16 +176,6 @@ export const routes: Routes = [
           import('./features/risk-analyst-feedback/risk-analyst-feedback.page').then(
             (m) => m.RiskAnalystFeedbackPageComponent,
           ),
-        children: [
-          {
-            path: 'projects',
-            canActivate: [roleGuard('risk_analyst')],
-            loadComponent: () =>
-              import('./features/risk-analyst-feedback/risk-analyst-feedback-project-list.page').then(
-                (m) => m.FeedbackProjectListPageComponent,
-              ),
-          },
-        ],
       },
       {
         path: 'auditor-feedback',

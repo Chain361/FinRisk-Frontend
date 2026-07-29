@@ -371,7 +371,9 @@ import {
                       ></textarea>
                     </label>
 
-                    <app-assignment-evidence-uploader [assignmentId]="currentAssignmentId()" />
+                    @if (!isFeedbackLocked()) {
+                      <app-assignment-evidence-uploader [assignmentId]="currentAssignmentId()" />
+                    }
                   </div>
 
                   <div class="mt-4 flex flex-wrap items-center justify-start gap-2.5">
