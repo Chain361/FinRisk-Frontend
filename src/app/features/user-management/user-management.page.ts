@@ -12,6 +12,7 @@ import {
 import { FormsModule } from '@angular/forms';
 
 import { ApiService } from '../../core/api/api.service';
+import { AuthService } from '../../core/auth/auth.service';
 import {
   ALL_FEATURE_ITEMS,
   FEATURE_GROUPS,
@@ -20,11 +21,13 @@ import {
 import { ROLE_LABELS, RoleCode, SCOPED_ROLES } from '../../core/auth/roles';
 import {
   ManagedUser,
+  ManagedUserCreate,
   UserDirectoryService,
   UserStatus,
 } from '../../core/auth/user-directory.service';
 import { Subdistrict } from '../../core/models/domain.models';
 import { subdistrictLabel } from '../../shared/utils/risk-utils';
+import { ConfirmModalComponent } from '../../shared/ui/confirm-modal.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { ToastService } from '../../shared/ui/toast.service';
 
@@ -33,7 +36,7 @@ const ROLE_OPTIONS = Object.keys(ROLE_LABELS) as RoleCode[];
 @Component({
   selector: 'app-user-management-page',
   standalone: true,
-  imports: [FormsModule, EmptyStateComponent],
+  imports: [FormsModule, EmptyStateComponent, ConfirmModalComponent],
   template: `
     <section class="page-shell">
       <div class="flex flex-wrap items-start justify-between gap-3">
@@ -42,6 +45,9 @@ const ROLE_OPTIONS = Object.keys(ROLE_LABELS) as RoleCode[];
           <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">จัดการผู้ใช้งาน</h1>
           <p class="m-0 mt-1.5 text-sm text-muted">แก้ไขและจัดการบัญชีผู้ใช้งานในระบบ</p>
         </div>
+        <button type="button" class="gov-btn-primary" (click)="openCreateModal()">
+          เพิ่มผู้ใช้งาน
+        </button>
       </div>
 
       <!-- ตัวกรอง -->
@@ -101,7 +107,17 @@ const ROLE_OPTIONS = Object.keys(ROLE_LABELS) as RoleCode[];
       <section class="panel p-[18px]">
         <p class="m-0 mb-3 text-[13px] text-muted">พบ {{ filteredUsers().length }} รายการ</p>
 
-        @if (filteredUsers().length === 0) {
+        @if (loadError()) {
+          <app-empty-state
+            title="โหลดรายชื่อผู้ใช้งานไม่สำเร็จ"
+            message="เชื่อมต่อ backend ไม่ได้ชั่วคราว ข้อมูลผู้ใช้งานที่มีอยู่ไม่ได้หายไป ลองใหม่อีกครั้ง"
+          />
+          <div class="mt-3 flex justify-center">
+            <button type="button" class="gov-btn-outline" (click)="retryLoadUsers()">
+              ลองใหม่
+            </button>
+          </div>
+        } @else if (filteredUsers().length === 0) {
           <app-empty-state
             title="ไม่พบผู้ใช้งาน"
             message="ไม่มีผู้ใช้งานที่ตรงกับตัวกรองที่เลือก ลองปรับตัวกรองแล้วลองใหม่อีกครั้ง"
@@ -137,13 +153,24 @@ const ROLE_OPTIONS = Object.keys(ROLE_LABELS) as RoleCode[];
                       </span>
                     </td>
                     <td>
-                      <button
-                        type="button"
-                        class="h-[32px] cursor-pointer rounded-[3px] border-[1.5px] border-line bg-white px-3 text-[12.5px] font-bold text-slate-700 hover:bg-zebra"
-                        (click)="openEditModal(u)"
-                      >
-                        แก้ไข
-                      </button>
+                      <div class="flex gap-2">
+                        <button
+                          type="button"
+                          class="h-[32px] cursor-pointer rounded-[3px] border-[1.5px] border-line bg-white px-3 text-[12.5px] font-bold text-slate-700 hover:bg-zebra"
+                          (click)="openEditModal(u)"
+                        >
+                          แก้ไข
+                        </button>
+                        @if (u.username !== currentUsername()) {
+                          <button
+                            type="button"
+                            class="h-[32px] cursor-pointer rounded-[3px] border-[1.5px] border-risk-high bg-white px-3 text-[12.5px] font-bold text-risk-high hover:bg-red-50"
+                            (click)="requestDelete(u)"
+                          >
+                            ลบ
+                          </button>
+                        }
+                      </div>
                     </td>
                   </tr>
                 }
@@ -169,20 +196,55 @@ const ROLE_OPTIONS = Object.keys(ROLE_LABELS) as RoleCode[];
           (click)="$event.stopPropagation()"
         >
           <h2 id="user-modal-title" class="m-0 mb-4 text-lg font-extrabold text-navy">
-            แก้ไขผู้ใช้งาน
+            {{ editingUser() === null ? 'เพิ่มผู้ใช้งาน' : 'แก้ไขผู้ใช้งาน' }}
           </h2>
 
           <form class="grid gap-3.5" (ngSubmit)="submitModal()">
-            <label class="block">
-              <span class="text-[12.5px] font-bold text-muted">ชื่อ-นามสกุล</span>
-              <input
-                #firstField
-                class="gov-input mt-[5px]"
-                [(ngModel)]="formDisplayName"
-                name="displayName"
-                required
-              />
-            </label>
+            @if (editingUser() === null) {
+              <label class="block">
+                <span class="text-[12.5px] font-bold text-muted">ชื่อผู้ใช้ (username)</span>
+                <input
+                  #firstField
+                  class="gov-input mt-[5px]"
+                  [(ngModel)]="formUsername"
+                  name="username"
+                  required
+                />
+              </label>
+
+              <label class="block">
+                <span class="text-[12.5px] font-bold text-muted">รหัสผ่าน</span>
+                <input
+                  type="password"
+                  class="gov-input mt-[5px]"
+                  [(ngModel)]="formPassword"
+                  name="password"
+                  minlength="6"
+                  required
+                />
+              </label>
+
+              <label class="block">
+                <span class="text-[12.5px] font-bold text-muted">ชื่อ-นามสกุล</span>
+                <input
+                  class="gov-input mt-[5px]"
+                  [(ngModel)]="formDisplayName"
+                  name="displayName"
+                  required
+                />
+              </label>
+            } @else {
+              <label class="block">
+                <span class="text-[12.5px] font-bold text-muted">ชื่อ-นามสกุล</span>
+                <input
+                  #firstField
+                  class="gov-input mt-[5px]"
+                  [(ngModel)]="formDisplayName"
+                  name="displayName"
+                  required
+                />
+              </label>
+            }
 
             <label class="block">
               <span class="text-[12.5px] font-bold text-muted">บทบาท</span>
@@ -276,23 +338,36 @@ const ROLE_OPTIONS = Object.keys(ROLE_LABELS) as RoleCode[];
                 ยกเลิก
               </button>
               <button type="submit" class="gov-btn-primary" [disabled]="saving()">
-                {{ saving() ? 'กำลังบันทึก...' : 'บันทึก' }}
+                {{ saving() ? 'กำลังบันทึก...' : editingUser() === null ? 'สร้าง' : 'บันทึก' }}
               </button>
             </div>
           </form>
         </div>
       </div>
     }
+
+    <app-confirm-modal
+      [open]="pendingDeleteUser() !== null"
+      title="ยืนยันการลบผู้ใช้งาน"
+      [message]="deleteConfirmMessage()"
+      confirmLabel="ยืนยันลบ"
+      (confirmed)="confirmDelete()"
+      (cancelled)="pendingDeleteUser.set(null)"
+    />
   `,
 })
 export class UserManagementPageComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly auth = inject(AuthService);
   private readonly userDirectory = inject(UserDirectoryService);
   private readonly toast = inject(ToastService);
 
   readonly roleOptions = ROLE_OPTIONS;
   readonly subdistricts = signal<Subdistrict[]>([]);
   readonly users = this.userDirectory.users;
+  readonly loadError = this.userDirectory.loadError;
+  /** ใช้จับคู่ ManagedUser.username เพื่อซ่อนปุ่ม "ลบ" ในแถวของผู้ใช้ที่ login อยู่เอง */
+  readonly currentUsername = computed(() => this.auth.user()?.username ?? null);
 
   readonly search = signal('');
   readonly roleFilter = signal('');
@@ -325,7 +400,16 @@ export class UserManagementPageComponent implements OnInit {
   readonly modalOpen = signal(false);
   readonly editingUser = signal<ManagedUser | null>(null);
   readonly saving = signal(false);
+  readonly pendingDeleteUser = signal<ManagedUser | null>(null);
+  readonly deleteConfirmMessage = computed(() => {
+    const target = this.pendingDeleteUser();
+    return target
+      ? `ต้องการลบผู้ใช้งาน ${target.display_name} ใช่หรือไม่? เมื่อลบแล้วจะไม่สามารถกู้คืนได้`
+      : '';
+  });
 
+  formUsername = '';
+  formPassword = '';
   formDisplayName = '';
   formRole: RoleCode = 'risk_analyst';
   formSubdistrictId: number | null = null;
@@ -366,6 +450,10 @@ export class UserManagementPageComponent implements OnInit {
     });
   }
 
+  retryLoadUsers(): void {
+    this.userDirectory.loadUsers().subscribe();
+  }
+
   roleLabel(role: string): string {
     return ROLE_LABELS[role] ?? role;
   }
@@ -388,6 +476,16 @@ export class UserManagementPageComponent implements OnInit {
     this.formSubdistrictId = user.subdistrict_id;
     this.formStatus = user.status;
     this.formFeatures = [...user.allowed_features];
+    this.modalOpen.set(true);
+  }
+
+  openCreateModal(): void {
+    this.editingUser.set(null);
+    this.formUsername = '';
+    this.formPassword = '';
+    this.formDisplayName = '';
+    this.formStatus = 'active';
+    this.onFormRoleChange(this.roleOptions[0]);
     this.modalOpen.set(true);
   }
 
@@ -421,32 +519,77 @@ export class UserManagementPageComponent implements OnInit {
   }
 
   submitModal(): void {
-    const editing = this.editingUser();
-    if (!editing || !this.formDisplayName.trim() || this.saving()) {
+    if (!this.formDisplayName.trim() || this.saving()) {
       return;
     }
+    const editing = this.editingUser();
     const subdistrictId = this.formRoleNeedsSubdistrict() ? this.formSubdistrictId : null;
+    const patch = {
+      display_name: this.formDisplayName.trim(),
+      role: this.formRole,
+      subdistrict_id: subdistrictId,
+      status: this.formStatus,
+      allowed_features: this.formFeatures,
+    };
 
     this.saving.set(true);
-    this.userDirectory
-      .updateUser(editing.user_id, {
-        display_name: this.formDisplayName.trim(),
-        role: this.formRole,
-        subdistrict_id: subdistrictId,
-        status: this.formStatus,
-        allowed_features: this.formFeatures,
-      })
-      .subscribe({
+
+    if (editing === null) {
+      if (!this.formUsername.trim() || !this.formPassword) {
+        this.saving.set(false);
+        return;
+      }
+      const body: ManagedUserCreate = {
+        ...patch,
+        username: this.formUsername.trim(),
+        password: this.formPassword,
+      };
+      this.userDirectory.createUser(body).subscribe({
         next: () => {
           this.saving.set(false);
           this.closeModal();
-          this.toast.success('บันทึกสิทธิ์ผู้ใช้งานสำเร็จ');
+          this.toast.success('เพิ่มผู้ใช้งานสำเร็จ');
         },
-        error: () => {
+        error: (err) => {
           this.saving.set(false);
-          this.toast.error('บันทึกสิทธิ์ผู้ใช้งานไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+          this.toast.error(err?.error?.detail ?? 'เพิ่มผู้ใช้งานไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
         },
       });
+      return;
+    }
+
+    this.userDirectory.updateUser(editing.user_id, patch).subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.closeModal();
+        this.toast.success('บันทึกสิทธิ์ผู้ใช้งานสำเร็จ');
+      },
+      error: () => {
+        this.saving.set(false);
+        this.toast.error('บันทึกสิทธิ์ผู้ใช้งานไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+      },
+    });
+  }
+
+  requestDelete(user: ManagedUser): void {
+    this.pendingDeleteUser.set(user);
+  }
+
+  confirmDelete(): void {
+    const target = this.pendingDeleteUser();
+    if (!target) {
+      return;
+    }
+    this.userDirectory.deleteUser(target.user_id).subscribe({
+      next: () => {
+        this.pendingDeleteUser.set(null);
+        this.toast.success('ลบผู้ใช้งานสำเร็จ');
+      },
+      error: (err) => {
+        this.pendingDeleteUser.set(null);
+        this.toast.error(err?.error?.detail ?? 'ลบผู้ใช้งานไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+      },
+    });
   }
 
   @HostListener('document:keydown.escape')

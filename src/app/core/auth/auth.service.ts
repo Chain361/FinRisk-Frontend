@@ -2,18 +2,25 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 
-import { I18nService } from '../i18n/i18n.service';
 import { ApiService } from '../api/api.service';
 import { AppUser, LoginResponse } from '../models/domain.models';
 import { canAccessFeature, resolveAllowedFeatures } from './features';
 import { SCOPED_ROLES } from './roles';
 import { TOKEN_KEY, USER_KEY, isTokenExpired } from './auth.constants';
 
+const ROLE_LABELS: Record<string, string> = {
+  admin: 'ผู้ดูแลระบบ',
+  regional_supervisor: 'ผู้กำกับดูแลอำเภอ/จังหวัด',
+  local_executive: 'ผู้บริหารตำบล (นายก/ปลัด)',
+  project_auditor: 'ผู้ตรวจสอบโครงการ',
+  risk_analyst: 'นักวิเคราะห์/ตรวจสอบภายใน',
+  public_user: 'ประชาชนทั่วไป',
+};
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly api = inject(ApiService);
   private readonly router = inject(Router);
-  private readonly i18n = inject(I18nService);
 
   readonly token = signal<string | null>(this.readStoredToken());
   readonly user = signal<AppUser | null>(this.restoreUser());
@@ -35,12 +42,10 @@ export class AuthService {
   readonly roleLabel = computed(() => {
     const user = this.user();
     if (!user) {
-      return this.i18n.t('role.unknown');
+      return 'ไม่ระบุบทบาท';
     }
-    const key = `role.${user.role}`;
-    const label = this.i18n.t(key);
-    // ถ้า role code ไม่มีใน dictionary ให้ fallback เป็นชื่อที่ backend ส่งมา
-    return label === key ? (user.display_name ?? user.role) : label;
+    // ถ้า role code ไม่มีใน ROLE_LABELS ให้ fallback เป็นชื่อที่ backend ส่งมา
+    return ROLE_LABELS[user.role] ?? (user.display_name ?? user.role);
   });
 
   /** true เมื่อ role ปัจจุบันอยู่ในรายการที่อนุญาต */

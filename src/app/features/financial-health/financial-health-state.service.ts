@@ -3,7 +3,6 @@ import { catchError, forkJoin, of } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
 import { AuthService } from '../../core/auth/auth.service';
-import { I18nService } from '../../core/i18n/i18n.service';
 import { AnnualRisk, FinancialStatement, Subdistrict } from '../../core/models/domain.models';
 import { BarChartSeries } from '../../shared/charts/bar-chart.component';
 import { CompositionSegment } from '../../shared/ui/composition-bar.component';
@@ -44,8 +43,6 @@ interface ComparisonDatum {
 export class FinancialHealthStateService {
   private readonly api = inject(ApiService);
   private readonly auth = inject(AuthService);
-  private readonly i18n = inject(I18nService);
-  private readonly t = this.i18n.t;
   private initialized = false;
   /** username ที่โหลดข้อมูลไว้ล่าสุด — ถ้า login คนละคนต้องโหลดใหม่ (ข้อมูล/ตำบลถูก scope ต่อ user) */
   private loadedForUsername: string | null = null;
@@ -59,7 +56,9 @@ export class FinancialHealthStateService {
   readonly financialStatements = signal<FinancialStatement[]>([]);
 
   readonly selectedSubdistrictId = signal<number | null>(null);
-  readonly selectedYear = signal<number | null>(2568);
+  // null ใช้แทน "ทุกปี" จึงต้องมี flag แยกสำหรับสถานะ "ยังไม่เลือกปี"
+  readonly selectedYear = signal<number | null>(null);
+  readonly hasSelectedYear = signal(false);
 
   readonly comparisonMetric = signal<ComparisonMetric>('netAssets');
   readonly comparisonFactorCode = signal<string | null>(null);
@@ -67,6 +66,9 @@ export class FinancialHealthStateService {
   /** role ไม่ถูกจำกัดพื้นที่ (เห็นได้หลายตำบล) ต้องเลือกตำบลก่อนถึงจะแสดงข้อมูล */
   readonly needsSubdistrictSelection = computed(
     () => !this.auth.isScopedRole() && this.selectedSubdistrictId() === null,
+  );
+  readonly needsFilterSelection = computed(
+    () => this.needsSubdistrictSelection() || !this.hasSelectedYear(),
   );
 
   readonly scopedRows = computed(() => {
@@ -113,21 +115,21 @@ export class FinancialHealthStateService {
     const { assets, liabilities, netAssets } = this.balanceSheet();
     return [
       {
-        label: this.t('fh.kpi.totalAssets'),
+        label: 'สินทรัพย์รวม',
         value: assets === null ? '-' : this.number(assets),
-        hint: this.t('fh.hint.fromBalanceSheet'),
+        hint: 'รวมจากงบแสดงฐานะการเงินของตำบลที่เลือก',
         accentClass: 'bg-navy',
       },
       {
-        label: this.t('fh.kpi.totalLiabilities'),
+        label: 'หนี้สินรวม',
         value: liabilities === null ? '-' : this.number(liabilities),
-        hint: this.t('fh.hint.fromBalanceSheet'),
+        hint: 'รวมจากงบแสดงฐานะการเงินของตำบลที่เลือก',
         accentClass: 'bg-risk-medium',
       },
       {
-        label: this.t('fh.kpi.netAssets'),
+        label: 'ส่วนทุน/สินทรัพย์สุทธิ',
         value: netAssets === null ? '-' : this.number(netAssets),
-        hint: this.t('fh.hint.netAssets'),
+        hint: 'ยอดสินทรัพย์สุทธิ/ส่วนทุนจากงบการเงิน',
         accentClass: 'bg-risk-low',
       },
     ];
@@ -136,9 +138,9 @@ export class FinancialHealthStateService {
   readonly assetComposition = computed<CompositionSegment[]>(() => {
     const { currentAssets, nonCurrentAssets } = this.balanceSheet();
     return [
-      { label: this.t('fh.comp.currentAssets'), value: currentAssets, color: PALETTE.navy },
+      { label: 'สินทรัพย์หมุนเวียน', value: currentAssets, color: PALETTE.navy },
       {
-        label: this.t('fh.comp.nonCurrentAssets'),
+        label: 'สินทรัพย์ไม่หมุนเวียน',
         value: nonCurrentAssets,
         color: PALETTE.chartBlue,
       },
@@ -149,12 +151,12 @@ export class FinancialHealthStateService {
     const { currentLiabilities, nonCurrentLiabilities } = this.balanceSheet();
     return [
       {
-        label: this.t('fh.comp.currentLiabilities'),
+        label: 'หนี้สินหมุนเวียน',
         value: currentLiabilities,
         color: PALETTE.chartRed,
       },
       {
-        label: this.t('fh.comp.longTermLiabilities'),
+        label: 'หนี้สินระยะยาว',
         value: nonCurrentLiabilities,
         color: PALETTE.chartOrange,
       },
@@ -165,35 +167,33 @@ export class FinancialHealthStateService {
     const { income, expenses, netIncome } = this.incomeStatement();
     return [
       {
-        label: this.t('fh.kpi.totalIncome'),
+        label: 'รายได้รวม',
         value: income === null ? '-' : this.number(income),
-        hint: this.t('fh.hint.fromIncome'),
+        hint: 'ยอดรวมจากงบแสดงผลการดำเนินงานของตำบลที่เลือก',
         accentClass: 'bg-chart-blue-deep',
       },
       {
-        label: this.t('fh.kpi.totalExpenses'),
+        label: 'ค่าใช้จ่ายรวม',
         value: expenses === null ? '-' : this.number(expenses),
-        hint: this.t('fh.hint.fromIncome'),
+        hint: 'ยอดรวมจากงบแสดงผลการดำเนินงานของตำบลที่เลือก',
         accentClass: 'bg-chart-red',
       },
       {
-        label: this.t('fh.kpi.netResult'),
+        label: 'ผลสุทธิ (รายได้ − ค่าใช้จ่าย)',
         value: netIncome === null ? '-' : this.number(netIncome),
         hint:
           netIncome === null
-            ? this.t('fh.hint.netResultNone')
+            ? 'ไม่พบข้อมูลรายได้หรือค่าใช้จ่ายรวม'
             : netIncome >= 0
-              ? this.t('fh.hint.surplus')
-              : this.t('fh.hint.deficit'),
+              ? 'รายได้สูงกว่าค่าใช้จ่าย'
+              : 'ค่าใช้จ่ายสูงกว่ารายได้',
         accentClass: 'bg-navy',
       },
     ];
   });
 
   readonly revenueStructureCategories = computed(() => [
-    this.selectedYear()
-      ? this.t('common.yearLabel', { year: this.selectedYear()! })
-      : this.t('fh.allSelectedYears'),
+    this.selectedYear() ? `ปี ${this.selectedYear()}` : 'ทุกปีที่เลือก',
   ]);
 
   readonly revenueStructureSeries = computed<BarChartSeries[]>(() => {
@@ -204,11 +204,11 @@ export class FinancialHealthStateService {
     );
     return [
       {
-        name: this.t('fh.revenue.ownAllocated'),
+        name: 'รายได้จัดเก็บเอง + รัฐจัดสรร',
         values: [ownAndAllocatedRevenue],
         color: PALETTE.navy,
       },
-      { name: this.t('fh.revenue.subsidies'), values: [subsidies], color: PALETTE.chartBlue },
+      { name: 'เงินอุดหนุน', values: [subsidies], color: PALETTE.chartBlue },
     ];
   });
 
@@ -234,7 +234,7 @@ export class FinancialHealthStateService {
 
   readonly fixedAssetBarSeries = computed<BarChartSeries[]>(() => [
     {
-      name: this.t('fh.fixedAsset.name'),
+      name: 'มูลค่าสินทรัพย์ถาวร',
       color: PALETTE.navy,
       values: this.fixedAssetTotals().map((item) => item.value),
     },
@@ -275,7 +275,7 @@ export class FinancialHealthStateService {
 
   readonly fixedAssetFocusValueText = computed(() => {
     const value = this.fixedAssetFocusValue();
-    return value === null ? '-' : `${this.number(value)} ${this.t('common.unit.baht')}`;
+    return value === null ? '-' : `${this.number(value)} บาท`;
   });
 
   readonly fixedAssetYoy = computed(() => {
@@ -302,20 +302,10 @@ export class FinancialHealthStateService {
   readonly fixedAssetInsight = computed(() => {
     const yoy = this.fixedAssetYoy();
     if (yoy === null) {
-      return this.t('fh.fixedAsset.insightNone');
+      return 'ไม่มีข้อมูลเพียงพอสำหรับคำนวณ YoY';
     }
-    const direction =
-      yoy > 0
-        ? this.t('fh.fixedAsset.up')
-        : yoy < 0
-          ? this.t('fh.fixedAsset.down')
-          : this.t('fh.fixedAsset.flat');
-    return this.t('fh.fixedAsset.yoy', {
-      prev: this.fixedAssetPreviousYear(),
-      cur: this.fixedAssetFocusYear(),
-      dir: direction,
-      mag: this.number(Math.abs(yoy)),
-    });
+    const direction = yoy > 0 ? 'เพิ่มขึ้น' : yoy < 0 ? 'ลดลง' : 'ไม่เปลี่ยนแปลง';
+    return `YoY ${this.fixedAssetPreviousYear()} → ${this.fixedAssetFocusYear()}: ${direction} ${this.number(Math.abs(yoy))}%`;
   });
 
   readonly allFactorOptions = computed<FactorOption[]>(() => {
@@ -349,7 +339,7 @@ export class FinancialHealthStateService {
 
   readonly comparisonUnit = computed(() => {
     if (this.comparisonMetric() !== 'riskFactor') {
-      return this.t('common.unit.baht');
+      return 'บาท';
     }
     const option = this.allFactorOptions().find(
       (item) => item.code === this.comparisonFactorCode(),
@@ -390,7 +380,7 @@ export class FinancialHealthStateService {
         this.loading.set(false);
       },
       error: () => {
-        this.error.set(this.t('fh.error'));
+        this.error.set('โหลดข้อมูล Financial Health ไม่สำเร็จ');
         this.loading.set(false);
       },
     });
@@ -402,6 +392,7 @@ export class FinancialHealthStateService {
 
   setYear(value: number | null): void {
     this.selectedYear.set(value);
+    this.hasSelectedYear.set(true);
   }
 
   setComparisonMetric(value: ComparisonMetric): void {
@@ -417,7 +408,8 @@ export class FinancialHealthStateService {
 
   resetFilters(): void {
     this.selectedSubdistrictId.set(null);
-    this.selectedYear.set(2568);
+    this.selectedYear.set(null);
+    this.hasSelectedYear.set(false);
     this.comparisonMetric.set('netAssets');
     this.comparisonFactorCode.set(this.allFactorOptions()[0]?.code ?? null);
   }
@@ -435,9 +427,9 @@ export class FinancialHealthStateService {
   comparisonMetricLabel(): string {
     switch (this.comparisonMetric()) {
       case 'netAssets':
-        return this.t('fh.metricNetAssets');
+        return 'สินทรัพย์สุทธิ';
       case 'netIncome':
-        return this.t('fh.metricNetIncome');
+        return 'ผลสุทธิ';
       case 'riskFactor': {
         const option = this.allFactorOptions().find(
           (item) => item.code === this.comparisonFactorCode(),
@@ -465,7 +457,7 @@ export class FinancialHealthStateService {
       (code.includes('cash') && code.includes('coverage')) ||
       code.includes('ccr')
     ) {
-      return this.t('fh.unit.times');
+      return 'เท่า';
     }
 
     return '';

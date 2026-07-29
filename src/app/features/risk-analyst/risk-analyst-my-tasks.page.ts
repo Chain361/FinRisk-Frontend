@@ -47,7 +47,15 @@ interface MyTaskRow {
             รายการโครงการที่ถูกมอบหมายให้คุณตรวจสอบ — ดูรายละเอียดและสถานะงาน
           </p>
         </div>
-        <button type="button" class="gov-btn-outline" (click)="reloadAll()">รีเฟรชรายการ</button>
+        <div class="flex gap-2">
+          <button type="button" class="gov-btn-outline" (click)="reloadAll()">รีเฟรชรายการ</button>
+          <a
+            routerLink="/risk-analyst-feedback"
+            class="gov-btn-outline inline-flex items-center justify-center text-center no-underline"
+          >
+            เพิ่มบันทึกความเห็น
+          </a>
+        </div>
       </div>
 
       <!-- Error Banner -->
@@ -230,7 +238,10 @@ interface MyTaskRow {
                           <p class="m-0 italic text-slate-400">ยังไม่มี Audit steps</p>
                         }
                         @if (row.assignment.note) {
-                          <p class="m-0"><span class="font-bold text-ink">หมายเหตุ:</span> {{ row.assignment.note }}</p>
+                          <p class="m-0">
+                            <span class="font-bold text-ink">หมายเหตุ:</span>
+                            {{ row.assignment.note }}
+                          </p>
                         }
                       </div>
                     </td>
@@ -336,7 +347,9 @@ export class RiskAnalystMyTasksPageComponent implements OnInit {
   }
 
   statusBadgeClass(row: MyTaskRow): string {
-    return assignmentWorkflowStatusBadgeClass(row.assignment.status) ?? 'bg-slate-100 text-slate-600';
+    return (
+      assignmentWorkflowStatusBadgeClass(row.assignment.status) ?? 'bg-slate-100 text-slate-600'
+    );
   }
 
   formatAssignedAt(value: string): string {
@@ -363,9 +376,8 @@ export class RiskAnalystMyTasksPageComponent implements OnInit {
   // ── Private Methods ──
 
   private toMyTaskRow(assignment: AuditAssignment): MyTaskRow {
-    const project = this.projects().find(
-      (p) => String(p.project_id) === assignment.project_id,
-    ) ?? null;
+    const project =
+      this.projects().find((p) => String(p.project_id) === assignment.project_id) ?? null;
     const projectName = project?.project_name || assignment.project_name || 'ไม่ระบุชื่อโครงการ';
     const assignedBy =
       assignment.assigned_by_display_name || assignment.assigned_by_username || 'ไม่ระบุผู้มอบหมาย';
@@ -400,7 +412,9 @@ export class RiskAnalystMyTasksPageComponent implements OnInit {
 
   private subdistrictLabel(subdistrictId: number | null | undefined): string {
     const sub = this.subdistricts().find((s) => s.subdistrict_id === subdistrictId);
-    return sub ? `${sub.subdistrict_name} ${sub.district_name} ${sub.province_name}` : 'ยังไม่มีข้อมูล';
+    return sub
+      ? `${sub.subdistrict_name} ${sub.district_name} ${sub.province_name}`
+      : 'ยังไม่มีข้อมูล';
   }
 
   private taskKey(assignment: AuditAssignment): string {

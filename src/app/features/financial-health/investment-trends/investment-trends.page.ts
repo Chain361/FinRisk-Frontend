@@ -1,6 +1,5 @@
 import { Component, inject, OnInit } from '@angular/core';
 
-import { I18nService } from '../../../core/i18n/i18n.service';
 import { BarChartComponent } from '../../../shared/charts/bar-chart.component';
 import { FilterBarComponent } from '../../../shared/filters/filter-bar.component';
 import { KpiCardComponent } from '../../../shared/ui/kpi-card.component';
@@ -14,14 +13,18 @@ import { FinancialHealthStateService } from '../financial-health-state.service';
     <section class="page-shell">
       <div>
         <p class="m-0 text-[13px] font-extrabold tracking-wide text-navy">F2.3</p>
-        <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">{{ t('fhInvest.title') }}</h1>
-        <p class="m-0 mt-1.5 text-sm text-muted">{{ t('fhInvest.subtitle') }}</p>
+        <h1 class="m-0 mt-1 text-[26px] font-extrabold text-ink">
+          แนวโน้มการลงทุนและการจัดซื้อจัดจ้าง
+        </h1>
+        <p class="m-0 mt-1.5 text-sm text-muted">วิเคราะห์แนวโน้มการลงทุน และการจัดซื้อจัดจ้าง</p>
       </div>
 
       <app-filter-bar
         [subdistricts]="subdistricts()"
         [selectedSubdistrictId]="selectedSubdistrictId()"
         [selectedYear]="selectedYear()"
+        [requireYearSelection]="true"
+        [hasSelectedYear]="hasSelectedYear()"
         [showRiskFilter]="false"
         (selectedSubdistrictIdChange)="setSubdistrict($event)"
         (selectedYearChange)="setYear($event)"
@@ -36,56 +39,54 @@ import { FinancialHealthStateService } from '../financial-health-state.service';
         </p>
       }
 
-      @if (needsSubdistrictSelection()) {
+      @if (needsFilterSelection()) {
         <p class="rounded-[4px] border-[1.5px] border-line bg-zebra px-4 py-3 text-sm text-muted">
-          {{ t('filter.selectSubdistrictPrompt') }}
+          กรุณาเลือกตำบลและปีงบประมาณก่อนแสดงข้อมูล
         </p>
       } @else {
       <section class="panel p-[18px]">
         <div class="mb-3">
-          <h2 class="m-0 text-[16px] font-bold text-ink">{{ t('fhInvest.sectionTitle') }}</h2>
-          <p class="m-0 mt-1 text-[13px] text-muted">{{ t('fhInvest.sectionSubtitle') }}</p>
+          <h2 class="m-0 text-[16px] font-bold text-ink">แนวโน้มการลงทุน (สินทรัพย์ถาวร)</h2>
+          <p class="m-0 mt-1 text-[13px] text-muted">
+            มูลค่าสินทรัพย์ถาวรย้อนหลังของตำบลที่เลือก พร้อมการเปลี่ยนแปลงเทียบปีก่อน (YoY)
+          </p>
         </div>
 
         <div class="mb-4 grid gap-3.5 sm:grid-cols-2">
           <app-kpi-card
-            [label]="t('fhInvest.fixedAssetKpi', { year: fixedAssetFocusYear() })"
+            [label]="'มูลค่าสินทรัพย์ถาวร ปี ' + fixedAssetFocusYear()"
             [value]="fixedAssetFocusValueText()"
-            [hint]="t('fhInvest.fixedAssetHint')"
+            hint="อ้างอิงตัวกรองตำบล/ปีงบประมาณด้านบน"
             accentClass="bg-navy"
           />
 
           <div class="rounded-[4px] border-[1.5px] border-line bg-white p-4">
-            <p class="m-0 text-[13px] font-bold text-muted">{{ t('fhInvest.yoyTitle') }}</p>
+            <p class="m-0 text-[13px] font-bold text-muted">YoY เทียบปีก่อน</p>
             @if (fixedAssetYoyView(); as yoyView) {
               <p class="m-0 mt-2 text-2xl font-extrabold" [class]="yoyView.colorClass">
                 {{ yoyView.arrow }} {{ yoyView.magnitude }}%
               </p>
               <p class="m-0 mt-1 text-xs text-muted">
-                {{
-                  t('fhInvest.yoyCompare', {
-                    prev: fixedAssetPreviousYear(),
-                    cur: fixedAssetFocusYear(),
-                  })
-                }}
+                เทียบปี {{ fixedAssetPreviousYear() }} → {{ fixedAssetFocusYear() }}
               </p>
             } @else {
-              <p class="m-0 mt-2 text-sm text-muted">{{ t('fh.fixedAsset.insightNone') }}</p>
+              <p class="m-0 mt-2 text-sm text-muted">ไม่มีข้อมูลเพียงพอสำหรับคำนวณ YoY</p>
             }
           </div>
         </div>
 
         <app-bar-chart
           [title]="
-            t('fhInvest.chartTitle', {
-              from: FISCAL_YEARS[0],
-              to: FISCAL_YEARS[FISCAL_YEARS.length - 1],
-            })
+            'แนวโน้มมูลค่าสินทรัพย์ถาวร (ปี ' +
+            FISCAL_YEARS[0] +
+            '-' +
+            FISCAL_YEARS[FISCAL_YEARS.length - 1] +
+            ')'
           "
           [subtitle]="fixedAssetInsight()"
           [categories]="fiscalYearLabels"
           [series]="fixedAssetBarSeries()"
-          [unitSuffix]="t('common.unit.baht')"
+          unitSuffix="บาท"
           [compactValueLabels]="true"
         />
       </section>
@@ -95,16 +96,15 @@ import { FinancialHealthStateService } from '../financial-health-state.service';
 })
 export class InvestmentTrendsPageComponent implements OnInit {
   private readonly state = inject(FinancialHealthStateService);
-  private readonly i18n = inject(I18nService);
-  protected readonly t = this.i18n.t;
 
   readonly FISCAL_YEARS = this.state.FISCAL_YEARS;
   readonly fiscalYearLabels = this.state.fiscalYearLabels;
   readonly error = this.state.error;
   readonly subdistricts = this.state.subdistricts;
   readonly selectedSubdistrictId = this.state.selectedSubdistrictId;
-  readonly needsSubdistrictSelection = this.state.needsSubdistrictSelection;
+  readonly needsFilterSelection = this.state.needsFilterSelection;
   readonly selectedYear = this.state.selectedYear;
+  readonly hasSelectedYear = this.state.hasSelectedYear;
   readonly fixedAssetFocusYear = this.state.fixedAssetFocusYear;
   readonly fixedAssetPreviousYear = this.state.fixedAssetPreviousYear;
   readonly fixedAssetFocusValueText = this.state.fixedAssetFocusValueText;

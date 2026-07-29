@@ -60,6 +60,7 @@ import { ProjectFeedbackPanelComponent } from './project-feedback-panel.componen
       <app-filter-bar
         [subdistricts]="subdistricts()"
         [selectedSubdistrictId]="selectedSubdistrictId()"
+        [allowAllSubdistricts]="true"
         [selectedYear]="selectedYear()"
         [selectedRiskLevel]="selectedRiskLevel()"
         [selectedProjectType]="selectedProjectType()"
@@ -254,10 +255,22 @@ import { ProjectFeedbackPanelComponent } from './project-feedback-panel.componen
                       </p>
                     </div>
                     <div class="flex flex-col items-end gap-1.5">
-                      <app-risk-badge [level]="scoreInfo().risk_level" />
+                      <div class="flex items-center gap-1.5">
+                        <app-risk-badge [level]="scoreInfo().risk_level" />
+                        <app-info-tooltip
+                          text="เกณฑ์ประเมินความเสี่ยงโครงการ — สูตร: (น้ำหนักปัจจัยเสี่ยงที่พบ ÷ น้ำหนักปัจจัยที่ประเมินได้) × 100 · สูง มากกว่า 60% (แดง) พบสัญญาณเตือนหลายประการที่ควรเร่งตรวจสอบ · ปานกลาง 30–60% (เหลือง) พบสัญญาณเตือนเฝ้าระวัง ควรตรวจสอบเอกสารเพิ่มเติม · ต่ำ น้อยกว่า 30% (เขียว) รูปแบบการจัดซื้อจัดจ้างอยู่ในเกณฑ์ปกติ"
+                          [width]="320"
+                        />
+                      </div>
                       <span class="text-[11px] font-bold text-muted"
                         >Risk Score {{ number(scoreInfo().risk_score, 0) }}/100</span
                       >
+                      <a
+                        [routerLink]="['/document-intelligence', projectDetail()?.project_id]"
+                        class="mt-1 text-[11.5px] font-bold text-navy underline"
+                      >
+                        เอกสารประกอบโครงการ
+                      </a>
                     </div>
                   </div>
 
@@ -769,7 +782,9 @@ export class RiskFactorsPageComponent implements OnInit {
   readonly searchQuery = signal('');
 
   readonly selectedSubdistrictId = signal<number | null>(null);
-  readonly selectedYear = signal<number | null>(2568);
+  // null แทน "ทุกปี" ตาม FilterBar เพื่อให้รายการโครงการ initial load
+  // ไม่ถูกจำกัดเป็นปีล่าสุดโดยที่ผู้ใช้ยังไม่ได้เลือกตัวกรอง
+  readonly selectedYear = signal<number | null>(null);
   readonly selectedRiskLevel = signal<string | null>(null);
   readonly selectedProjectType = signal<string | null>(null);
   readonly budgetAmountMin = signal('');
@@ -930,7 +945,7 @@ export class RiskFactorsPageComponent implements OnInit {
 
   resetFilters(): void {
     this.selectedSubdistrictId.set(null);
-    this.selectedYear.set(2568);
+    this.selectedYear.set(null);
     this.selectedRiskLevel.set(null);
     this.selectedProjectType.set(null);
     this.budgetAmountMin.set('');

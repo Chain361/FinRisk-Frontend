@@ -34,6 +34,8 @@ Backend ใช้ JWT auth จริงแล้ว (bcrypt password hashing + P
 - every authenticated request sends `Authorization: Bearer <token>`
 - default mock password is `password123`
 
+## Workflow Overview
+
 ## Demo Accounts (mock — ทุกคนรหัสผ่าน `password123`)
 
 > ⚠️ บัญชีทดสอบสำหรับ prototype เท่านั้น (seed จาก `FinRisk-Backend/seed_database.py`) —
@@ -56,6 +58,26 @@ Backend ใช้ JWT auth จริงแล้ว (bcrypt password hashing + P
 
 คู่เดโมที่เห็นความต่างชัด: login `admin` (เลือกตำบลได้ 3 ตำบล) เทียบกับ `pingkhong_user`
 (ตัวกรองล็อก + badge "ขอบเขต: ตำบลของตน")
+
+### ขั้นตอนการทำงาน
+
+1. ผู้ตรวจสอบโครงการ (`auditor1-3`) เข้าเมนู `มอบหมายงาน` ที่ `/assignment-project-auditor`
+2. เลือกโครงการ, ผู้รับผิดชอบ, due date และคำแนะนำ แล้วกดยืนยันการมอบหมาย
+3. ระบบบันทึก assignment ผ่าน `POST /audit/assignments`
+4. ผู้รับมอบหมาย (`analyst1-3`) เข้าเมนู `งานที่ได้รับมอบหมาย` ที่ `/risk-analyst/my-tasks`
+5. เปิดหน้ารายละเอียดงานที่ `/risk-analyst/task/:id` เพื่อดูคำแนะนำ, หลักฐาน, และกระทู้ขอความชัดเจน
+6. ระหว่างทำงาน ผู้รับมอบหมายสามารถแนบหลักฐานและส่งคำชี้แจงได้
+7. เมื่อพร้อมส่งงาน ผู้รับมอบหมายเปลี่ยนสถานะไปยังขั้นตรวจทาน
+8. ผู้ตรวจสอบโครงการ (`auditor1-3`) เข้า `ตรวจทานงานตรวจสอบ` ที่ `/assignment-project-auditor/review/:id`
+9. ผู้ตรวจสอบโครงการเป็นคนอนุมัติหรือปิดงานขั้นสุดท้าย
+10. กระดิ่งแจ้งเตือนที่มุมบนขวาจะดึงรายการจาก `/notifications` และใช้เปิดไปยังงานหรือโครงการที่เกี่ยวข้อง
+
+### ขอบเขตสิทธิ์ที่ควรจำ
+
+- ผู้ตรวจสอบโครงการ (`auditor1-3`) เป็นผู้รับผิดชอบ workflow ปิดงาน
+- ฝั่ง `supervisor1` และบทบาทอื่นที่เป็น read-only ใช้เพื่อดูข้อมูลและตรวจสอบประกอบ ไม่ใช่ผู้ปิดงาน
+- การเปลี่ยนสถานะงานถูกจำกัดตาม role ที่ backend อนุญาต
+- frontend ทำหน้าที่แสดงผลและส่งคำสั่งเท่านั้น ไม่ตัดสินสิทธิ์ขั้นสุดท้ายเอง
 
 > หมายเหตุ: workflow มอบหมาย/รับงาน/ส่งรายงาน ยัง implement บางส่วน — `GET /audit/assignments`
 > มีแล้ว แต่ `POST /audit/assignments` ยัง comment ไว้ และตาราง assignment/report ยังว่างใน seed

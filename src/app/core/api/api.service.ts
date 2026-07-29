@@ -9,6 +9,10 @@ import {
   AccessLogFilters,
   AccessLogPage,
   AssignmentAssignee,
+  AssignmentAttachment,
+  AssignmentClarification,
+  AssignmentDetailResponse,
+  AssignmentStatus,
   AnnualRisk,
   AuditAssignment,
   AuditorFeedback,
@@ -17,14 +21,20 @@ import {
   ChatTurn,
   CreateAssignmentRequest,
   DataUploadResult,
+  DocumentType,
   FinancialStatement,
   LoginRequest,
   LoginResponse,
+  NotificationListResponse,
+  NotificationReadAllResponse,
+  NotificationReadResponse,
   ManagedUser,
+  ManagedUserCreate,
   ManagedUserPatch,
   Project,
   ProjectDetail,
   ProjectDetailResponse,
+  ProjectDocumentsView,
   ProjectFilters,
   ProjectLegalFactor,
   RiskEngineRunResult,
@@ -54,6 +64,11 @@ interface ManagedUserWirePatch {
   allowed_features: string[];
 }
 
+interface ManagedUserWireCreate extends ManagedUserWirePatch {
+  username: string;
+  password: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private readonly http = inject(HttpClient);
@@ -81,11 +96,28 @@ export class ApiService {
       .pipe(map((response) => this.unwrapList(response).map((row) => this.fromWire(row))));
   }
 
+  /** สร้างผู้ใช้ใหม่ (ตั้ง username/password ครั้งเดียวตอนสร้าง) — admin เท่านั้น */
+  createUser(body: ManagedUserCreate): Observable<ManagedUser> {
+    const wire: ManagedUserWireCreate = {
+      ...this.toWire(body),
+      username: body.username,
+      password: body.password,
+    };
+    return this.http
+      .post<ManagedUserWire>(`${this.baseUrl}/users`, wire)
+      .pipe(map((row) => this.fromWire(row)));
+  }
+
   /** แก้ไขข้อมูล + สิทธิ์เข้าถึงฟีเจอร์ของผู้ใช้รายคน — admin เท่านั้น */
   updateUser(userId: number, body: ManagedUserPatch): Observable<ManagedUser> {
     return this.http
       .put<ManagedUserWire>(`${this.baseUrl}/users/${userId}`, this.toWire(body))
       .pipe(map((row) => this.fromWire(row)));
+  }
+
+  /** ลบผู้ใช้ (hard delete) — admin เท่านั้น, ลบบัญชีของตัวเองไม่ได้ (backend คืน 422) */
+  deleteUser(userId: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/users/${userId}`);
   }
 
   subdistricts(): Observable<Subdistrict[]> {
@@ -120,6 +152,16 @@ export class ApiService {
   /** ผล risk factor ล่าสุด + legal_refs (มาตรา/ระเบียบที่เกี่ยวข้อง) ของโครงการ */
   projectLegal(projectId: string | number): Observable<ProjectLegalFactor[]> {
     return this.http.get<ProjectLegalFactor[]>(`${this.baseUrl}/risk/projects/${projectId}/legal`);
+  }
+
+  /** ประเภทเอกสารอ้างอิง (ปร.4/5/6) + provides (เอกสารนั้นระบุอะไร) */
+  documentTypes(): Observable<DocumentType[]> {
+    return this.http.get<DocumentType[]>(`${this.baseUrl}/documents/types`);
+  }
+
+  /** เอกสารของโครงการ + สถานะ + รายการที่ยังขาด + findings พร้อม legal refs */
+  projectDocuments(projectId: string | number): Observable<ProjectDocumentsView> {
+    return this.http.get<ProjectDocumentsView>(`${this.baseUrl}/projects/${projectId}/documents`);
   }
 
   riskFactors(): Observable<RiskFactorCatalog[]> {
@@ -198,8 +240,96 @@ export class ApiService {
     return this.http.post<AuditAssignment>(`${this.baseUrl}/audit/assignments`, body);
   }
 
+  /** รายละเอียดงานตรวจสอบ + ประวัติการเปลี่ยนสถานะทั้งหมด (ใหม่สุดก่อน) */
+  assignmentDetail(assignmentId: number): Observable<AssignmentDetailResponse> {
+    return this.http.get<AssignmentDetailResponse>(
+      `${this.baseUrl}/audit/assignments/${assignmentId}`,
+    );
+  }
+
   deleteAssignment(assignmentId: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/audit/assignments/${assignmentId}`);
+  }
+
+  notifications(filters: { unread?: boolean } = {}): Observable<NotificationListResponse> {
+    let params = new HttpParams();
+    if (filters.unread !== undefined) {
+      params = params.set('unread', String(filters.unread));
+    }
+    return this.http.get<NotificationListResponse>(`${this.baseUrl}/notifications`, { params });
+  }
+
+  markNotificationRead(notificationId: number): Observable<NotificationReadResponse> {
+    return this.http.patch<NotificationReadResponse>(
+      `${this.baseUrl}/notifications/${notificationId}/read`,
+      {},
+    );
+  }
+
+  markAllNotificationsRead(): Observable<NotificationReadAllResponse> {
+    return this.http.post<NotificationReadAllResponse>(
+      `${this.baseUrl}/notifications/read-all`,
+      {},
+   );
+  }
+  /** เปลี่ยนสถานะงานตรวจสอบ (accept/submit/approve/reject ฯลฯ) — backend บังคับ transition ที่อนุญาตตาม role อยู่แล้ว */
+  updateAssignmentStatus(
+    assignmentId: number,
+    status: AssignmentStatus,
+    note?: string,
+  ): Observable<AuditAssignment> {
+    return this.http.patch<AuditAssignment>(`${this.baseUrl}/audit/assignments/${assignmentId}/status`, {
+      status,
+      note,
+    });
+  }
+
+  /** ไฟล์หลักฐาน (evidence) แนบกับงานตรวจสอบ — backend เก็บเป็น BYTEA ใน Postgres, จำกัด 10MB/ไฟล์ */
+  assignmentAttachments(assignmentId: number): Observable<AssignmentAttachment[]> {
+    return this.http.get<AssignmentAttachment[]>(
+      `${this.baseUrl}/audit/assignments/${assignmentId}/attachments`,
+    );
+  }
+
+  uploadAssignmentAttachment(assignmentId: number, file: File): Observable<AssignmentAttachment> {
+    const form = new FormData();
+    form.set('file', file);
+    return this.http.post<AssignmentAttachment>(
+      `${this.baseUrl}/audit/assignments/${assignmentId}/attachments`,
+      form,
+    );
+  }
+
+  deleteAssignmentAttachment(assignmentId: number, attachmentId: number): Observable<void> {
+    return this.http.delete<void>(
+      `${this.baseUrl}/audit/assignments/${assignmentId}/attachments/${attachmentId}`,
+    );
+  }
+
+  /** ดาวน์โหลดเป็น blob ผ่าน HttpClient (ไม่ใช้ <a href> ตรงๆ เพราะ browser navigation ไม่แนบ
+   * Authorization header — ต้องผ่าน authInterceptor เหมือน request อื่น) เรียกแล้วสร้าง object URL
+   * เอง (ดู FileSaver util) */
+  downloadAssignmentAttachment(assignmentId: number, attachmentId: number): Observable<Blob> {
+    return this.http.get(
+      `${this.baseUrl}/audit/assignments/${assignmentId}/attachments/${attachmentId}/download`,
+      { responseType: 'blob' },
+    );
+  }
+
+  assignmentClarifications(assignmentId: number): Observable<AssignmentClarification[]> {
+    return this.http.get<AssignmentClarification[]>(
+      `${this.baseUrl}/audit/assignments/${assignmentId}/clarifications`,
+    );
+  }
+
+  postAssignmentClarification(
+    assignmentId: number,
+    messageText: string,
+  ): Observable<AssignmentClarification> {
+    return this.http.post<AssignmentClarification>(
+      `${this.baseUrl}/audit/assignments/${assignmentId}/clarifications`,
+      { message_text: messageText },
+    );
   }
 
   feedbackList(): Observable<AuditorFeedback[]> {

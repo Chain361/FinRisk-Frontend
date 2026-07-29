@@ -14,7 +14,7 @@ export type RoleCode =
   | 'risk_analyst'
   | 'public_user';
 
-// ชื่อบทบาทสำหรับแสดงผลย้ายไป dictionary i18n แล้ว (key `role.*`) — ดู core/i18n
+// ชื่อบทบาทสำหรับแสดงผล — ดู ROLE_LABELS ใน core/auth/auth.service.ts
 
 /** role ที่เห็น/เขียนความเห็นผู้ตรวจสอบได้ — mirror ของ FEEDBACK_ROLES ใน FinRisk-Backend/src/routers/audit.py */
 export const FEEDBACK_ROLES = [
@@ -25,7 +25,7 @@ export const FEEDBACK_ROLES = [
   'risk_analyst',
 ] as const;
 
-/** role ที่ปิดเรื่อง (resolve) และจัดการความเห็นของคนอื่นได้ — mirror ของ RESOLVE_ROLES ฝั่ง backend */
+/** role ที่อนุมัติ (resolve) และจัดการความเห็นของคนอื่นได้ — mirror ของ RESOLVE_ROLES ฝั่ง backend */
 export const RESOLVE_ROLES = ['admin', 'project_auditor'] as const;
 
 export const ROLE_LABELS: Record<string, string> = {

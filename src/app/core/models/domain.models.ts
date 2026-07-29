@@ -6,6 +6,7 @@ export type RiskLevel = 'low' | 'medium' | 'high' | string;
 export type RiskBand = 'ต่ำ' | 'ปานกลาง' | 'สูง' | 'สูงมาก' | string;
 
 export interface AppUser {
+  user_id: number;
   username: string;
   role: string;
   subdistrict_id?: number | null;
@@ -36,6 +37,9 @@ export type ManagedUserPatch = Pick<
   ManagedUser,
   'display_name' | 'role' | 'subdistrict_id' | 'status' | 'allowed_features'
 >;
+
+/** body ของ POST /users — เหมือน ManagedUserPatch แต่เพิ่ม username/password (ตั้งได้แค่ตอนสร้าง) */
+export type ManagedUserCreate = ManagedUserPatch & { username: string; password: string };
 
 export interface LoginRequest {
   username: string;
@@ -233,6 +237,31 @@ export interface AccessLogFilters {
   offset?: number | null;
 }
 
+export interface AppNotification {
+  notification_id: number;
+  user_id: number;
+  type: 'assignment' | 'high_risk' | string;
+  message: string;
+  ref_type?: 'assignment' | 'project' | string | null;
+  ref_id?: string | null;
+  read_at?: string | null;
+  created_at: string;
+}
+
+export interface NotificationListResponse {
+  notifications: AppNotification[];
+  unread_count: number;
+}
+
+export interface NotificationReadResponse {
+  notification_id: number;
+  read: boolean;
+}
+
+export interface NotificationReadAllResponse {
+  marked_read: boolean;
+}
+
 export interface LegalRef {
   section_id: number;
   law_code: string | null;
@@ -284,6 +313,7 @@ export type AssignmentStatus =
   | 'clarification_needed'
   | 'ready_for_review'
   | 'under_review'
+  | 'pending_approval'
   | 'revision_requested'
   | 'completed';
 
@@ -331,13 +361,52 @@ export interface CreateAssignmentRequest {
   audit_steps?: string;
 }
 
+export interface AssignmentStatusHistoryEntry {
+  history_id: number;
+  assignment_id: number;
+  old_status: AssignmentStatus | null;
+  new_status: AssignmentStatus;
+  changed_by: number;
+  changed_by_username?: string | null;
+  changed_by_display_name?: string | null;
+  note?: string | null;
+  created_at: string;
+}
+
+export interface AssignmentDetailResponse {
+  assignment: AuditAssignment;
+  status_history: AssignmentStatusHistoryEntry[];
+}
+
+/** ไฟล์หลักฐาน (evidence) แนบกับ assignment — backend เก็บเป็น BYTEA ตรงๆ ใน Postgres */
+export interface AssignmentAttachment {
+  attachment_id: number;
+  assignment_id: number;
+  file_name: string;
+  content_type: string;
+  file_size: number;
+  uploaded_by: number;
+  uploaded_by_display_name?: string | null;
+  created_at: string;
+}
+
+/** ข้อความในกระทู้ขอความชัดเจน (clarification thread) ระหว่าง risk_analyst กับ project_auditor */
+export interface AssignmentClarification {
+  clarification_id: number;
+  assignment_id: number;
+  message_text: string;
+  created_by: number;
+  created_by_display_name?: string | null;
+  created_at: string;
+}
+
 export type FeedbackStatus = 'draft' | 'submitted' | 'resolved';
 export type ConcernLevel = 'low' | 'medium' | 'high';
 
 export const FEEDBACK_STATUS_LABELS: Record<FeedbackStatus, string> = {
   draft: 'แบบร่าง',
   submitted: 'ส่งแล้ว',
-  resolved: 'ปิดเรื่องแล้ว',
+  resolved: 'อนุมัติแล้ว',
 };
 
 export const CONCERN_LEVEL_OPTIONS: ReadonlyArray<{
@@ -416,4 +485,73 @@ export interface ChatToolCall {
 export interface ChatResponse {
   reply: string;
   tool_calls: ChatToolCall[];
+}
+
+/** ---- Document Intelligence (checklist เอกสารประกอบโครงการ + OCR findings, issue #35) ---- */
+
+export interface DocumentType {
+  doc_type_code: string;
+  name_th: string;
+  description: string | null;
+  required_for_project_type: string | null;
+  provides: string[];
+}
+
+export interface DocumentFinding {
+  finding_id: number;
+  doc_id: number;
+  doc_type_code: string;
+  doc_type_name: string;
+  finding_text: string;
+  risk_category: string;
+  observed_value: string | null;
+  expected_value: string | null;
+  severity: 'low' | 'medium' | 'high';
+  source: 'mock' | 'ocr' | 'llm' | 'manual';
+  legal_refs: LegalRef[];
+}
+
+export type ProjectDocumentStatus = 'present' | 'missing' | 'pending_review';
+
+export interface ProjectDocument {
+  doc_id: number;
+  doc_type_code: string;
+  doc_type_name: string | null;
+  status: ProjectDocumentStatus;
+  is_required: boolean;
+  doc_no: string | null;
+  doc_date: string | null;
+  summary_text: string | null;
+  extracted: Record<string, unknown>;
+  provides: string[];
+  file_path: string | null;
+  source: 'mock' | 'ocr' | 'manual';
+  findings: DocumentFinding[];
+}
+
+export interface MissingDocType {
+  doc_type_code: string;
+  name_th: string;
+  provides: string[];
+  reason: 'no_record' | 'missing' | 'pending_review';
+}
+
+export interface ProvidesIndexEntry {
+  doc_type_code: string;
+  name_th: string;
+  status: ProjectDocumentStatus | 'no_record';
+}
+
+export interface ProjectDocumentsView {
+  project_id: string;
+  project_name: string;
+  project_type: string | null;
+  subdistrict_id: number;
+  data_quality_note: string | null;
+  required_doc_types: string[];
+  has_document_data: boolean;
+  documents: ProjectDocument[];
+  missing_doc_types: MissingDocType[];
+  provides_index: Record<string, ProvidesIndexEntry[]>;
+  findings_count: number;
 }

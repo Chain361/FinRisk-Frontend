@@ -2,10 +2,10 @@ import { Injectable, inject, signal } from '@angular/core';
 import { Observable, catchError, of, tap } from 'rxjs';
 
 import { ApiService } from '../api/api.service';
-import { ManagedUser, ManagedUserPatch, UserStatus } from '../models/domain.models';
+import { ManagedUser, ManagedUserCreate, ManagedUserPatch, UserStatus } from '../models/domain.models';
 
 // re-export เพื่อไม่ให้ import path เดิม (`../../core/auth/user-directory.service`) ในหน้าอื่นต้องแก้
-export type { ManagedUser, ManagedUserPatch, UserStatus };
+export type { ManagedUser, ManagedUserCreate, ManagedUserPatch, UserStatus };
 
 /**
  * แหล่งข้อมูลผู้ใช้ทั้งหมด + สิทธิ์เข้าถึงฟีเจอร์ของแต่ละคน — ใช้โดยหน้าจัดการผู้ใช้งาน (admin เท่านั้น)
@@ -22,6 +22,10 @@ export class UserDirectoryService {
   private readonly api = inject(ApiService);
 
   readonly users = signal<ManagedUser[]>([]);
+  /** true เมื่อโหลดครั้งล่าสุดพลาด — ให้ UI แยกแยะ "ไม่มีผู้ใช้จริงๆ" กับ "โหลดไม่สำเร็จ" ได้
+   * (เช่น backend สะดุดชั่วคราวตอน cold start) แทนที่จะเห็น list ว่างเปล่าเฉยๆ แล้วเข้าใจผิดว่า
+   * ผู้ใช้หายไปหมด */
+  readonly loadError = signal(false);
 
   constructor() {
     this.loadUsers().subscribe();
@@ -30,12 +34,23 @@ export class UserDirectoryService {
   /** โหลดรายชื่อผู้ใช้ + สิทธิ์ฟีเจอร์ล่าสุดจาก backend แล้วอัปเดต signal ทันทีที่โหลดสำเร็จ */
   loadUsers(): Observable<ManagedUser[]> {
     return this.api.getUsers().pipe(
-      tap((users) => this.users.set(users)),
+      tap((users) => {
+        this.users.set(users);
+        this.loadError.set(false);
+      }),
       catchError((error) => {
         console.error('[UserDirectoryService] โหลดรายชื่อผู้ใช้จาก backend ไม่สำเร็จ', error);
         this.users.set([]);
+        this.loadError.set(true);
         return of([]);
       }),
+    );
+  }
+
+  /** สร้างผู้ใช้ใหม่ที่ backend (POST /users) แล้วเพิ่มเข้า signal ทันทีที่สำเร็จ */
+  createUser(body: ManagedUserCreate): Observable<ManagedUser> {
+    return this.api.createUser(body).pipe(
+      tap((created) => this.users.update((list) => [...list, created])),
     );
   }
 
@@ -45,6 +60,13 @@ export class UserDirectoryService {
       tap((updated) => {
         this.users.update((list) => list.map((u) => (u.user_id === userId ? updated : u)));
       }),
+    );
+  }
+
+  /** ลบผู้ใช้ที่ backend (DELETE /users/{user_id}) แล้วเอาออกจาก signal ทันทีที่สำเร็จ */
+  deleteUser(userId: number): Observable<void> {
+    return this.api.deleteUser(userId).pipe(
+      tap(() => this.users.update((list) => list.filter((u) => u.user_id !== userId))),
     );
   }
 }

@@ -1,10 +1,11 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Subject } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 
 import { ApiService } from '../../../core/api/api.service';
 import { AuthService } from '../../../core/auth/auth.service';
-import { I18nService } from '../../../core/i18n/i18n.service';
 import {
   Project,
   ProjectFilters,
@@ -72,7 +73,7 @@ interface CrossTabRow {
 
       @if (needsSubdistrictSelection()) {
         <p class="rounded-[4px] border-[1.5px] border-line bg-zebra px-4 py-3 text-sm text-muted">
-          {{ t('filter.selectSubdistrictPrompt') }}
+          กรุณาเลือกตำบลเพื่อแสดงข้อมูล
         </p>
       } @else {
         <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -162,9 +163,10 @@ interface CrossTabRow {
 })
 export class OverviewPageComponent implements OnInit {
   private readonly api = inject(ApiService);
-  private readonly i18n = inject(I18nService);
-  protected readonly t = this.i18n.t;
   private readonly auth = inject(AuthService);
+  private readonly destroyRef = inject(DestroyRef);
+  /** ยิงคำขอใหม่ผ่าน switchMap เพื่อยกเลิกคำขอเดิมที่ยังค้างอยู่ (กันผลลัพธ์เก่ามาถึงทีหลังทับของใหม่เวลาสลับปีงบเร็วๆ) */
+  private readonly loadDashboard$ = new Subject<void>();
   readonly fiscalYearLabels = FISCAL_YEARS.map(String);
   readonly error = signal('');
   readonly subdistricts = signal<Subdistrict[]>([]);
@@ -172,7 +174,9 @@ export class OverviewPageComponent implements OnInit {
   readonly multiYearProjects = signal<Project[]>([]);
   readonly summary = signal<RiskSummary | null>(null);
   readonly selectedSubdistrictId = signal<number | null>(null);
-  readonly selectedYear = signal<number | null>(2568);
+  // ค่า null คือ "ทุกปี" ตาม FilterBar; อย่าตั้งปีล่าสุดไว้เงียบ ๆ เพราะจะทำให้
+  // จำนวนโครงการ initial load ไม่ตรงกับตัวเลือกที่ผู้ใช้เห็น
+  readonly selectedYear = signal<number | null>(null);
   readonly selectedRiskLevel = signal<string | null>(null);
 
   readonly hasActiveFilter = computed(
@@ -247,6 +251,24 @@ export class OverviewPageComponent implements OnInit {
   );
 
   ngOnInit(): void {
+    this.loadDashboard$
+      .pipe(
+        switchMap(() =>
+          forkJoin({
+            summary: this.api.riskSummary(this.filters()),
+            projects: this.api.projects(this.filters()),
+          }),
+        ),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: ({ summary, projects }) => {
+          this.summary.set(summary);
+          this.projects.set(projects);
+        },
+        error: () => this.error.set('โหลดข้อมูล Project Risk ไม่สำเร็จ'),
+      });
+
     this.loadSubdistricts();
     if (!this.needsSubdistrictSelection()) {
       this.loadDashboard();
@@ -274,7 +296,7 @@ export class OverviewPageComponent implements OnInit {
   }
   resetFilters(): void {
     this.selectedSubdistrictId.set(null);
-    this.selectedYear.set(2568);
+    this.selectedYear.set(null);
     this.selectedRiskLevel.set(null);
     if (!this.needsSubdistrictSelection()) {
       this.loadDashboard();
@@ -289,16 +311,7 @@ export class OverviewPageComponent implements OnInit {
   }
   private loadDashboard(): void {
     this.error.set('');
-    forkJoin({
-      summary: this.api.riskSummary(this.filters()),
-      projects: this.api.projects(this.filters()),
-    }).subscribe({
-      next: ({ summary, projects }) => {
-        this.summary.set(summary);
-        this.projects.set(projects);
-      },
-      error: () => this.error.set('โหลดข้อมูล Project Risk ไม่สำเร็จ'),
-    });
+    this.loadDashboard$.next();
   }
   private loadTimeSeries(): void {
     const subdistrictId = this.selectedSubdistrictId();

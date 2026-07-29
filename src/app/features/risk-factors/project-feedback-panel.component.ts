@@ -1,9 +1,13 @@
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 import { ApiService } from '../../core/api/api.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { FEEDBACK_ROLES, RESOLVE_ROLES } from '../../core/auth/roles';
 import {
+  AssignmentAttachment,
+  AuditAssignment,
   AuditorFeedback,
   AuditorFeedbackCreate,
   ConcernLevel,
@@ -18,13 +22,14 @@ import {
   feedbackStatusLabel,
   formatFeedbackDate,
 } from '../../shared/utils/feedback-utils';
+import { triggerBlobDownload } from '../../shared/utils/file-download-utils';
 
 type ModalMode = 'submit' | 'delete' | 'resolve' | null;
 
 /**
  * F5 — ความเห็นผู้ตรวจสอบต่อโครงการ (แผงใต้รายละเอียดโครงการในหน้า F3)
- * workflow: draft (แก้/ลบได้) → submitted (แก้ไม่ได้) → resolved (ปิดเรื่องโดย admin/auditor)
- * สิทธิ์ mirror ฝั่ง backend: FEEDBACK_ROLES เห็น/เขียน, RESOLVE_ROLES ปิดเรื่อง+จัดการของคนอื่น
+ * workflow: draft (แก้/ลบได้) → submitted (แก้ไม่ได้) → resolved (อนุมัติโดย admin/auditor)
+ * สิทธิ์ mirror ฝั่ง backend: FEEDBACK_ROLES เห็น/เขียน, RESOLVE_ROLES อนุมัติ+จัดการของคนอื่น
  */
 @Component({
   selector: 'app-project-feedback-panel',
@@ -76,7 +81,7 @@ type ModalMode = 'submit' | 'delete' | 'resolve' | null;
                     <p class="m-0 mt-0.5 text-[11.5px] text-muted">
                       อัปเดตล่าสุด {{ date(item.updated_at) }}
                       @if (item.resolved_at) {
-                        · ปิดเรื่องเมื่อ {{ date(item.resolved_at) }}
+                        · อนุมัติเมื่อ {{ date(item.resolved_at) }}
                       }
                     </p>
                   </div>
@@ -112,6 +117,28 @@ type ModalMode = 'submit' | 'delete' | 'resolve' | null;
                   </p>
                 }
 
+                @if (attachmentsFor(item).length) {
+                  <div class="mt-2.5 grid gap-1.5 border-t border-line-soft pt-2.5">
+                    <span class="text-[11px] font-bold uppercase tracking-wide text-muted"
+                      >เอกสารประกอบ</span
+                    >
+                    @for (file of attachmentsFor(item); track file.attachment_id) {
+                      <div
+                        class="flex items-center justify-between rounded-[3px] border border-line-soft bg-zebra px-2.5 py-1.5 text-xs"
+                      >
+                        <span class="truncate font-bold text-ink">{{ file.file_name }}</span>
+                        <button
+                          type="button"
+                          class="shrink-0 px-2 py-0.5 text-[11.5px] font-bold text-navy hover:underline"
+                          (click)="downloadAttachment(file)"
+                        >
+                          ดาวน์โหลด
+                        </button>
+                      </div>
+                    }
+                  </div>
+                }
+
                 @if (canEdit(item) || canResolve(item)) {
                   <div class="mt-2.5 flex gap-2 border-t border-line-soft pt-2.5">
                     @if (canEdit(item)) {
@@ -136,7 +163,7 @@ type ModalMode = 'submit' | 'delete' | 'resolve' | null;
                         class="gov-btn-primary text-[12.5px]"
                         (click)="askResolve(item)"
                       >
-                        ปิดเรื่อง
+                        อนุมัติ
                       </button>
                     }
                   </div>
@@ -170,6 +197,11 @@ export class ProjectFeedbackPanelComponent {
   readonly loading = signal(false);
   readonly error = signal('');
   readonly saving = signal(false);
+
+  /** ไฟล์แนบของความเห็นแต่ละรายการ — ผูกผ่าน assignment ของโครงการนี้ที่มอบหมายให้ auditor_username
+   * ของความเห็นนั้น (backend ยังไม่มี field เชื่อม attachment ↔ feedback_id ตรงๆ) */
+  private readonly assignmentIdByUsername = signal<Map<string, number>>(new Map());
+  private readonly attachmentsByAssignment = signal<Map<number, AssignmentAttachment[]>>(new Map());
 
   readonly formText = signal('');
   readonly formConcern = signal<ConcernLevel | null>(null);
@@ -208,7 +240,7 @@ export class ProjectFeedbackPanelComponent {
       case 'delete':
         return 'ยืนยันการลบความเห็น';
       case 'resolve':
-        return 'ยืนยันการปิดเรื่อง';
+        return 'ยืนยันการอนุมัติ';
       default:
         return '';
     }
@@ -221,7 +253,7 @@ export class ProjectFeedbackPanelComponent {
       case 'delete':
         return 'ความเห็นที่ลบจะหายไปถาวร ต้องการลบใช่หรือไม่?';
       case 'resolve':
-        return 'ปิดเรื่องเมื่อดำเนินการตามข้อสังเกตครบถ้วนแล้ว ต้องการปิดเรื่องใช่หรือไม่?';
+        return 'อนุมัติเมื่อดำเนินการตามข้อสังเกตครบถ้วนแล้ว ต้องการอนุมัติใช่หรือไม่?';
       default:
         return '';
     }
@@ -234,7 +266,7 @@ export class ProjectFeedbackPanelComponent {
       case 'delete':
         return 'ลบ';
       case 'resolve':
-        return 'ปิดเรื่อง';
+        return 'อนุมัติ';
       default:
         return 'ยืนยัน';
     }
@@ -249,9 +281,25 @@ export class ProjectFeedbackPanelComponent {
     return item.auditor_username === username || this.auth.hasRole(...RESOLVE_ROLES);
   }
 
-  /** ปุ่มปิดเรื่อง — แสดงเฉพาะรายการที่ส่งแล้ว (design choice ฝั่ง UI; backend ไม่บังคับสถานะ) */
+  /** ปุ่มอนุมัติ — แสดงเฉพาะรายการที่ส่งแล้ว (design choice ฝั่ง UI; backend ไม่บังคับสถานะ) */
   canResolve(item: AuditorFeedback): boolean {
     return item.status === 'submitted' && this.auth.hasRole(...RESOLVE_ROLES);
+  }
+
+  /** ไฟล์แนบของ assignment ที่มอบหมายให้ auditor_username ของความเห็นนี้ในโครงการนี้ */
+  attachmentsFor(item: AuditorFeedback): AssignmentAttachment[] {
+    const assignmentId = this.assignmentIdByUsername().get(item.auditor_username);
+    if (assignmentId === undefined) {
+      return [];
+    }
+    return this.attachmentsByAssignment().get(assignmentId) ?? [];
+  }
+
+  downloadAttachment(file: AssignmentAttachment): void {
+    this.api.downloadAssignmentAttachment(file.assignment_id, file.attachment_id).subscribe({
+      next: (blob) => triggerBlobDownload(blob, file.file_name),
+      error: () => this.error.set('ดาวน์โหลดไฟล์ไม่สำเร็จ'),
+    });
   }
 
   setConcern(value: string): void {
@@ -363,8 +411,37 @@ export class ProjectFeedbackPanelComponent {
   private resolve(feedbackId: number): void {
     this.error.set('');
     this.api.resolveFeedback(feedbackId).subscribe({
-      next: () => this.reload(this.projectId()),
-      error: (err) => this.error.set(err?.error?.detail ?? 'ปิดเรื่องไม่สำเร็จ'),
+      next: () => {
+        this.reload(this.projectId());
+        this.completeAssignmentForProject();
+      },
+      error: (err) => this.error.set(err?.error?.detail ?? 'อนุมัติไม่สำเร็จ'),
+    });
+  }
+
+  /** อนุมัติความเห็นแล้ว → ปิดงานตรวจสอบ (assignment) ของโครงการนี้เป็น completed ไปเลย
+   * ข้ามขั้น pending_approval/regional_supervisor ตามปกติของ workflow — เป็นทางลัดที่ตกลงกันไว้
+   * ต้องมี endpoint ฝั่ง backend รองรับ transition นี้ด้วย (ไม่ใช่แค่ฝั่ง UI) */
+  private completeAssignmentForProject(): void {
+    const projectId = this.projectId();
+    this.api.assignments().subscribe({
+      next: (assignments) => {
+        const target = assignments.find(
+          (a) => String(a.project_id) === String(projectId) && a.status !== 'completed',
+        );
+        if (!target) {
+          return;
+        }
+        this.api
+          .updateAssignmentStatus(
+            target.assignment_id,
+            'completed',
+            'ปิดอัตโนมัติหลังอนุมัติความเห็นผู้ตรวจสอบ',
+          )
+          .subscribe({
+            error: () => this.error.set('อนุมัติความเห็นสำเร็จ แต่ปิดสถานะงานตรวจสอบไม่สำเร็จ'),
+          });
+      },
     });
   }
 
@@ -381,6 +458,41 @@ export class ProjectFeedbackPanelComponent {
         this.loading.set(false);
       },
     });
+    this.loadAttachments(projectId);
+  }
+
+  /** หา assignment ของโครงการนี้ที่มอบหมายให้แต่ละ auditor_username แล้วโหลดไฟล์แนบของ assignment นั้นๆ */
+  private loadAttachments(projectId: string): void {
+    this.api
+      .assignments()
+      .pipe(catchError(() => of<AuditAssignment[]>([])))
+      .subscribe((assignments) => {
+        const matching = assignments.filter((a) => String(a.project_id) === projectId);
+        this.assignmentIdByUsername.set(
+          new Map(
+            matching
+              .filter((a): a is AuditAssignment & { assignee_username: string } =>
+                Boolean(a.assignee_username),
+              )
+              .map((a) => [a.assignee_username, a.assignment_id]),
+          ),
+        );
+        if (!matching.length) {
+          this.attachmentsByAssignment.set(new Map());
+          return;
+        }
+        forkJoin(
+          matching.map((a) =>
+            this.api
+              .assignmentAttachments(a.assignment_id)
+              .pipe(catchError(() => of<AssignmentAttachment[]>([]))),
+          ),
+        ).subscribe((lists) => {
+          const map = new Map<number, AssignmentAttachment[]>();
+          matching.forEach((a, index) => map.set(a.assignment_id, lists[index]));
+          this.attachmentsByAssignment.set(map);
+        });
+      });
   }
 
   private resetForm(): void {

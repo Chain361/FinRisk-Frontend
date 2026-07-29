@@ -6,6 +6,7 @@ import { catchError, forkJoin, of } from 'rxjs';
 import { ApiService } from '../../core/api/api.service';
 import { AuditAssignment, Project, Subdistrict } from '../../core/models/domain.models';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
+import { InfoTooltipComponent } from '../../shared/ui/info-tooltip.component';
 import { normalizeRiskLevel, subdistrictLabel } from '../../shared/utils/risk-utils';
 import {
   Analyst,
@@ -30,7 +31,7 @@ interface ProjectStatusRow {
 @Component({
   selector: 'app-assignment-project-auditor-status-page',
   standalone: true,
-  imports: [FormsModule, RouterLink, EmptyStateComponent],
+  imports: [FormsModule, RouterLink, EmptyStateComponent, InfoTooltipComponent],
   template: `
     <section class="page-shell">
       <div class="flex flex-wrap items-start justify-between gap-4">
@@ -167,14 +168,23 @@ interface ProjectStatusRow {
           </div>
         } @else {
           <div class="overflow-x-auto">
-            <table class="gov-table min-w-[980px]">
+            <table class="gov-table min-w-[1080px]">
               <thead>
                 <tr>
                   <th scope="col">สถานะโครงการโดยรวม</th>
                   <th scope="col">โครงการ</th>
                   <th scope="col">ผู้รับมอบหมายล่าสุด</th>
-                  <th scope="col">ความเสี่ยง</th>
+                  <th scope="col">
+                    <span class="inline-flex items-center gap-1">
+                      ความเสี่ยง
+                      <app-info-tooltip
+                        text="เกณฑ์ประเมินความเสี่ยงโครงการ — สูตร: (น้ำหนักปัจจัยเสี่ยงที่พบ ÷ น้ำหนักปัจจัยที่ประเมินได้) × 100 · สูง มากกว่า 60% (แดง) พบสัญญาณเตือนหลายประการที่ควรเร่งตรวจสอบ · ปานกลาง 30–60% (เหลือง) พบสัญญาณเตือนเฝ้าระวัง ควรตรวจสอบเอกสารเพิ่มเติม · ต่ำ น้อยกว่า 30% (เขียว) รูปแบบการจัดซื้อจัดจ้างอยู่ในเกณฑ์ปกติ"
+                        [width]="320"
+                      />
+                    </span>
+                  </th>
                   <th scope="col">มอบหมายล่าสุด</th>
+                  <th scope="col" class="w-[110px] text-right">การตรวจสอบ</th>
                 </tr>
               </thead>
               <tbody>
@@ -282,6 +292,21 @@ interface ProjectStatusRow {
                         <p class="m-0 mt-1 text-xs text-muted">
                           Budget {{ row.latestAssignment!.budgetHours }} ชม.
                         </p>
+                      }
+                    </td>
+                    <td class="align-top text-right">
+                      @if (row.latestAssignment) {
+                        <a
+                          [routerLink]="[
+                            '/assignment-project-auditor/review',
+                            row.latestAssignment.assignmentId,
+                          ]"
+                          class="gov-btn-outline inline-flex px-3 py-1.5 text-xs no-underline"
+                        >
+                          ตรวจสอบ
+                        </a>
+                      } @else {
+                        <span class="text-xs italic text-slate-400">-</span>
                       }
                     </td>
                   </tr>

@@ -94,6 +94,15 @@ export const routes: Routes = [
           ),
       },
       {
+        // เอกสารประกอบโครงการ + checklist/ผล OCR (issue #35) — เข้าถึงได้ทุก role ที่ login
+        // (backend endpoint ไม่มี require_roles จำกัด แค่ scope guard ตามตำบล)
+        path: 'document-intelligence/:projectId',
+        loadComponent: () =>
+          import('./features/document-intelligence/document-intelligence.page').then(
+            (m) => m.DocumentIntelligencePageComponent,
+          ),
+      },
+      {
         path: 'assignment-project-auditor',
         children: [
           {
@@ -108,6 +117,15 @@ export const routes: Routes = [
             loadComponent: () =>
               import('./features/assignment-project-auditor/assignment-project-auditor-history.page').then(
                 (m) => m.AssignmentProjectAuditorHistoryPageComponent,
+              ),
+          },
+          {
+            // ตรวจทาน/อนุมัติงาน — project_auditor (ตรวจทาน) + regional_supervisor (อนุมัติขั้นสุดท้าย)
+            path: 'review/:id',
+            canActivate: [roleGuard('admin', 'project_auditor', 'regional_supervisor')],
+            loadComponent: () =>
+              import('./features/assignment-project-auditor/assignment-project-auditor-review.page').then(
+                (m) => m.AssignmentProjectAuditorReviewPageComponent,
               ),
           },
         ],
@@ -137,6 +155,13 @@ export const routes: Routes = [
         path: 'contact',
         loadComponent: () =>
           import('./features/contact/contact.page').then((m) => m.ContactPageComponent),
+      },
+      {
+        path: 'privacy-policy',
+        loadComponent: () =>
+          import('./features/privacy-policy/privacy-policy.page').then(
+            (m) => m.PrivacyPolicyPageComponent,
+          ),
       },
       {
         // บันทึกการเข้าถึงระบบ — เฉพาะ admin (backend บังคับสิทธิ์ซ้ำด้วย require_roles("admin"))

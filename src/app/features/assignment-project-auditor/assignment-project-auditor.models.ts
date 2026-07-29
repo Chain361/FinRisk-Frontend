@@ -6,6 +6,7 @@ export type AssignmentWorkflowStatus =
   | 'clarification_needed'
   | 'ready_for_review'
   | 'under_review'
+  | 'pending_approval'
   | 'revision_requested'
   | 'completed';
 
@@ -18,6 +19,7 @@ export const ASSIGNMENT_WORKFLOW_STATUS_LABELS: Record<AssignmentWorkflowStatus,
   clarification_needed: 'ขอคำชี้แจง',
   ready_for_review: 'ส่งงานให้ตรวจทาน',
   under_review: 'อยู่ระหว่างสอบทาน',
+  pending_approval: 'รอการอนุมัติ',
   revision_requested: 'ส่งกลับแก้ไข',
   completed: 'เสร็จสิ้น',
 };
@@ -29,6 +31,7 @@ export const PROJECT_WORKFLOW_STATUS_LABELS: Record<AssignmentWorkflowStatus, st
   clarification_needed: 'รอคำชี้แจง',
   ready_for_review: 'รอสอบทาน',
   under_review: 'รอสอบทาน',
+  pending_approval: 'รอการอนุมัติ',
   revision_requested: 'ส่งกลับแก้ไข',
   completed: 'ตรวจสอบเสร็จสิ้น',
 };
@@ -85,6 +88,7 @@ export function assignmentWorkflowStatusBadgeClass(
       return 'bg-red-100 text-risk-high';
     case 'ready_for_review':
     case 'under_review':
+    case 'pending_approval':
       return 'bg-purple-100 text-purple-700';
     case 'completed':
       return 'bg-green-100 text-risk-low';
@@ -108,6 +112,7 @@ export function projectWorkflowStatusBadgeClass(status?: AssignmentWorkflowStatu
       return 'bg-red-100 text-risk-high';
     case 'ready_for_review':
     case 'under_review':
+    case 'pending_approval':
       return 'bg-purple-100 text-purple-700';
     case 'completed':
       return 'bg-green-100 text-risk-low';

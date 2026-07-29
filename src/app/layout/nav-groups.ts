@@ -100,11 +100,6 @@ const NAV_ROUTES: Record<string, NavRoute> = {
         label: 'ประวัติการมอบหมายงาน',
         path: '/assignment-project-auditor/history',
       },
-      {
-        code: 'F4.3',
-        label: 'ตรวจทานงานที่ส่งกลับมา',
-        path: '/assignment-project-auditor/review',
-      },
     ],
   },
   team_reports: {
@@ -136,24 +131,28 @@ const NAV_ROUTES: Record<string, NavRoute> = {
   },
 };
 
+export const FOOTER_ONLY_FEATURE_CODES = new Set(['public_audit_info', 'contact_report']);
+
 export const NAV_GROUPS: NavGroup[] = FEATURE_GROUPS.map((group) => ({
   id: group.id,
   label: group.label,
-  items: group.items.map((item): NavItem => {
-    const route = NAV_ROUTES[item.code];
-    if (!route) {
-      throw new Error(`nav-groups: missing route mapping for feature "${item.code}"`);
-    }
-    return {
-      code: item.code,
-      label: item.label,
-      path: route.path,
-      exact: route.exact,
-      children: route.children,
-      roles: item.roles,
-    };
-  }),
-}));
+  items: group.items
+    .filter((item) => !FOOTER_ONLY_FEATURE_CODES.has(item.code))
+    .map((item): NavItem => {
+      const route = NAV_ROUTES[item.code];
+      if (!route) {
+        throw new Error(`nav-groups: missing route mapping for feature "${item.code}"`);
+      }
+      return {
+        code: item.code,
+        label: item.label,
+        path: route.path,
+        exact: route.exact,
+        children: route.children,
+        roles: item.roles,
+      };
+    }),
+})).filter((group) => group.items.length > 0);
 
 /** เมนูแรกตามลำดับ NAV_GROUPS ที่ผู้ใช้คนนี้เข้าถึงได้ — ใช้เป็นหน้าแรกหลัง login แทนเส้นทางตายตัว */
 export function firstAccessibleNavPath(auth: AuthService): string {

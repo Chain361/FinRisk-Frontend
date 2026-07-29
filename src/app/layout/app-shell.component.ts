@@ -15,11 +15,11 @@ import { catchError, filter, map, of } from 'rxjs';
 
 import { ApiService } from '../core/api/api.service';
 import { AuthService } from '../core/auth/auth.service';
-import { I18nService } from '../core/i18n/i18n.service';
 import { ASSIGNMENT_ROLES, CHATBOT_ROLES, PUBLIC_EXPORT_ROLES } from '../core/auth/roles';
 import { SystemMeta } from '../core/models/domain.models';
 import { ChatbotWidgetComponent } from '../features/chatbot/chatbot-widget.component';
 import { GuardrailBannerComponent } from '../shared/ui/guardrail-banner.component';
+import { NotificationBellComponent } from '../shared/ui/notification-bell.component';
 import { PrototypeBannerComponent } from '../shared/ui/prototype-banner.component';
 import { NAV_GROUPS, NavGroup, NavItem } from './nav-groups';
 
@@ -31,6 +31,7 @@ import { NAV_GROUPS, NavGroup, NavItem } from './nav-groups';
     RouterLink,
     ChatbotWidgetComponent,
     GuardrailBannerComponent,
+    NotificationBellComponent,
     PrototypeBannerComponent,
     LucideLayoutDashboard,
     LucideLandmark,
@@ -42,7 +43,7 @@ import { NAV_GROUPS, NavGroup, NavItem } from './nav-groups';
     LucideKeyRound,
   ],
   template: `
-    <a class="skip-link" href="#main-content">{{ t('a11y.skipToContent') }}</a>
+    <a class="skip-link" href="#main-content">ข้ามไปยังเนื้อหาหลัก</a>
     <app-prototype-banner />
     <div class="flex min-h-screen bg-page text-ink">
       <aside class="hidden w-[264px] shrink-0 flex-col bg-navy text-white lg:flex">
@@ -57,7 +58,7 @@ import { NAV_GROUPS, NavGroup, NavItem } from './nav-groups';
 
         <nav
           class="flex flex-1 flex-col overflow-y-auto py-2.5"
-          [attr.aria-label]="t('a11y.mainNav')"
+          aria-label="เมนูนำทางหลัก"
         >
           @for (group of visibleNavGroups(); track group.id) {
             <div>
@@ -241,6 +242,12 @@ import { NAV_GROUPS, NavGroup, NavItem } from './nav-groups';
             >
               ติดต่อ / แจ้งข้อมูลไม่ถูกต้อง
             </a>
+            <a
+              routerLink="/privacy-policy"
+              class="text-xs text-[#c9d4e3] no-underline hover:text-white hover:underline"
+            >
+              นโยบายความเป็นส่วนตัว
+            </a>
           </div>
         </div>
       </aside>
@@ -250,7 +257,7 @@ import { NAV_GROUPS, NavGroup, NavItem } from './nav-groups';
           class="flex flex-wrap items-center justify-between gap-4 border-b-2 border-navy bg-white px-4 py-3.5 lg:px-[30px]"
         >
           <div>
-            <nav [attr.aria-label]="t('a11y.breadcrumb')">
+            <nav aria-label="เส้นทางหน้า">
               <p class="m-0 text-[12.5px] text-muted">
                 หน้าหลัก /
                 <span class="font-bold text-navy" aria-current="page">{{
@@ -264,6 +271,7 @@ import { NAV_GROUPS, NavGroup, NavItem } from './nav-groups';
           </div>
 
           <div class="flex items-center gap-3.5">
+            <app-notification-bell />
             <div class="rounded-[3px] border-[1.5px] border-line px-3.5 py-[7px] text-right">
               <p class="m-0 text-[13px] font-bold text-ink">
                 {{ auth.user()?.display_name ?? auth.user()?.username ?? auth.token() }}
@@ -290,7 +298,7 @@ import { NAV_GROUPS, NavGroup, NavItem } from './nav-groups';
         <main
           id="main-content"
           tabindex="-1"
-          [attr.aria-label]="t('a11y.mainContent')"
+          aria-label="เนื้อหาหลัก"
           class="flex flex-1 flex-col gap-[22px] px-4 pb-[60px] pt-[26px] lg:px-[30px]"
         >
           <app-guardrail-banner />
@@ -306,7 +314,6 @@ import { NAV_GROUPS, NavGroup, NavItem } from './nav-groups';
 })
 export class AppShellComponent {
   readonly auth = inject(AuthService);
-  protected readonly t = inject(I18nService).t;
   private readonly router = inject(Router);
   private readonly api = inject(ApiService);
 
