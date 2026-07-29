@@ -484,18 +484,54 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
         due_date: this.dueDate(),
       })
       .subscribe({
-        next: () => {
-          this.reloadAssignments();
+        next: (created) => {
           this.dueDate.set('');
           this.assignmentNote.set('');
           this.confirmOpen.set(false);
           this.successOpen.set(true);
+          this.startAssignmentImmediately(created);
         },
         error: (response: { error?: { detail?: string } }) => {
           this.confirmOpen.set(false);
           this.formError.set(
             response.error?.detail ?? 'บันทึกการมอบหมายงานไม่สำเร็จ กรุณาลองใหม่อีกครั้ง',
           );
+        },
+      });
+  }
+
+  /** มอบหมายงานเสร็จแล้ว → ข้ามขั้นตอนรอผู้รับงานตอบรับ (waiting_acceptance) ไปเป็นกำลังดำเนินการ
+   * (in_progress) ทันทีเลย เป็นทางลัดที่ตกลงกันไว้ (เหมือน advanceAssignmentToUnderReview ใน
+   * risk-analyst-feedback.page.ts และ completeAssignmentForProject ใน project-feedback-panel.component.ts)
+   * backend บังคับ transition ทีละขั้น (waiting_acceptance → accepted → in_progress) จึงต้องยิง
+   * PATCH สองครั้งเรียงกัน จะข้าม accepted ไปตรงๆ ไม่ได้ */
+  private startAssignmentImmediately(created: AuditAssignment): void {
+    this.api
+      .updateAssignmentStatus(created.assignment_id, 'accepted', 'รับงานอัตโนมัติหลังมอบหมายงาน')
+      .subscribe({
+        next: () => {
+          this.api
+            .updateAssignmentStatus(
+              created.assignment_id,
+              'in_progress',
+              'เริ่มดำเนินการทันทีหลังมอบหมายงาน',
+            )
+            .subscribe({
+              next: () => this.reloadAssignments(),
+              error: (response: { error?: { detail?: string } }) => {
+                this.formError.set(
+                  response.error?.detail ??
+                    'มอบหมายงานสำเร็จ แต่เปลี่ยนสถานะเป็นกำลังดำเนินการไม่สำเร็จ',
+                );
+                this.reloadAssignments();
+              },
+            });
+        },
+        error: (response: { error?: { detail?: string } }) => {
+          this.formError.set(
+            response.error?.detail ?? 'มอบหมายงานสำเร็จ แต่เปลี่ยนสถานะเป็นกำลังดำเนินการไม่สำเร็จ',
+          );
+          this.reloadAssignments();
         },
       });
   }
