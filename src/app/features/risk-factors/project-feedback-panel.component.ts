@@ -1,4 +1,5 @@
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
@@ -35,7 +36,7 @@ type ModalMode = 'submit' | 'delete' | 'resolve' | null;
 @Component({
   selector: 'app-project-feedback-panel',
   standalone: true,
-  imports: [EmptyStateComponent, ConfirmModalComponent, RiskMatrixComponent],
+  imports: [RouterLink, EmptyStateComponent, ConfirmModalComponent,  RiskMatrixComponent],
   template: `
     <section class="panel p-[18px]">
       <div class="flex flex-wrap items-start justify-between gap-3">
@@ -162,7 +163,7 @@ type ModalMode = 'submit' | 'delete' | 'resolve' | null;
                   </div>
                 }
 
-                @if (canEdit(item) || canResolve(item)) {
+                @if (canEdit(item) || canResolve(item) || canCreateAuditReport(item)) {
                   <div class="mt-2.5 flex gap-2 border-t border-line-soft pt-2.5">
                     @if (canEdit(item)) {
                       <button
@@ -188,6 +189,14 @@ type ModalMode = 'submit' | 'delete' | 'resolve' | null;
                       >
                         อนุมัติ
                       </button>
+                    }
+                    @if (canCreateAuditReport(item)) {
+                      <a
+                        [routerLink]="['/audit-reports', item.feedback_id]"
+                        class="gov-btn-primary inline-flex items-center justify-center text-[12.5px] no-underline"
+                      >
+                        บันทึกผลตรวจโครงการ
+                      </a>
                     }
                   </div>
                 }
@@ -307,6 +316,11 @@ export class ProjectFeedbackPanelComponent {
   /** ปุ่มอนุมัติ — แสดงเฉพาะรายการที่ส่งแล้ว (design choice ฝั่ง UI; backend ไม่บังคับสถานะ) */
   canResolve(item: AuditorFeedback): boolean {
     return item.status === 'submitted' && this.auth.hasRole(...RESOLVE_ROLES);
+  }
+
+  /** ผู้ตรวจสอบโครงการเท่านั้นที่สร้างรายงานจากความเห็นที่อนุมัติแล้วได้ */
+  canCreateAuditReport(item: AuditorFeedback): boolean {
+    return item.status === 'resolved' && this.auth.hasRole('project_auditor');
   }
 
   /** ไฟล์แนบของ assignment ที่มอบหมายให้ auditor_username ของความเห็นนี้ในโครงการนี้ */

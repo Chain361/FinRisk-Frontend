@@ -475,6 +475,26 @@ export interface AuditorFeedbackCreate {
   status: 'draft' | 'submitted';
 }
 
+/** รายงานผลตรวจ 1 รายการต่อความเห็นที่ได้รับอนุมัติ 1 รายการ */
+export interface AuditReport {
+  report_id: number | null;
+  feedback_id: number;
+  assignment_id: number;
+  project_id: string;
+  project_name: string;
+  dept_name?: string | null;
+  work_process?: string | null;
+  objective?: string | null;
+  findings: string;
+  suggestions?: string | null;
+  likelihood?: number | null;
+  impact?: number | null;
+  impact_score?: number | null;
+  risk_level?: number | null;
+  concern_level?: ConcernLevel | string | null;
+  submitted_at?: string | null;
+}
+
 /** ประวัติแชท — ฝั่ง client ถืออยู่ ไม่เก็บใน backend (ส่งไปทุกครั้งพร้อมข้อความใหม่) */
 export interface ChatTurn {
   role: 'user' | 'model';
