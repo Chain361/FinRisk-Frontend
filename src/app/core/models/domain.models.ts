@@ -486,3 +486,72 @@ export interface ChatResponse {
   reply: string;
   tool_calls: ChatToolCall[];
 }
+
+/** ---- Document Intelligence (checklist เอกสารประกอบโครงการ + OCR findings, issue #35) ---- */
+
+export interface DocumentType {
+  doc_type_code: string;
+  name_th: string;
+  description: string | null;
+  required_for_project_type: string | null;
+  provides: string[];
+}
+
+export interface DocumentFinding {
+  finding_id: number;
+  doc_id: number;
+  doc_type_code: string;
+  doc_type_name: string;
+  finding_text: string;
+  risk_category: string;
+  observed_value: string | null;
+  expected_value: string | null;
+  severity: 'low' | 'medium' | 'high';
+  source: 'mock' | 'ocr' | 'llm' | 'manual';
+  legal_refs: LegalRef[];
+}
+
+export type ProjectDocumentStatus = 'present' | 'missing' | 'pending_review';
+
+export interface ProjectDocument {
+  doc_id: number;
+  doc_type_code: string;
+  doc_type_name: string | null;
+  status: ProjectDocumentStatus;
+  is_required: boolean;
+  doc_no: string | null;
+  doc_date: string | null;
+  summary_text: string | null;
+  extracted: Record<string, unknown>;
+  provides: string[];
+  file_path: string | null;
+  source: 'mock' | 'ocr' | 'manual';
+  findings: DocumentFinding[];
+}
+
+export interface MissingDocType {
+  doc_type_code: string;
+  name_th: string;
+  provides: string[];
+  reason: 'no_record' | 'missing' | 'pending_review';
+}
+
+export interface ProvidesIndexEntry {
+  doc_type_code: string;
+  name_th: string;
+  status: ProjectDocumentStatus | 'no_record';
+}
+
+export interface ProjectDocumentsView {
+  project_id: string;
+  project_name: string;
+  project_type: string | null;
+  subdistrict_id: number;
+  data_quality_note: string | null;
+  required_doc_types: string[];
+  has_document_data: boolean;
+  documents: ProjectDocument[];
+  missing_doc_types: MissingDocType[];
+  provides_index: Record<string, ProvidesIndexEntry[]>;
+  findings_count: number;
+}

@@ -21,6 +21,7 @@ import {
   ChatTurn,
   CreateAssignmentRequest,
   DataUploadResult,
+  DocumentType,
   FinancialStatement,
   LoginRequest,
   LoginResponse,
@@ -33,6 +34,7 @@ import {
   Project,
   ProjectDetail,
   ProjectDetailResponse,
+  ProjectDocumentsView,
   ProjectFilters,
   ProjectLegalFactor,
   RiskEngineRunResult,
@@ -150,6 +152,16 @@ export class ApiService {
   /** ผล risk factor ล่าสุด + legal_refs (มาตรา/ระเบียบที่เกี่ยวข้อง) ของโครงการ */
   projectLegal(projectId: string | number): Observable<ProjectLegalFactor[]> {
     return this.http.get<ProjectLegalFactor[]>(`${this.baseUrl}/risk/projects/${projectId}/legal`);
+  }
+
+  /** ประเภทเอกสารอ้างอิง (ปร.4/5/6) + provides (เอกสารนั้นระบุอะไร) */
+  documentTypes(): Observable<DocumentType[]> {
+    return this.http.get<DocumentType[]>(`${this.baseUrl}/documents/types`);
+  }
+
+  /** เอกสารของโครงการ + สถานะ + รายการที่ยังขาด + findings พร้อม legal refs */
+  projectDocuments(projectId: string | number): Observable<ProjectDocumentsView> {
+    return this.http.get<ProjectDocumentsView>(`${this.baseUrl}/projects/${projectId}/documents`);
   }
 
   riskFactors(): Observable<RiskFactorCatalog[]> {
