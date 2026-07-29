@@ -64,8 +64,8 @@ interface MyTaskRow {
       <!-- KPI Cards -->
       <div class="grid gap-4 md:grid-cols-4">
         <div class="panel p-4">
-          <p class="m-0 text-xs font-bold text-muted">งานรอรับ</p>
-          <p class="m-0 mt-1 text-[26px] font-extrabold text-orange-600">{{ waitingCount() }}</p>
+          <p class="m-0 text-xs font-bold text-muted">งานทั้งหมด</p>
+          <p class="m-0 mt-1 text-[26px] font-extrabold text-navy">{{ totalCount() }}</p>
         </div>
         <div class="panel p-4">
           <p class="m-0 text-xs font-bold text-muted">กำลังดำเนินการ</p>
@@ -78,9 +78,9 @@ interface MyTaskRow {
           </p>
         </div>
         <div class="panel p-4">
-          <p class="m-0 text-xs font-bold text-muted">แสดงผลตามตัวกรอง</p>
+          <p class="m-0 text-xs font-bold text-muted">เสร็จสิ้น</p>
           <p class="m-0 mt-1 text-[26px] font-extrabold text-risk-low">
-            {{ filteredRows().length }}
+            {{ completedCount() }}
           </p>
         </div>
       </div>
@@ -119,7 +119,6 @@ interface MyTaskRow {
                 (ngModelChange)="statusFilter.set($event)"
               >
                 <option value="all">ทุกสถานะ</option>
-                <option value="waiting_acceptance">รอผู้รับงานตอบรับ</option>
                 <option value="in_progress">กำลังดำเนินการ</option>
                 <option value="under_review">อยู่ระหว่างสอบทาน</option>
                 <option value="completed">เสร็จสิ้น</option>
@@ -295,14 +294,15 @@ export class RiskAnalystMyTasksPageComponent implements OnInit {
     );
   });
 
-  readonly waitingCount = computed(
-    () => this.assignments().filter((a) => a.status === 'waiting_acceptance').length,
-  );
+  readonly totalCount = computed(() => this.assignments().length);
   readonly inProgressCount = computed(
     () => this.assignments().filter((a) => a.status === 'in_progress').length,
   );
   readonly underReviewCount = computed(
     () => this.assignments().filter((a) => a.status === 'under_review').length,
+  );
+  readonly completedCount = computed(
+    () => this.assignments().filter((a) => a.status === 'completed').length,
   );
 
   // ── Lifecycle ──

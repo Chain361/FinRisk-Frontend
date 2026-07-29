@@ -112,7 +112,6 @@ interface ProjectStatusRow {
               >
                 <option value="all">ทุกสถานะโครงการ</option>
                 <option value="unassigned">ยังไม่มอบหมาย</option>
-                <option value="waiting_acceptance">รอผู้รับงานตอบรับ</option>
                 <option value="in_progress">กำลังดำเนินการ</option>
                 <option value="under_review">อยู่ระหว่างสอบทาน</option>
                 <option value="completed">เสร็จสิ้น</option>
@@ -370,12 +369,9 @@ export class AssignmentProjectAuditorStatusPageComponent implements OnInit {
     return this.projectRows().filter(
       (row) =>
         (!search || row.searchText.includes(search)) &&
-        (workflowStatus === 'all' ||
+          (workflowStatus === 'all' ||
           (workflowStatus === 'unassigned' && !row.latestAssignment) ||
-          row.latestAssignment?.workflowStatus === workflowStatus ||
-          (!row.latestAssignment?.workflowStatus &&
-            workflowStatus === 'waiting_acceptance' &&
-            Boolean(row.latestAssignment))) &&
+          row.latestAssignment?.workflowStatus === workflowStatus) &&
         (risk === 'all' || normalizeRiskLevel(row.project.risk_level) === risk) &&
         (analystId === 'all' || row.latestAssignment?.analystId === analystId),
     );

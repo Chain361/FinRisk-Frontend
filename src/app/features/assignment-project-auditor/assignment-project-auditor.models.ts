@@ -1,24 +1,19 @@
 export type AssignmentPriority = 'high' | 'normal' | 'low';
 export type AssignmentWorkflowStatus =
-  | 'waiting_acceptance'
   | 'in_progress'
   | 'under_review'
   | 'completed';
 
-export const DEFAULT_ASSIGNMENT_WORKFLOW_STATUS: AssignmentWorkflowStatus = 'waiting_acceptance';
-
 export const ASSIGNMENT_WORKFLOW_STATUS_LABELS: Record<AssignmentWorkflowStatus, string> = {
-  waiting_acceptance: 'รอผู้รับงานตอบรับ',
   in_progress: 'กำลังดำเนินการ',
   under_review: 'อยู่ระหว่างสอบทาน',
   completed: 'เสร็จสิ้น',
 };
 
 export const PROJECT_WORKFLOW_STATUS_LABELS: Record<AssignmentWorkflowStatus, string> = {
-  waiting_acceptance: 'รอผู้รับงานตอบรับ',
-  in_progress: 'อยู่ระหว่างตรวจสอบ',
-  under_review: 'รอสอบทาน',
-  completed: 'ตรวจสอบเสร็จสิ้น',
+  in_progress: 'กำลังดำเนินการ',
+  under_review: 'อยู่ระหว่างสอบทาน',
+  completed: 'เสร็จสิ้น',
 };
 
 export interface Analyst {
@@ -58,15 +53,13 @@ export interface SavedAssignment {
 export const ASSIGNMENT_STORAGE_KEY = 'finrisk_assignment_project_auditor';
 
 export function assignmentWorkflowStatusLabel(status?: AssignmentWorkflowStatus | null): string {
-  return ASSIGNMENT_WORKFLOW_STATUS_LABELS[status ?? DEFAULT_ASSIGNMENT_WORKFLOW_STATUS];
+  return status ? ASSIGNMENT_WORKFLOW_STATUS_LABELS[status] : 'ไม่ระบุสถานะ';
 }
 
 export function assignmentWorkflowStatusBadgeClass(
   status?: AssignmentWorkflowStatus | null,
 ): string {
-  switch (status ?? DEFAULT_ASSIGNMENT_WORKFLOW_STATUS) {
-    case 'waiting_acceptance':
-      return 'bg-orange-100 text-risk-medium';
+  switch (status) {
     case 'in_progress':
       return 'bg-blue-100 text-navy';
     case 'under_review':
@@ -74,6 +67,7 @@ export function assignmentWorkflowStatusBadgeClass(
     case 'completed':
       return 'bg-green-100 text-risk-low';
   }
+  return 'bg-slate-100 text-slate-600';
 }
 
 export function projectWorkflowStatusLabel(status?: AssignmentWorkflowStatus | null): string {
@@ -83,8 +77,6 @@ export function projectWorkflowStatusLabel(status?: AssignmentWorkflowStatus | n
 export function projectWorkflowStatusBadgeClass(status?: AssignmentWorkflowStatus | null): string {
   if (!status) return 'bg-slate-100 text-slate-600';
   switch (status) {
-    case 'waiting_acceptance':
-      return 'bg-orange-100 text-risk-medium';
     case 'in_progress':
       return 'bg-blue-100 text-navy';
     case 'under_review':

@@ -307,7 +307,6 @@ export interface DataUploadResult {
 
 export type AssignmentPriority = 'low' | 'normal' | 'high';
 export type AssignmentStatus =
-  | 'waiting_acceptance'
   | 'in_progress'
   | 'under_review'
   | 'completed';
