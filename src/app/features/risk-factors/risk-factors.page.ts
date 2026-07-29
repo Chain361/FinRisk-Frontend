@@ -978,8 +978,13 @@ export class RiskFactorsPageComponent implements OnInit {
   }
 
   /** เลขประจำตัวผู้เสียภาษีของผู้ชนะ/คู่สัญญา — มาจาก JOIN vendors.tin ใน GET /projects/:id
-   * (ไม่ได้ type ไว้ใน ProjectDetail เพราะเป็น field เสริมจาก backend, ไม่ใช่คอลัมน์ projects ตรงๆ) */
+   * (ไม่ได้ type ไว้ใน ProjectDetail เพราะเป็น field เสริมจาก backend, ไม่ใช่คอลัมน์ projects ตรงๆ)
+   * backend มาสก์ TIN ให้ public_user อยู่แล้ว (mask_project_for_public ใน privacy.py) แต่กันซ้ำฝั่งนี้ไว้ด้วย
+   * ไม่ให้เลขเต็มหลุดออกมาได้เลยถ้า backend มีบั๊ก/ยังไม่มาสก์ — PDPA-sensitive จึงป้องกันสองชั้น */
   vendorTinLabel(): string {
+    if (this.auth.role() === 'public_user') {
+      return '-';
+    }
     const detail = this.projectDetail() as (ProjectDetail & Record<string, unknown>) | null;
     if (!detail) {
       return '-';
