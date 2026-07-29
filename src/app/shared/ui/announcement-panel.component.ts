@@ -27,7 +27,6 @@ const DEFAULT_NOTICES = [
             class="inline-flex h-[38px] cursor-pointer items-center gap-2 rounded-[3px] border-[1.5px] border-navy bg-white px-4 text-[13px] font-bold text-navy no-underline hover:bg-page"
           >
             <svg lucideFileText class="size-4" aria-hidden="true"></svg>
-            {{ t('announce.downloadManual') }}
             ดาวน์โหลดคู่มือการใช้งานระบบ (PDF)
           </a>
         </div>
