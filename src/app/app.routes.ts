@@ -4,6 +4,7 @@ import { authGuard } from './core/auth/auth.guard';
 import { roleGuard } from './core/auth/role.guard';
 import { ASSIGNMENT_ROLES, FEEDBACK_ROLES, PUBLIC_EXPORT_ROLES } from './core/auth/roles';
 import { AppShellComponent } from './layout/app-shell.component';
+import { exportAccessGuard } from './core/auth/export-access.guard';
 
 export const routes: Routes = [
   {
@@ -127,7 +128,7 @@ export const routes: Routes = [
       {
         // ชุดข้อมูลเปิด — backend อนุญาต admin/regional_supervisor/public_user เท่านั้น
         path: 'open-data',
-        canActivate: [roleGuard(...PUBLIC_EXPORT_ROLES)],
+        canActivate: [exportAccessGuard],
         loadComponent: () =>
           import('./features/open-data/open-data.page').then((m) => m.OpenDataPageComponent),
       },
