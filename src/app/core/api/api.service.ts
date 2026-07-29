@@ -17,6 +17,7 @@ import {
   AuditAssignment,
   AuditorFeedback,
   AuditorFeedbackCreate,
+  AuditReport,
   ChatResponse,
   ChatTurn,
   CreateAssignmentRequest,
@@ -138,6 +139,15 @@ export class ApiService {
   downloadPublicProjects(format: 'csv' | 'json'): Observable<HttpResponse<Blob>> {
     return this.http.get(`${this.baseUrl}/public/projects/export`, {
       params: new HttpParams().set('format', format),
+      observe: 'response',
+      responseType: 'blob',
+    });
+  }
+
+  /** ทะเบียนความเสี่ยงตาม scope ที่ backend อนุญาตสำหรับผู้ใช้ปัจจุบัน */
+  downloadRiskRegister(): Observable<HttpResponse<Blob>> {
+    return this.http.get(`${this.baseUrl}/risk/register/export`, {
+      params: new HttpParams().set('format', 'xlsx'),
       observe: 'response',
       responseType: 'blob',
     });
@@ -270,7 +280,7 @@ export class ApiService {
     return this.http.post<NotificationReadAllResponse>(
       `${this.baseUrl}/notifications/read-all`,
       {},
-   );
+    );
   }
   /** เปลี่ยนสถานะงานตรวจสอบ (accept/submit/approve/reject ฯลฯ) — backend บังคับ transition ที่อนุญาตตาม role อยู่แล้ว */
   updateAssignmentStatus(
@@ -278,10 +288,13 @@ export class ApiService {
     status: AssignmentStatus,
     note?: string,
   ): Observable<AuditAssignment> {
-    return this.http.patch<AuditAssignment>(`${this.baseUrl}/audit/assignments/${assignmentId}/status`, {
-      status,
-      note,
-    });
+    return this.http.patch<AuditAssignment>(
+      `${this.baseUrl}/audit/assignments/${assignmentId}/status`,
+      {
+        status,
+        note,
+      },
+    );
   }
 
   /** ไฟล์หลักฐาน (evidence) แนบกับงานตรวจสอบ — backend เก็บเป็น BYTEA ใน Postgres, จำกัด 10MB/ไฟล์ */
@@ -372,6 +385,23 @@ export class ApiService {
       form.append('file', file);
     }
     return this.http.post<ChatResponse>(`${this.baseUrl}/chatbot`, form);
+  }
+  auditReportFromFeedback(feedbackId: number): Observable<AuditReport> {
+    return this.http.get<AuditReport>(`${this.baseUrl}/audit/reports/from-feedback/${feedbackId}`);
+  }
+
+  createAuditReportFromFeedback(feedbackId: number): Observable<AuditReport> {
+    return this.http.post<AuditReport>(
+      `${this.baseUrl}/audit/reports/from-feedback/${feedbackId}`,
+      {},
+    );
+  }
+
+  downloadAuditReport(reportId: number): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/audit/reports/${reportId}/export`, {
+      params: { format: 'pdf' },
+      responseType: 'blob',
+    });
   }
 
   private toParams(filters: ProjectFilters): HttpParams {

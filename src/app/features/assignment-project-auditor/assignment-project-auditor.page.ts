@@ -258,11 +258,33 @@ import {
 
           <label class="mt-4 block">
             <span class="mb-1.5 block text-sm font-bold text-ink"
-              >คำแนะนำหรือรายละเอียดการตรวจสอบ <span class="text-risk-high">*</span></span
+              >กระบวนการงาน <span class="text-risk-high">*</span></span
             >
             <textarea
+              class="min-h-[96px] w-full rounded-[3px] border-[1.5px] border-line bg-white p-2.5 text-sm"
+              placeholder="ระบุกระบวนการงานหรือกิจกรรมที่จะตรวจสอบ…"
+              [ngModel]="workProcess()"
+              (ngModelChange)="workProcess.set($event)"
+            ></textarea>
+          </label>
+
+          <label class="mt-4 block">
+            <span class="mb-1.5 block text-sm font-bold text-ink"
+              >วัตถุประสงค์ของกระบวนงาน <span class="text-risk-high">*</span></span
+            >
+            <textarea
+              class="min-h-[96px] w-full rounded-[3px] border-[1.5px] border-line bg-white p-2.5 text-sm"
+              placeholder="ระบุวัตถุประสงค์ที่ต้องการประเมินหรือทดสอบ…"
+              [ngModel]="workObjective()"
+              (ngModelChange)="workObjective.set($event)"
+            ></textarea>
+          </label>
+
+          <label class="mt-4 block">
+            <span class="mb-1.5 block text-sm font-bold text-ink">คำแนะนำ</span>
+            <textarea
               class="min-h-[112px] w-full rounded-[3px] border-[1.5px] border-line bg-white p-2.5 text-sm"
-              placeholder="ระบุประเด็นที่ต้องการให้นักวิเคราะห์ตรวจสอบ…"
+              placeholder="ระบุคำแนะนำเพิ่มเติมสำหรับผู้รับมอบหมาย (ถ้ามี)…"
               [ngModel]="assignmentNote()"
               (ngModelChange)="assignmentNote.set($event)"
             ></textarea>
@@ -345,6 +367,8 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
   readonly selectedProjectId = signal<string | null>(null);
   readonly selectedAnalystId = signal<string | null>(null);
   readonly dueDate = signal('');
+  readonly workProcess = signal('');
+  readonly workObjective = signal('');
   readonly assignmentNote = signal('');
   readonly formError = signal('');
   readonly confirmOpen = signal(false);
@@ -465,8 +489,12 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
       this.formError.set('กรุณาระบุ Due date');
       return;
     }
-    if (!this.assignmentNote().trim()) {
-      this.formError.set('กรุณาระบุคำแนะนำหรือรายละเอียดการตรวจสอบ');
+    if (!this.workProcess().trim()) {
+      this.formError.set('กรุณาระบุกระบวนการงาน');
+      return;
+    }
+    if (!this.workObjective().trim()) {
+      this.formError.set('กรุณาระบุวัตถุประสงค์ของกระบวนงาน');
       return;
     }
     this.confirmOpen.set(true);
@@ -482,10 +510,14 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
         assignee_id: Number(analystId),
         note: this.assignmentNote().trim(),
         due_date: this.dueDate(),
+        work_process: this.workProcess().trim(),
+        work_objective: this.workObjective().trim(),
       })
       .subscribe({
         next: (created) => {
           this.dueDate.set('');
+          this.workProcess.set('');
+          this.workObjective.set('');
           this.assignmentNote.set('');
           this.confirmOpen.set(false);
           this.successOpen.set(true);
@@ -599,6 +631,8 @@ export class AssignmentProjectAuditorPageComponent implements OnInit {
       dueDate: assignment.due_date ?? undefined,
       budgetHours: assignment.budget_hours ?? undefined,
       auditSteps: assignment.audit_steps,
+      workProcess: assignment.work_process,
+      workObjective: assignment.work_objective,
       workflowStatus: assignment.status,
       assignedBy:
         assignment.assigned_by_display_name || assignment.assigned_by_username || undefined,
