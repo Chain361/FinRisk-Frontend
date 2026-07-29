@@ -1,6 +1,6 @@
 import { AuthService } from '../core/auth/auth.service';
 import { FEATURE_GROUPS } from '../core/auth/features';
-import { PUBLIC_EXPORT_ROLES } from '../core/auth/roles';
+import { ASSIGNMENT_ROLES, PUBLIC_EXPORT_ROLES } from '../core/auth/roles';
 
 export interface NavItem {
   code: string;
@@ -21,7 +21,15 @@ export interface NavGroup {
 interface NavRoute {
   path: string;
   exact?: boolean;
-  children?: Array<{ code: string; label: string; path: string; exact?: boolean }>;
+  children?: Array<{
+    code: string;
+    label: string;
+    path: string;
+    exact?: boolean;
+    /** จำกัด sub-item เฉพาะบาง role นอกเหนือจาก role ของ parent feature — ไม่ระบุ = ทุก role
+     * ที่เข้าถึง feature นี้เห็น (ดู canSeeByRole ใน app-shell.component.ts) */
+    roles?: readonly string[];
+  }>;
 }
 
 /**
@@ -83,6 +91,9 @@ const NAV_ROUTES: Record<string, NavRoute> = {
         code: 'F3.2',
         label: 'สถานะโครงการ',
         path: '/risk-factors/status',
+        // สถานะงานตรวจสอบภายใน (มอบหมาย/waiting/in-progress) ไม่ใช่ข้อมูลเปิด — mirror ของ
+        // ASSIGNMENT_ROLES ที่ backend ใช้กับ GET /audit/assignments (route นี้ก็ผูก roleGuard เดียวกันไว้)
+        roles: ASSIGNMENT_ROLES,
       },
     ],
   },

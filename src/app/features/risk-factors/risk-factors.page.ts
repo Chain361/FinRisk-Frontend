@@ -4,7 +4,7 @@ import { catchError, forkJoin, of } from 'rxjs';
 
 import { ApiService } from '../../core/api/api.service';
 import { AuthService } from '../../core/auth/auth.service';
-import { FEEDBACK_ROLES } from '../../core/auth/roles';
+import { ASSIGNMENT_ROLES, FEEDBACK_ROLES } from '../../core/auth/roles';
 import {
   SavedAssignment,
   projectWorkflowStatusLabel,
@@ -291,65 +291,67 @@ import { ProjectFeedbackPanelComponent } from './project-feedback-panel.componen
                     </div>
                   }
 
-                  <div
-                    class="mt-4 rounded-[4px] border-[1.5px] border-line-soft bg-[#fbfcfd] px-4 py-3.5"
-                  >
-                    <div class="flex flex-wrap items-center justify-between gap-3">
-                      <div class="flex min-w-0 flex-wrap items-center gap-4">
-                        <div class="flex items-center gap-2.5">
-                          <span
-                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-extrabold"
-                            [class]="assignmentStatusCircleClass()"
-                          >
-                            {{ projectWorkflowIcon() }}
-                          </span>
-                          <div>
-                            <p class="m-0 text-[11.5px] font-bold text-muted">สถานะโครงการโดยรวม</p>
-                            <p class="m-0 mt-0.5 text-[13.5px] font-extrabold text-ink">
-                              {{ projectWorkflowStatusText() }}
-                            </p>
+                  @if (canSeeAssignmentStatus()) {
+                    <div
+                      class="mt-4 rounded-[4px] border-[1.5px] border-line-soft bg-[#fbfcfd] px-4 py-3.5"
+                    >
+                      <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex min-w-0 flex-wrap items-center gap-4">
+                          <div class="flex items-center gap-2.5">
+                            <span
+                              class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-extrabold"
+                              [class]="assignmentStatusCircleClass()"
+                            >
+                              {{ projectWorkflowIcon() }}
+                            </span>
+                            <div>
+                              <p class="m-0 text-[11.5px] font-bold text-muted">สถานะโครงการโดยรวม</p>
+                              <p class="m-0 mt-0.5 text-[13.5px] font-extrabold text-ink">
+                                {{ projectWorkflowStatusText() }}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div class="min-w-[160px] border-l border-line-soft pl-4">
+                            <p class="m-0 text-[11.5px] font-bold text-muted">ผู้รับมอบหมาย</p>
+                            @if (assignmentAnalyst()) {
+                              <p class="m-0 mt-0.5 text-[13.5px] font-extrabold text-ink">
+                                {{ assignmentAnalystName() }}
+                              </p>
+                              @if (assignmentAnalystUserLabel()) {
+                                <p class="m-0 mt-0.5 text-[11.5px] font-bold text-navy">
+                                  {{ assignmentAnalystUserLabel() }}
+                                </p>
+                              }
+                            } @else {
+                              <p class="m-0 mt-0.5 text-[13.5px] italic text-slate-400">รอมอบหมาย</p>
+                            }
+                          </div>
+
+                          <div class="min-w-[160px] border-l border-line-soft pl-4">
+                            <p class="m-0 text-[11.5px] font-bold text-muted">ผู้มอบหมาย</p>
+                            @if (latestProjectAssignment()?.assignedBy) {
+                              <p class="m-0 mt-0.5 text-[13.5px] font-extrabold text-ink">
+                                {{ latestProjectAssignment()?.assignedBy }}
+                              </p>
+                            } @else {
+                              <p class="m-0 mt-0.5 text-[13.5px] italic text-slate-400">
+                                ยังไม่มีผู้รับผิดชอบ
+                              </p>
+                            }
                           </div>
                         </div>
 
-                        <div class="min-w-[160px] border-l border-line-soft pl-4">
-                          <p class="m-0 text-[11.5px] font-bold text-muted">ผู้รับมอบหมาย</p>
-                          @if (assignmentAnalyst()) {
-                            <p class="m-0 mt-0.5 text-[13.5px] font-extrabold text-ink">
-                              {{ assignmentAnalystName() }}
-                            </p>
-                            @if (assignmentAnalystUserLabel()) {
-                              <p class="m-0 mt-0.5 text-[11.5px] font-bold text-navy">
-                                {{ assignmentAnalystUserLabel() }}
-                              </p>
-                            }
-                          } @else {
-                            <p class="m-0 mt-0.5 text-[13.5px] italic text-slate-400">รอมอบหมาย</p>
-                          }
-                        </div>
-
-                        <div class="min-w-[160px] border-l border-line-soft pl-4">
-                          <p class="m-0 text-[11.5px] font-bold text-muted">ผู้มอบหมาย</p>
-                          @if (latestProjectAssignment()?.assignedBy) {
-                            <p class="m-0 mt-0.5 text-[13.5px] font-extrabold text-ink">
-                              {{ latestProjectAssignment()?.assignedBy }}
-                            </p>
-                          } @else {
-                            <p class="m-0 mt-0.5 text-[13.5px] italic text-slate-400">
-                              ยังไม่มีผู้รับผิดชอบ
-                            </p>
-                          }
-                        </div>
+                        <a
+                          routerLink="/risk-factors/status"
+                          [queryParams]="{ projectId: projectDetail()?.project_id }"
+                          class="inline-flex min-h-[38px] items-center justify-center rounded-[3px] border-[1.5px] border-line bg-white px-4 text-[13px] font-bold text-slate-700 no-underline hover:bg-zebra"
+                        >
+                          ดูสถานะเพิ่มเติม
+                        </a>
                       </div>
-
-                      <a
-                        routerLink="/risk-factors/status"
-                        [queryParams]="{ projectId: projectDetail()?.project_id }"
-                        class="inline-flex min-h-[38px] items-center justify-center rounded-[3px] border-[1.5px] border-line bg-white px-4 text-[13px] font-bold text-slate-700 no-underline hover:bg-zebra"
-                      >
-                        ดูสถานะเพิ่มเติม
-                      </a>
                     </div>
-                  </div>
+                  }
 
                   <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     <div class="rounded-[3px] border border-line-soft bg-zebra p-[11px]">
@@ -911,7 +913,12 @@ export class RiskFactorsPageComponent implements OnInit {
     );
   }
 
+  /** backend มาสก์ project_status ให้ public_user แล้ว (PUBLIC_PROJECT_REDACTED_FIELDS ใน privacy.py)
+   * แต่กันซ้ำฝั่งนี้ไว้ด้วย เผื่อ backend ที่ deploy อยู่ยังไม่มี fix นี้ (เช่นระหว่างรอ merge/deploy) */
   projectStatus(): string {
+    if (this.auth.role() === 'public_user') {
+      return 'ไม่ระบุ';
+    }
     const detail = this.projectDetail();
     return detail?.project_status || detail?.status || 'ไม่ระบุ';
   }
@@ -963,6 +970,13 @@ export class RiskFactorsPageComponent implements OnInit {
 
   canSeeFeedback(): boolean {
     return this.auth.hasRole(...FEEDBACK_ROLES);
+  }
+
+  /** ผู้ตรวจ/ผู้กำกับดูแล/แอดมินเท่านั้นที่เห็นสถานะงานตรวจสอบภายใน (workflow มอบหมายงาน)
+   * — ไม่ใช่ข้อมูลเปิด, public_user (และ local_executive ซึ่งเป็นฝ่ายถูกตรวจ) ไม่ควรเห็น
+   * mirror ของ ASSIGNMENT_ROLES (GET /audit/assignments ใน FinRisk-Backend) */
+  canSeeAssignmentStatus(): boolean {
+    return this.auth.hasRole(...ASSIGNMENT_ROLES);
   }
 
   vendorLabel(): string {
