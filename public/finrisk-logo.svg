@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 200" width="560" height="200">
+  <!-- icon mark -->
+  <g id="icon" transform="translate(20,12)">
+    <!-- shield -->
+    <path id="shield" d="M80 8
+             C 45 8 18 22 18 22
+             L 18 88
+             C 18 138 46 165 80 178
+             C 114 165 142 138 142 88
+             L 142 22
+             C 142 22 115 8 80 8
+             Z"
+          fill="#0b3164"/>
+
+    <!-- magnifying glass (audit / search for anomalies) -->
+    <circle id="lens" cx="72" cy="82" r="26" fill="none" stroke="#ffffff" stroke-width="9"/>
+    <line id="handle" x1="90" y1="100" x2="108" y2="118" stroke="#ffffff" stroke-width="10" stroke-linecap="round"/>
+
+    <!-- mini bar chart inside the lens (financial data) -->
+    <rect id="bar1" x="61" y="82" width="7" height="14" fill="#ffffff"/>
+    <rect id="bar2" x="71" y="72" width="7" height="24" fill="#ffffff"/>
+    <rect id="bar3" x="81" y="88" width="7" height="8" fill="#ffffff"/>
+
+    <!-- risk-flag accent dot -->
+    <circle id="flag-dot" cx="132" cy="26" r="12" fill="#c98a3a"/>
+  </g>
+
+  <!-- wordmark: two separate text objects so each color block stays independently editable -->
+  <g id="wordmark" font-family="Helvetica, Arial, sans-serif" font-size="56" font-weight="700">
+    <text id="word-fin" x="180" y="118" fill="#0b3164">Fin</text>
+    <text id="word-risk" x="284" y="118" fill="#c98a3a">Risk</text>
+  </g>
+</svg>

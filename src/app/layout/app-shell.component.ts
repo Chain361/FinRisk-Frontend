@@ -14,6 +14,7 @@ import {
 import { catchError, filter, map, of } from 'rxjs';
 
 import { ApiService } from '../core/api/api.service';
+import { APP_VERSION } from '../core/app-info';
 import { AuthService } from '../core/auth/auth.service';
 import {
   ASSIGNMENT_ROLES,
@@ -73,6 +74,9 @@ import { NAV_GROUPS, NavGroup, NavItem } from './nav-groups';
             </p>
             <p class="m-0 mt-2 text-xs tracking-wide text-[#c9d4e3]">
               Local Budget Financial Risk System
+            </p>
+            <p class="m-0 mt-1 text-[11px] font-medium tracking-wide text-[#8fa6c4]">
+              v{{ appVersion }}
             </p>
           </div>
         </div>
@@ -339,6 +343,8 @@ export class AppShellComponent {
   readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly api = inject(ApiService);
+
+  readonly appVersion = APP_VERSION;
 
   readonly navGroups = NAV_GROUPS;
   /** mirror ของ require_roles บน POST /chatbot (FinRisk-Backend routers/chatbot.py) */
